@@ -23,6 +23,7 @@ from databases import *
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 WEBHOOK_HOST = os.getenv('WEBHOOK_HOST')
+AWS_ENDPOINT = os.getenv('AWS_ENDPOINT')
 WEBHOOK_PORT = 443
 WEBHOOK_URL_BASE = "https://%s:%s" % (WEBHOOK_HOST, WEBHOOK_PORT)
 WEBHOOK_URL_PATH = "/%s/" % (TOKEN)
@@ -32,7 +33,7 @@ WEBHOOK_URL_PATH = "/%s/" % (TOKEN)
 logger = telebot.logger
 telebot.logger.setLevel(logging.DEBUG)
 
-bot = telebot.TeleBot(TOKEN, parse_mode='HTML') # You can set parse_mode by default. HTML or MARKDOWN
+bot = telebot.TeleBot(TOKEN, parse_mode='HTML', threaded=False) # You can set parse_mode by default. HTML or MARKDOWN
 app = fastapi.FastAPI(docs=None, redoc_url=None)
 app.type = "00"
 
@@ -284,24 +285,37 @@ def ask_availability(tele_id, event_id):
 
 
 ############################# WEBHOOK STUFF ###############################################
-@app.post(f'/{TOKEN}/')
-def process_webhook(update: dict):
-	"""
-	Process webhook calls
-	"""
-	if update:
-		update = telebot.types.Update.de_json(update)
-		bot.process_new_updates([update])
-	else:
-		return
+# @app.post(f'/{TOKEN}/')
+# def process_webhook(update: dict):
+# 	"""
+# 	Process webhook calls
+# 	"""
+# 	if update:
+# 		update = telebot.types.Update.de_json(update)
+# 		bot.process_new_updates([update])
+# 	else:
+# 		return
 
-bot.remove_webhook()
-time.sleep(0.1)
 # Set webhook
-bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
+#bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
 				#certificate=open(WEBHOOK_SSL_CERT, 'r'))
 
+########################### LAMBDA STUFF #################################################
+#bot.remove_webhook()
+time.sleep(0.1)
 
+webhook_info = bot.get_webhook_info()
+ic(webhook_info)
+if not webhook_info.url:
+	bot.set_webhook(url=AWS_ENDPOINT)
+
+def lambda_handler(event, context):
+	update = types.Update.de_json(json.loads(event['body']))
+	bot.process_new_updates([update])
+	return {
+		'statusCode': 200,
+		'body': json.dumps('Hello from Lambda!')
+	}
 
 """
 @bot.message_handler(commands=['event'])
