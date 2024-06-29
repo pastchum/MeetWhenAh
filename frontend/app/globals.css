@@ -31,3 +31,34 @@ body {
     text-wrap: balance;
   }
 }
+
+@layer components
+{
+    .dark-mode
+    {
+        @apply dark:invert dark:-hue-rotate-180 dark:saturate-100 dark:brightness-90;
+    }
+
+    .dark-image-mode
+    {
+        @apply dark:invert dark:hue-rotate-180 dark:saturate-[1.25];
+    }
+}
+
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
