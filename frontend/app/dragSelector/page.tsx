@@ -1,15 +1,94 @@
-import React from 'react';
-import DragSelect from '../_components/DragSelect';
+'use client'
 
-export default function Home() {
+import React, { useRef, useContext, createContext, forwardRef, ReactNode } from 'react';
+import useSelected from '@/components/dragselector/useselected';
+import useAreaSelection from '@/components/dragselector/useareaselection';
+
+const SelectionContext = React.createContext<DOMRect | null>(null);
+
+const boxStyles = {
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  background: "#fff",
+  width: "2rem",
+  height: "1rem",
+  borderRadius: "0.5rem",
+  transition: "all 200ms ease-in-out"
+};
+function Box() {
+  const ref = React.useRef(null);
+  const selection = React.useContext(SelectionContext);
+  const isSelected = useSelected(ref, selection);
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+    <div
+      ref={ref}
+      style={{
+        ...boxStyles,
+        ...(isSelected && {
+          boxShadow: "inset 0 0 0 .25rem hsl(206deg 100% 50%)"
+        })
+      }}
+    />
+  );
+}
+
+const containerStyles = {
+  display: "grid",
+  flexWrap: "wrap",
+  gap: "10px",
+  width: "100vw",
+  maxWidth: "100%",
+  margin: "10ch auto",
+  background: "#eee",
+  padding: "4rem",
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "hidden",
+  border: ".25rem dashed #aaa",
+  borderRadius: "1rem",
+};
+
+interface ContainerProps {
+  columns: number;
+  rows: number;
+}
+
+const Container = forwardRef<HTMLElement, ContainerProps>(({ columns, rows }, ref) => {
+  const boxes = Array.from({ length: columns * rows }, (_, i) => i + 1);
+  return (
+    <div ref={ref} style={containerStyles}>
+    </div>
+  );
+});
+export default function Home() {  
+
+  const selectContainerRef = React.useRef<HTMLElement | null>(null);
+  const selection = useAreaSelection({ container: selectContainerRef });
+
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-between p-24 w-screen">
       <head>
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
       </head>
       <div>
-        <h1>Drag to Select Box Example</h1>
-        <DragSelect />
+        <SelectionContext.Provider value={selection}>
+          <Container ref={selectContainerRef}>{boxes}</Container>
+        </SelectionContext.Provider>
+        {/* <pre
+          style={{
+            display: "inline-block",
+            lineHeight: "1.4",
+            background: "rgba(0,0,0,0.05)",
+            padding: "1rem",
+            borderRadius: ".5rem",
+            margin: "4rem",
+            fontSize: "1rem"
+          }}
+        >
+          selection: {JSON.stringify(selection, null, 2)}
+        </pre> */}
       </div>
     </main>
   );
