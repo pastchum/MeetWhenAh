@@ -5,6 +5,7 @@ import CustomDateRangePicker from '@/components/datepicker/CustomDateRangePicker
 import Summary from '@/components/datepicker/Summary'
 import { useState, useEffect } from 'react'
 
+
 export default function DatePicker() {
   const [data, setData] = useState({
     event_name: "",
@@ -25,12 +26,15 @@ export default function DatePicker() {
     console.log("prev component");
     setCurrentComponent(currentComponent - 1);
   }
-  const [webApp, setWebApp] = useState()
+  const [tg, setTg] = useState();
   useEffect(() => {
-    const app = (window).Telegram?.WebApp;
-    if (app) {
-      app.ready();
-      setWebApp(app);
+    if (window.Telegram) {
+      setTg(window.Telegram.WebApp);
+      // Now you can use the Telegram Web App API
+      // For example, getting the user data:
+      
+    } else {
+      console.error("Telegram Web App script not loaded");
     }
   }, []);
 
@@ -38,7 +42,7 @@ export default function DatePicker() {
     data.start = data.start.toString();
     data.end = data.end.toString();
     console.log(data);
-    webApp.sendData(data);
+    tg.sendData(JSON.stringify(data, null, 4));
   }
   
   return (

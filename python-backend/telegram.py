@@ -23,7 +23,7 @@ from databases import *
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 WEBHOOK_HOST = os.getenv('WEBHOOK_HOST')
-AWS_ENDPOINT = os.getenv('AWS_ENDPOINT')
+#AWS_ENDPOINT = os.getenv('AWS_ENDPOINT')
 WEBHOOK_PORT = 443
 WEBHOOK_URL_BASE = "https://%s:%s" % (WEBHOOK_HOST, WEBHOOK_PORT)
 WEBHOOK_URL_PATH = "/%s/" % (TOKEN)
@@ -82,7 +82,7 @@ Need help? Type /help for more info on commands!
 			#	updateEntry(db_result, "callout_cleared", False) 
 
 		markup = types.ReplyKeyboardMarkup(row_width=1)
-		web_app_info = types.WebAppInfo(url="https://jensenhuangyankai.github.io/meetWhenAh/frontend0")
+		web_app_info = types.WebAppInfo(url="https://meetwhenah.deploy.jensenhshoots.com/datepicker")
 		web_app_button = types.KeyboardButton(text="Create Event", web_app=web_app_info)
 		markup.add(web_app_button)
 
@@ -285,37 +285,38 @@ def ask_availability(tele_id, event_id):
 
 
 ############################# WEBHOOK STUFF ###############################################
-# @app.post(f'/{TOKEN}/')
-# def process_webhook(update: dict):
-# 	"""
-# 	Process webhook calls
-# 	"""
-# 	if update:
-# 		update = telebot.types.Update.de_json(update)
-# 		bot.process_new_updates([update])
-# 	else:
-# 		return
+bot.remove_webhook()
+@app.post(f'/{TOKEN}/')
+def process_webhook(update: dict):
+	"""
+	Process webhook calls
+	"""
+	if update:
+		update = telebot.types.Update.de_json(update)
+		bot.process_new_updates([update])
+	else:
+		return
 
-# Set webhook
-#bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
-				#certificate=open(WEBHOOK_SSL_CERT, 'r'))
+#Set webhook
+bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
+#				certificate=open(WEBHOOK_SSL_CERT, 'r'))
 
 ########################### LAMBDA STUFF #################################################
 #bot.remove_webhook()
-time.sleep(0.1)
+# time.sleep(0.1)
 
-webhook_info = bot.get_webhook_info()
-ic(webhook_info)
-if not webhook_info.url:
-	bot.set_webhook(url=AWS_ENDPOINT)
+# webhook_info = bot.get_webhook_info()
+# ic(webhook_info)
+# if not webhook_info.url:
+# 	bot.set_webhook(url=AWS_ENDPOINT)
 
-def lambda_handler(event, context):
-	update = types.Update.de_json(json.loads(event['body']))
-	bot.process_new_updates([update])
-	return {
-		'statusCode': 200,
-		'body': json.dumps('Hello from Lambda!')
-	}
+# def lambda_handler(event, context):
+# 	update = types.Update.de_json(json.loads(event['body']))
+# 	bot.process_new_updates([update])
+# 	return {
+# 		'statusCode': 200,
+# 		'body': json.dumps('Hello from Lambda!')
+# 	}
 
 """
 @bot.message_handler(commands=['event'])
