@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 
 export default function DatePicker() {
   const [data, setData] = useState({
+    web_app_number: 0,
     event_name: "",
     event_details: "",
     start: "",
