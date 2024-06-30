@@ -11,11 +11,11 @@ export default function Details({ nextComponent }) {
 
     const handleNameChange = (e) => {
         setNewData({...newData, event_name: e.target.value});
-        console.log(newData);
+        //console.log(newData);
     }
     const handleDetailsChange = (e) => {
         setNewData({...newData, event_details: e.target.value});
-        console.log(newData);
+        //console.log(newData);
     }
     
 
