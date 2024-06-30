@@ -27,6 +27,7 @@ export default function DatePicker() {
     console.log("prev component");
     setCurrentComponent(currentComponent - 1);
   }
+  
   const [tg, setTg] = useState(null);
   useEffect(() => {
     if (window.Telegram) {
