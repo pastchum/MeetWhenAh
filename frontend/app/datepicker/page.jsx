@@ -5,7 +5,7 @@ import CustomDateRangePicker from '@/components/datepicker/CustomDateRangePicker
 import Summary from '@/components/datepicker/Summary'
 import { useState, useEffect } from 'react'
 
-export default function datePicker() {
+export default function DatePicker() {
   const [data, setData] = useState({
     event_name: "",
     event_details: "",
