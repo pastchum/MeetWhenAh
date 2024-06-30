@@ -109,14 +109,14 @@ def handle_webapp(message):
 	if web_app_number == 0:
 		event_name = web_app_data["event_name"]
 		event_details = web_app_data["event_details"]
-		start_date = web_app_data["start_date"]
-		end_date = web_app_data["end_date"]
+		start_date = web_app_data["start"]
+		end_date = web_app_data["end"]
 
 		if start_date == None or end_date == None:
 			bot.send_message(message.chat.id, "Enter in valid date pls")
 			return
-		start_date = datetime.strptime(start_date, '%d-%m-%Y')
-		end_date = datetime.strptime(end_date, '%d-%m-%Y')
+		start_date = datetime.strptime(start_date, '%Y-%m-%d')
+		end_date = datetime.strptime(end_date, '%Y-%m-%d')
 
 		def daterange(start_date, end_date):
 			for n in range(int((end_date - start_date).days)):

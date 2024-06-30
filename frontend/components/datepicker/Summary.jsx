@@ -5,7 +5,7 @@ import PreviousButton from '@/components/datepicker/PreviousButton'
 export default function Summary({ data, prevComponent, nextComponent}) {
     
     return (
-        <div className="relative w-[80vw] sm:w-[60vw]">
+        <div className="relative w-[80vw] sm:w-[60vw] space-y-4 sm:space-y-14">
             <SummaryCard data={data} />
             <div className="absolute left-0">
                 <PreviousButton onClick={prevComponent} />

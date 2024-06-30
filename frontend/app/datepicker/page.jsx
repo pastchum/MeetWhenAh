@@ -45,7 +45,7 @@ export default function DatePicker() {
   }
   
   return (
-    <main className="dark-mode flex min-h-screen flex-col items-center justify-start">
+    <main className="dark-mode flex min-h-screen flex-col items-center justify-start overflow-hidden">
       <div className="pt-10">
         <p className="font-semibold text-gray-900 text-2xl"> MeetWhenAh? </p>
       </div>
