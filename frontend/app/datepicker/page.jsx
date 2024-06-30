@@ -30,9 +30,6 @@ export default function DatePicker() {
   useEffect(() => {
     if (window.Telegram) {
       setTg(window.Telegram.WebApp);
-      // Now you can use the Telegram Web App API
-      // For example, getting the user data:
-      
     } else {
       console.error("Telegram Web App script not loaded");
     }
@@ -43,6 +40,7 @@ export default function DatePicker() {
     data.end = data.end.toString();
     console.log(data);
     tg.sendData(JSON.stringify(data, null, 4));
+    tg.close()
   }
   
   return (
