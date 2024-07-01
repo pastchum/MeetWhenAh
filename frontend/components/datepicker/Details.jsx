@@ -24,7 +24,7 @@ export default function Details({ nextComponent }) {
             <Name handleInputChange={handleNameChange} />
             <TextArea handleInputChange={handleDetailsChange} />
             <div className="absolute right-0">
-                <NextButton onClick={nextComponent} newData={newData} />
+                <NextButton onClick={nextComponent} disabled={} newData={newData} />
             </div>
         </div>    
     )
