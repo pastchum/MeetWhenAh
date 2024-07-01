@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface Coordinates {
   x: number;
@@ -27,10 +27,10 @@ export default function useAreaSelection({
 }: UseAreaSelectionProps) {
   const boxRef = React.useRef<HTMLDivElement>(boxNode);
   const boxElement = boxRef;
-  const [mouseDown, setMouseDown] = React.useState<boolean>(false);
-  
-  const [selection, setSelection] = React.useState<DOMRect | null>(null);
-  const [drawArea, setDrawArea] = React.useState<DrawnArea>({
+  const [mouseDown, setMouseDown] = useState<boolean>(false);
+
+  const [selection, setSelection] = useState<DOMRect | null>(null);
+  const [drawArea, setDrawArea] = useState<DrawnArea>({
     start: undefined,
     end: undefined
   });
@@ -83,7 +83,7 @@ export default function useAreaSelection({
     // set selection
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const containerElement = container.current;
     if (containerElement) {
       containerElement.addEventListener("mousedown", handleMouseDown);
@@ -100,7 +100,7 @@ export default function useAreaSelection({
     }
   }, [container]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const { start, end } = drawArea;
     if (start && end && boxElement.current) {
       drawSelectionBox(boxElement.current, start, end);
@@ -108,7 +108,7 @@ export default function useAreaSelection({
     }
   }, [drawArea, boxElement]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const containerElement = container.current;
     const selectionBoxElement = boxElement.current;
     if (containerElement && selectionBoxElement) {

@@ -10,7 +10,7 @@ export default function useSelected(
 
   React.useEffect(() => {
     if (!elementRef.current || !selection) {
-      setIsSelected(false);
+      // setIsSelected(false);
     } else {
       console.log(".");
       const a = elementRef.current.getBoundingClientRect();
