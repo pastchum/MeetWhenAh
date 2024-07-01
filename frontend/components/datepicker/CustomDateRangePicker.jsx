@@ -1,12 +1,11 @@
 import { DateRangePicker } from "@nextui-org/react";
 import NextButton from '@/components/datepicker/NextButton'
 import PreviousButton from '@/components/datepicker/PreviousButton'
-import {today, CalendarDate, DateFormatter, getLocalTimeZone} from "@internationalized/date";
+import {today, getLocalTimeZone} from "@internationalized/date";
 import { useState } from 'react';
 
 
 export default function CustomDateRangePicker({ prevComponent, nextComponent }) {
-    const formatter = new DateFormatter('en-GB');
     const [newData, setNewData] = useState({
         start: today(getLocalTimeZone()),
         end: today(getLocalTimeZone())
@@ -17,6 +16,7 @@ export default function CustomDateRangePicker({ prevComponent, nextComponent }) 
             <div className=''>
                 <DateRangePicker 
                     isRequired 
+                    defaultOpen
                     labelPlacement="inside"
                     label="Date Range"
                     description="Please enter the date range for your event"
