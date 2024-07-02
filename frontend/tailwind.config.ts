@@ -11,7 +11,12 @@ const config: Config = {
   ],
   darkMode : 'class',
   theme: {
+    
     extend: {
+      gridTemplateRows: {        
+        // Simple 48 column grid        
+        '48': 'repeat(48, minmax(0, 1fr))',     
+      },    
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":

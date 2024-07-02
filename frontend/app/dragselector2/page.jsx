@@ -7,23 +7,42 @@ import './style.css'
 export default function DragSelector2() {
     
 
-    const handleSelectionChange = (selectedKeys) => {
-        console.log('Selected items:', selectedKeys);
+    const handleSelectionChange = (nodes) => {
+        for (const node of nodes) console.log('Selected items: ' + node.innerText);
+        
     };
 
-    var data = [];
-    for(var i = 0; i < 65; i++) {
-    data.push(
-        <DragBox data={i} key={i} />
-    );
+    const DayGrid = (numDays) => {
+        // Generate an array with the total number of DragBoxes needed
+        const totalHalfHours = numDays * 48;  // 48 half-hours per day
+      
+        const formatTime = (halfHourIndex) => {
+            const hour = Math.floor(halfHourIndex / 2);
+            const minutes = halfHourIndex % 2 === 0 ? '00' : '30';
+            return `${hour.toString().padStart(2, '0')}${minutes}`;
+          };
+      
+        // Generate the DragBox components
+        const data = [];
+        for (let i = 0; i < totalHalfHours; i++) {
+            const day = Math.floor(i / 48) + 1;
+            const time = formatTime(i % 48);
+            data.push(
+                <DragBox data={`Day ${day}, Time ${time}`} key={i} />
+            );
+        }
+
+        //console.log(data);
+        return data;
     }
 
     return (
-        <div>
-            <div id ="example">
-            <DragSelector enabled={true} onSelectionChange={handleSelectionChange}>
-                {data}
-            </DragSelector>
+        <div className="overflow-hidden">
+            <div id="example" className="">
+                <DragSelector enabled={true} onSelectionChange={handleSelectionChange}>
+                    {DayGrid(10)}
+                </DragSelector>
+                
             </div>
             
         </div>

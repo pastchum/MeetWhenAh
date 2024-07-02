@@ -1,13 +1,13 @@
 import {forwardRef} from 'react';
-export const DragBox = forwardRef(({ isSelected, data}, ref) =>{
+export const DragBox = ({isSelected, data}) => {
     //console.log({data})
-    let className='item noselect';
+    let className='item noselect ';
     className += isSelected ? ' selected' : '';
     return (
-        <div className={className} ref={ref}>
-            Item {data + 1}
+        <div className={className}>
+            {data}
         </div>
     );
-})
+}
 
 export default DragBox;
