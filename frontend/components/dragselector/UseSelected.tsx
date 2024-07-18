@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-export default function useSelected(
+export default function UseSelected(
   elementRef: React.RefObject<HTMLElement>,
   selection: DOMRect | null
 ) {

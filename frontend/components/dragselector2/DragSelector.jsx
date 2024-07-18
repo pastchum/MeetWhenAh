@@ -216,7 +216,7 @@ export default function DragSelector({ enabled, onSelectionChange, children }) {
                 isSelected: isSelected
             })
             return (
-                <div className={`select-box ${isSelected ? 'selected bg-zinc-400' : ''} w-96px h-100px text-xs m-2   `}
+                <div className={`select-box ${isSelected ? 'selected bg-blue-400' : ''} w-96px h-100px text-xs m-1   `}
                     onClick={(e) => {
                         if ((e.ctrlKey || e.altKey || e.shiftKey)) { 
                             e.preventDefault();
@@ -243,7 +243,7 @@ export default function DragSelector({ enabled, onSelectionChange, children }) {
 
     return (
         <div
-            className={`text-black grid grid-flow-col grid-rows-48 grid-cols-12 absolute selection ${mouseDown ? 'dragging' : ''}`} // you set absolute here to get your calculateSelectionBox right
+            className={`text-black grid grid-flow-col grid-rows-49 grid-cols-11 selection ${(mouseDown || touchStart) ? 'dragging' : ''}`} // you set absolute here to get your calculateSelectionBox right
             ref={selectionBoxRef}
             onMouseDown={onMouseDown}
             onTouchStart={onTouchStart}

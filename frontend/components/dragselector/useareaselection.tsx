@@ -12,6 +12,7 @@ interface DrawnArea {
 }
 interface UseAreaSelectionProps {
   container: React.RefObject<HTMLElement> | undefined;
+  selectionBox: React.RefObject<HTMLElement> | undefined;
 }
 
 const boxNode = document.createElement("div");
@@ -23,9 +24,11 @@ boxNode.style.pointerEvents = "none";
 boxNode.style.mixBlendMode = "multiply";
 
 export default function useAreaSelection({
-  container = { current: document.body }
+  container = { current: document.body },
+  selectionBox = { current: document.body }
 }: UseAreaSelectionProps) {
-  const boxRef = React.useRef<HTMLDivElement>(boxNode);
+  //const boxRef = React.useRef<HTMLDivElement>(boxNode);
+  const boxRef = selectionBox;
   const boxElement = boxRef;
   const [mouseDown, setMouseDown] = useState<boolean>(false);
 

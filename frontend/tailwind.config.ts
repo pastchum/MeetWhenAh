@@ -11,17 +11,27 @@ const config: Config = {
   ],
   darkMode : 'class',
   theme: {
-    
     extend: {
+      colors: {
+        'custom-blue': 'hsl(206deg 100% 50% / 5%)',
+      },
+      boxShadow: {
+        'custom-inset': 'inset 0 0 0 2px hsl(206deg 100% 50% / 50%)',
+      },
       gridTemplateRows: {        
         // Simple 48 column grid        
-        '48': 'repeat(48, minmax(0, 1fr))',     
+        '49': 'repeat(49, minmax(0, 1fr))',     
       },    
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
+    },
+  },
+  variants: {
+    extend: {
+      mixBlendMode: ['responsive', 'hover', 'focus'],
     },
   },
   plugins: [nextui()],
