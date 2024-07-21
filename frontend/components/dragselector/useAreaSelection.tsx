@@ -10,28 +10,22 @@ interface DrawnArea {
   start: undefined | Coordinates;
   end: undefined | Coordinates;
 }
-interface UseAreaSelectionProps {
+interface useAreaSelectionProps {
   container: React.RefObject<HTMLElement> | undefined;
   selectionBox: React.RefObject<HTMLElement> | undefined;
+  appendMode: boolean;
+  setAppendMode: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const boxNode = document.createElement("div");
-boxNode.style.position = "fixed";
-boxNode.style.background = "hsl(206deg 100% 50% / 5%)";
-boxNode.style.boxShadow = "inset 0 0 0 2px hsl(206deg 100% 50% / 50%)";
-boxNode.style.borderRadius = "2px";
-boxNode.style.pointerEvents = "none";
-boxNode.style.mixBlendMode = "multiply";
-
 export default function useAreaSelection({
-  container = { current: document.body },
-  selectionBox = { current: document.body }
-}: UseAreaSelectionProps) {
-  //const boxRef = React.useRef<HTMLDivElement>(boxNode);
+    container = { current: document.body },
+    selectionBox = { current: null },
+    appendMode = false,
+    setAppendMode = () => false,
+  }: useAreaSelectionProps) {
   const boxRef = selectionBox;
   const boxElement = boxRef;
   const [mouseDown, setMouseDown] = useState<boolean>(false);
-
   const [selection, setSelection] = useState<DOMRect | null>(null);
   const [drawArea, setDrawArea] = useState<DrawnArea>({
     start: undefined,
@@ -41,8 +35,6 @@ export default function useAreaSelection({
   const handleMouseMove = (e: MouseEvent | TouchEvent) => {
     const clientX = (e as MouseEvent).clientX ?? (e as TouchEvent).touches[0].clientX;
     const clientY = (e as MouseEvent).clientY ?? (e as TouchEvent).touches[0].clientY;
-
-    document.body.style.userSelect = "none";
     setDrawArea((prev) => ({
       ...prev,
       end: {
@@ -56,9 +48,13 @@ export default function useAreaSelection({
     const clientX = (e as MouseEvent).clientX ?? (e as TouchEvent).touches[0].clientX;
     const clientY = (e as MouseEvent).clientY ?? (e as TouchEvent).touches[0].clientY;
     const containerElement = container.current;
-
+    document.body.style.userSelect = "none";
+    setAppendMode(false);
+    if (e.ctrlKey || e.altKey || e.shiftKey ) {
+      setAppendMode(true);
+    } 
     setMouseDown(true);
-
+    
     if (
       containerElement &&
       containerElement.contains(e.target as HTMLElement)
@@ -83,7 +79,12 @@ export default function useAreaSelection({
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("touchmove", handleMouseMove);
     setMouseDown(false);
-    // set selection
+    //setAppendMode(false);
+    setDrawArea({
+      start: undefined,
+      end: undefined
+    });
+
   };
 
   useEffect(() => {
@@ -116,9 +117,10 @@ export default function useAreaSelection({
     const selectionBoxElement = boxElement.current;
     if (containerElement && selectionBoxElement) {
       if (mouseDown) {
-        if (!document.body.contains(selectionBoxElement)) {
-          containerElement.appendChild(selectionBoxElement);
-        }
+        containerElement.appendChild(selectionBoxElement);
+        // if (!document.body.contains(selectionBoxElement)) {
+        //   containerElement.appendChild(selectionBoxElement);
+        // }
       } else {
         if (containerElement.contains(selectionBoxElement)) {
           containerElement.removeChild(selectionBoxElement);
