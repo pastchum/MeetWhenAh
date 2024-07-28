@@ -33,22 +33,23 @@ export default function useAreaSelection({
   });
 
   const handleMouseMove = (e: MouseEvent | TouchEvent) => {
-    const clientX = (e as MouseEvent).clientX ?? (e as TouchEvent).touches[0].clientX;
-    const clientY = (e as MouseEvent).clientY ?? (e as TouchEvent).touches[0].clientY;
+    const pageX = (e as MouseEvent).pageX ?? (e as TouchEvent).touches[0].pageX;
+    const pageY = (e as MouseEvent).pageY ?? (e as TouchEvent).touches[0].pageY;
     setDrawArea((prev) => ({
       ...prev,
       end: {
-        x: clientX,
-        y: clientY
+        x: pageX,
+        y: pageY
       }
     }));
   };
 
   const handleMouseDown = (e: MouseEvent | TouchEvent) => {
-    const clientX = (e as MouseEvent).clientX ?? (e as TouchEvent).touches[0].clientX;
-    const clientY = (e as MouseEvent).clientY ?? (e as TouchEvent).touches[0].clientY;
+    const pageX = (e as MouseEvent).pageX ?? (e as TouchEvent).touches[0].pageX;
+    const pageY = (e as MouseEvent).pageY ?? (e as TouchEvent).touches[0].pageY;
+    e.preventDefault();
     const containerElement = container.current;
-    document.body.style.userSelect = "none";
+
     setAppendMode(false);
     if (e.ctrlKey || e.altKey || e.shiftKey ) {
       setAppendMode(true);
@@ -63,23 +64,21 @@ export default function useAreaSelection({
       document.addEventListener("touchmove", handleMouseMove);
       setDrawArea({
         start: {
-          x: clientX,
-          y: clientY
+          x: pageX,
+          y: pageY
         },
         end: {
-          x: clientX,
-          y: clientY
+          x: pageX,
+          y: pageY
         }
       });
     }
   };
 
   const handleMouseUp = (e: MouseEvent | TouchEvent) => {
-    document.body.style.userSelect = "initial";
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("touchmove", handleMouseMove);
     setMouseDown(false);
-    //setAppendMode(false);
     setDrawArea({
       start: undefined,
       end: undefined

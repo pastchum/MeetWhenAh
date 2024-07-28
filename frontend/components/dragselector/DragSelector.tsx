@@ -1,8 +1,7 @@
-import { useRef, useContext, createContext, forwardRef, ReactNode, useState, Fragment} from 'react';
+import { useRef, useContext, createContext, forwardRef, ReactNode, useState, Fragment, useEffect} from 'react';
 import Box from '@/components/dragselector/Box'
 import useAreaSelection from '@/components/dragselector/useAreaSelection';
 import CustomDateTimeSet from '@/components/dragselector/CustomDateTimeSet';
-import { Fascinate } from 'next/font/google';
 
   
 interface ContainerProps {
@@ -13,6 +12,8 @@ interface ContainerProps {
 }
   
 const Container = forwardRef<HTMLDivElement, ContainerProps>(({ startDate, numberOfDays, appendMode, removeNight}, ref) => {
+  const [timeIntervals, setTimeIntervals] = useState<string[]>([]);
+  const [dates, setDates] = useState<Date[]>([]);
   const generateTimeIntervals = () => {
     const intervals = [];
     if (removeNight) {
@@ -30,30 +31,36 @@ const Container = forwardRef<HTMLDivElement, ContainerProps>(({ startDate, numbe
       }
     }
     
-    return intervals;
+    setTimeIntervals(intervals);
   };
 
   const generateDates = () => {
-    const dates = [];
+    const dateList = [];
     for (let i = 0; i < numberOfDays; i++) {
       const date = new Date(startDate);
       date.setDate(date.getDate() + i);
-      dates.push(date);
+      dateList.push(date);
     }
-    return dates;
+    setDates(dateList);
   };
 
-  const timeIntervals = generateTimeIntervals();
-  const dates = generateDates();
+  useEffect(() => {
+    generateTimeIntervals();  
+  }, [removeNight])
+
+  useEffect(() => {
+    console.log(startDate)
+    setDates([])
+    generateDates();
+  }, [startDate])
 
   const finalContainerStyles = {
-    //...containerStyles,
     gridTemplateColumns: `repeat(${numberOfDays+1}, 2rem)`,
     gridTemplateRows: `repeat(${timeIntervals.length}, 1rem)`,
   };
 
   return (
-    <div ref={ref} className="grid gap-2 w-screen max-w-full bg-transparent items-center justify-center overflow-scroll" style={finalContainerStyles}>
+    <div ref={ref} className="grid gap-y-0.5 gap-x-3 w-screen max-w-full bg-transparent items-center justify-center" style={finalContainerStyles}>
       {/* Empty top-left cell */}
       <div className="flex justify-center items-center text-sm font-bold"></div>
 
@@ -108,15 +115,19 @@ interface DragSelectorProps {
   setSelectedElements: React.Dispatch<React.SetStateAction<CustomDateTimeSet>>;
 }
 
+
+
 export default function DragSelector( {removeNight, startDate, numDays, selectedElements, setSelectedElements}:DragSelectorProps ) {
     const selectContainerRef = useRef<HTMLDivElement | null>(null);
     const selectionBoxRef = useRef<HTMLDivElement | null>(null);
     const [appendMode, setAppendMode] = useState<boolean>(false);
     const selection = useAreaSelection({ container: selectContainerRef, selectionBox: selectionBoxRef, appendMode: appendMode, setAppendMode: setAppendMode});
 
-
-    //const [selectedElements, setSelectedElements] = useState<CustomDateTimeSet>(new CustomDateTimeSet());
-    console.log(selectedElements)
+    
+    useEffect(() => {
+      console.log(selectedElements)
+    }, [selectedElements])
+  
     
     
     return (

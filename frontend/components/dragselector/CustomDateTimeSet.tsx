@@ -42,12 +42,18 @@ export default class CustomDateTimeSet{
         return false;
       }
     
-      get size(): number {
+      size(): number {
         return this.set.size;
       }
     
       // Additional method to get all DateTime objects as an array
       values(): DateTime[] {
         return Array.from(this.set);
+      }
+      
+      toJSON(): object {
+        return {
+          dateTimes: this.values()
+        };
       }
 }

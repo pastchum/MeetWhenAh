@@ -21,7 +21,6 @@ const boxStyles = {
 };
 
 
-
 export default function Box({ date, time, appendMode }: BoxProps) {
     const newDateTime:DateTime = { date: date.toString(),
         time: time 
