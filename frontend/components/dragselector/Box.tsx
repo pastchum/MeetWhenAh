@@ -9,16 +9,6 @@ interface BoxProps {
     appendMode: boolean;
   }
 
-const boxStyles = {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#fff",
-    width: "2rem",
-    height: "1rem",
-    borderRadius: "0.5rem",
-    transition: "all 200ms ease-in-out"
-};
 
 
 export default function Box({ date, time, appendMode }: BoxProps) {

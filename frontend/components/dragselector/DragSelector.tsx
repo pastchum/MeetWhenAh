@@ -11,7 +11,7 @@ interface ContainerProps {
   removeNight: boolean
 }
   
-const Container = forwardRef<HTMLDivElement, ContainerProps>(({ startDate, numberOfDays, appendMode, removeNight}, ref) => {
+const Container = forwardRef<HTMLDivElement, ContainerProps>(function Component({ startDate, numberOfDays, appendMode, removeNight}, ref) {
   const [timeIntervals, setTimeIntervals] = useState<string[]>([]);
   const [dates, setDates] = useState<Date[]>([]);
   const generateTimeIntervals = () => {
