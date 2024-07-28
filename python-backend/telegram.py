@@ -163,6 +163,7 @@ Joining:
 		db_result = getEntry("Events", "event_id", str(event_id))
 		hours_already_available = db_result.to_dict()["hours_available"] #data existing in database
 
+		ic(new_hours_available)
 		for new_day in new_hours_available:             # old_day = [date][][][][]
 			for old_day in hours_already_available:
 				if datetime.strptime(new_day["0"], '%d%m%y') == old_day["0"]:

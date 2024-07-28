@@ -12,7 +12,8 @@ interface BoxProps {
 
 
 export default function Box({ date, time, appendMode }: BoxProps) {
-    const newDateTime:DateTime = { date: date.toString(),
+    const newDateTime:DateTime = { 
+        date: date.toLocaleDateString(),
         time: time 
     }
     const ref = useRef<HTMLDivElement>(null);
