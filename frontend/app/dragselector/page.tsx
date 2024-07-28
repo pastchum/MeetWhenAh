@@ -70,8 +70,8 @@ export default function Home() {
     setRemoveNight(!removeNight);
   }
 
-  const startString = data.start.toLocaleDateString();
-  const endString = data.end.toLocaleDateString();
+  const startString = data.start.toLocaleDateString("en-GB");
+  const endString = data.end.toLocaleDateString("en-GB");
 
   function addDays(date:Date, days:number) {
     var result = new Date(date);
