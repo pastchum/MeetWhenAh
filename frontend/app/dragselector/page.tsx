@@ -44,13 +44,15 @@ export default function Home() {
     tg.close()
   }
 
+  const [startDate, setStartDate] = useState<Date>(new Date(data.start));
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+    const start = params.get('start');
+    const end = params.get('end');
+    const event_name = params.get("event_name");
+    const event_id = params.get("event_id");
     setData((oldData:any):any => {
-      const start = params.get('start');
-      const end = params.get('end');
-      const event_name = params.get("event_name");
-      const event_id = params.get("event_id");
       if (start && end && event_id && event_name){
         return {
           ...oldData,
@@ -62,10 +64,13 @@ export default function Home() {
       }
       
     })
+    if (start) setStartDate(new Date(start))
   }, [])
 
+
+
   //console.log(data)
-  const [startDate, setStartDate] = useState<Date>(data.start);
+  
   const toggleRemoveNight = () => {
     setRemoveNight(!removeNight);
   }
@@ -98,6 +103,7 @@ export default function Home() {
       <p className="text-3xl font-bold text-center pt-1"> {data.event_name} </p>
       <p className="text-lg text-center"> Select timings for this event </p>
       <p className="text-2sm font-bold text-center"> { startString } - { endString } </p>
+      <p> {startDate.toLocaleDateString("en-GB")} </p>
 
       
       <div id="buttons" className="flex justify-center items-center space-x-10 p-1">
