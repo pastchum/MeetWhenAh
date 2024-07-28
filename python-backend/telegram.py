@@ -187,13 +187,13 @@ def query_text(inline_query):
 		result = getEntry("Events", "event_id", event_id)
 		text = result.to_dict()["text"]
 		
-		#updateEntry(result, "inline_message_id", str(inline_query.id))
-
+	
 		r = types.InlineQueryResultArticle(
 			id='1', title=inline_query.query,
 			input_message_content=types.InputTextMessageContent(text),
 			reply_markup=types.InlineKeyboardMarkup().add(
-				types.InlineKeyboardButton('Join event', callback_data=result.to_dict()["event_id"])
+				types.InlineKeyboardButton('Join event', callback_data=result.to_dict()["event_id"]),
+				types.InlineKeyboardButton('Calculate Best Timing', callback_data=str("Calculate " + result.to_dict()["event_id"]))
 			)
 		)
 		bot.answer_inline_query(inline_query.id, [r])
@@ -213,48 +213,51 @@ def create_web_app_url(base_url, data):
 
 @bot.callback_query_handler(func=lambda call: call)
 def handle_join_event(call):
-	message_id = call.inline_message_id
-	db_result = getEntry("Events", "event_id", str(call.data))
-	members = db_result.to_dict()["members"]
-	if str(call.from_user.id) in members:
-		return
-	
-	event_id = db_result.to_dict()["event_id"]
-	original_text = db_result.to_dict()["text"]
-	
-	db_result2 = getEntry("Users", "tele_id", str(call.from_user.id))
-	if db_result2 == None:
-		new_text = original_text + f"\n <b>@{call.from_user.username}, please do /start in a direct message with me at @meetwhenah_bot. Click the join button again when you are done!</b>"
-		updateEntry(db_result, "text", new_text)
-
-		setEntry("Users", {"tele_id" : str(call.from_user.id),
-					   "tele_user" : str(call.from_user.username),
-					   "initialised" : False,
-					   "callout_cleared" : False})
+	if "Calculate" in str(call.data): 
 		
-
-	elif db_result2.to_dict()["initialised"] == True and db_result2.to_dict()["callout_cleared"] == False:
-		old_string = f"\n <b>@{call.from_user.username}, please do /start in a private message with me at @meetwhenah_bot. Click the join button again when you are done!</b>"
-		new_text = original_text.replace(old_string, "")
-
-		members.append(str(call.from_user.id))
-		updateEntry(db_result, "members", members)
-		new_text = new_text + f"\n <b>{call.from_user.username}</b>"
-		updateEntry(db_result, "text", new_text)
-
 	else:
-		#this is the part where the user is initalised and added into db
-		members.append(str(call.from_user.id))
-		updateEntry(db_result, "members", members)
-		new_text = original_text + f"\n <b>{call.from_user.username}</b>"
-		updateEntry(db_result, "text", new_text)
-		ask_availability(call.from_user.id, event_id)
-		ic("Asking Availability...")
+		message_id = call.inline_message_id
+		db_result = getEntry("Events", "event_id", str(call.data))
+		members = db_result.to_dict()["members"]
+		if str(call.from_user.id) in members:
+			return
+		
+		event_id = db_result.to_dict()["event_id"]
+		original_text = db_result.to_dict()["text"]
+		
+		db_result2 = getEntry("Users", "tele_id", str(call.from_user.id))
+		if db_result2 == None:
+			new_text = original_text + f"\n <b>@{call.from_user.username}, please do /start in a direct message with me at @meetwhenah_bot. Click the join button again when you are done!</b>"
+			updateEntry(db_result, "text", new_text)
 
-	bot.edit_message_text(text = f"{new_text}",
-							inline_message_id=message_id,
-							reply_markup=types.InlineKeyboardMarkup().add(
-								types.InlineKeyboardButton('Join event', callback_data=event_id)))
+			setEntry("Users", {"tele_id" : str(call.from_user.id),
+						"tele_user" : str(call.from_user.username),
+						"initialised" : False,
+						"callout_cleared" : False})
+			
+
+		elif db_result2.to_dict()["initialised"] == True and db_result2.to_dict()["callout_cleared"] == False:
+			old_string = f"\n <b>@{call.from_user.username}, please do /start in a private message with me at @meetwhenah_bot. Click the join button again when you are done!</b>"
+			new_text = original_text.replace(old_string, "")
+
+			members.append(str(call.from_user.id))
+			updateEntry(db_result, "members", members)
+			new_text = new_text + f"\n <b>{call.from_user.username}</b>"
+			updateEntry(db_result, "text", new_text)
+
+		else:
+			#this is the part where the user is initalised and added into db
+			members.append(str(call.from_user.id))
+			updateEntry(db_result, "members", members)
+			new_text = original_text + f"\n <b>{call.from_user.username}</b>"
+			updateEntry(db_result, "text", new_text)
+			ask_availability(call.from_user.id, event_id)
+			ic("Asking Availability...")
+
+		bot.edit_message_text(text = f"{new_text}",
+								inline_message_id=message_id,
+								reply_markup=types.InlineKeyboardMarkup().add(
+									types.InlineKeyboardButton('Join event', callback_data=event_id)))
 
 def ask_availability(tele_id, event_id):
 	ic("here")
