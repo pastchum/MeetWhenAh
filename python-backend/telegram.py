@@ -263,14 +263,14 @@ def ask_availability(tele_id, event_id):
 	event_name = db_result.to_dict()["event_name"]
 
 	data = {"event_id": event_id,
-		 	"startDate" : start_date.strftime('%Y-%m-%d'),
-			"endDate" : end_date.strftime('%Y-%m-%d'),
+		 	"start" : start_date.strftime('%Y-%m-%d'),
+			"end" : end_date.strftime('%Y-%m-%d'),
 			"event_name": event_name
 		}
 	
 
 	markup = types.ReplyKeyboardMarkup(row_width=1)
-	url = create_web_app_url("https://jensenhuangyankai.github.io/meetWhenAh/frontend1/", data=data)
+	url = create_web_app_url("https://meetwhenah.deploy.jensenhshoots.com/dragselector/", data=data)
 	print(url)
 	web_app_info = types.WebAppInfo(url=url)
 	web_app_button = types.KeyboardButton(text="Set availability", web_app=web_app_info)

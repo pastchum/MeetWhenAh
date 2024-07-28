@@ -37,7 +37,7 @@ export default function Home() {
       event_id: data.event_id,
       start: data.start.toString(),
       end: data.end.toString(),
-      times: selectedElements.toJSON()
+      hours_available: selectedElements.toJSON()
     }
     console.log(results);
     tg.sendData(JSON.stringify(results, null, 4));
@@ -65,11 +65,6 @@ export default function Home() {
   }, [])
 
   //console.log(data)
-
-
-
-
-  
 
   const toggleRemoveNight = () => {
     setRemoveNight(!removeNight);
