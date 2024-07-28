@@ -214,7 +214,31 @@ def create_web_app_url(base_url, data):
 @bot.callback_query_handler(func=lambda call: call)
 def handle_join_event(call):
 	if "Calculate" in str(call.data): 
-		
+		event_id = str(call.data).split()[1]
+		members_count = len(db_result.to_dict()["members"])
+
+		#get the longest contiguous series of numbers 
+		counter = 0
+		best_date = {
+			'final_date': "",
+			'final_start_timing': "",
+			'final_end_timing': "",
+		}
+		second_best_date = {
+			'final_date': "",
+			'final_start_timing': "",
+			'final_end_timing': "",
+		}
+
+		db_result = getEntry("Events", "event_id", str(call.data))
+		hours_available = db_result.to_dict()["hours_available"]
+		for day in hours_available:
+			date = day['date']
+			for hour in day.items():
+				if 
+				
+				
+				
 	else:
 		message_id = call.inline_message_id
 		db_result = getEntry("Events", "event_id", str(call.data))
