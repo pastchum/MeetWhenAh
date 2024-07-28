@@ -11,7 +11,7 @@ export default function Home() {
 
   const [selectedElements, setSelectedElements] = useState<CustomDateTimeSet>(new CustomDateTimeSet());
   const [removeNight, setRemoveNight] = useState<boolean>(true);
-  const [startDate, setStartDate] = useState<Date>(new Date());
+  
    
   const [data, setData] = useState({
     web_app_number: 1,
@@ -65,7 +65,7 @@ export default function Home() {
   }, [])
 
   //console.log(data)
-
+  const [startDate, setStartDate] = useState<Date>(data.start);
   const toggleRemoveNight = () => {
     setRemoveNight(!removeNight);
   }

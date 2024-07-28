@@ -112,7 +112,7 @@ def handle_webapp(message):
 		start_date = web_app_data["start"]
 		end_date = web_app_data["end"]
 
-		if start_date == None or end_date == None:
+		if start_date is None or end_date is None:
 			bot.send_message(message.chat.id, "Enter in valid date pls")
 			return
 		start_date = datetime.strptime(start_date, '%Y-%m-%d')
@@ -123,11 +123,15 @@ def handle_webapp(message):
 				yield start_date + timedelta(n)
 		hours_available = []
 
-		for single_date in daterange(start_date, end_date):
-			day = { str(i): [] for i in range(25) }
-			day["0"] = single_date 
-			hours_available.append(day)
+		for single_date in daterange(start_date, end_date + timedelta(days=1)):
+			time_values = []
+			for hour in range(24):
+				for minute in range(0, 60, 30):
+					time_values.append(f"{hour:02}{minute:02}")
 
+			day = { str(time): [] for time in time_values }
+			day["date"] = single_date
+			hours_available.append(day)
 
 		text = f"""Date range: {start_date.strftime("%-d %b %Y")} - {end_date.strftime("%-d %b %Y")}
 
@@ -158,19 +162,17 @@ Joining:
 
 	elif web_app_number == 1:
 		tele_id = message.from_user.id
-		new_hours_available = web_app_data["hours_available"] #data from web app. new.
+		new_hours_available = web_app_data["hours_available"]["dateTimes"] #data from web app. new.
 		event_id = web_app_data["event_id"]
 		db_result = getEntry("Events", "event_id", str(event_id))
 		hours_already_available = db_result.to_dict()["hours_available"] #data existing in database
 
-		ic(new_hours_available)
 		for new_day in new_hours_available:             # old_day = [date][][][][]
 			for old_day in hours_already_available:
-				if datetime.strptime(new_day["0"], '%d%m%y') == old_day["0"]:
-					for i in range(1,24):
-						if new_day[str(i)] == 1:
-							old_day[str(i)].append(tele_id)
+				if datetime.strptime(new_day['date'], '%d/%m/%Y').date() == old_day["date"].date():
+					old_day[new_day['time']].append(tele_id)
 
+		ic(hours_already_available)
 		#write back to db
 		updateEntry(db_result, "hours_available", hours_already_available)
 
@@ -230,8 +232,7 @@ def handle_join_event(call):
 					   "initialised" : False,
 					   "callout_cleared" : False})
 		
-	#elif db_result2.to_dict()["initialised"] == False:
-	#	return
+
 	elif db_result2.to_dict()["initialised"] == True and db_result2.to_dict()["callout_cleared"] == False:
 		old_string = f"\n <b>@{call.from_user.username}, please do /start in a private message with me at @meetwhenah_bot. Click the join button again when you are done!</b>"
 		new_text = original_text.replace(old_string, "")
