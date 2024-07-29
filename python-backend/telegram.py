@@ -15,6 +15,7 @@ from datetime import datetime, date, timedelta
 import random
 import string
 import urllib.parse
+import re
 
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 
@@ -134,6 +135,8 @@ def handle_webapp(message):
 			hours_available.append(day)
 
 		text = f"""Date range: {start_date.strftime("%-d %b %Y")} - {end_date.strftime("%-d %b %Y")}
+Best date: []
+Best timing: []
 
 Join this event by clicking the join button below! 
 
@@ -213,34 +216,62 @@ def create_web_app_url(base_url, data):
 
 @bot.callback_query_handler(func=lambda call: call)
 def handle_join_event(call):
+	new_text = ""
+	message_id = call.inline_message_id
 	if "Calculate" in str(call.data): 
 		event_id = str(call.data).split()[1]
-		members_count = len(db_result.to_dict()["members"])
+		
 
 		#get the longest contiguous series of numbers 
-		counter = 0
+		
 		best_date = {
 			'final_date': "",
 			'final_start_timing': "",
 			'final_end_timing': "",
-		}
-		second_best_date = {
-			'final_date': "",
-			'final_start_timing': "",
-			'final_end_timing': "",
+			'max_participants': 0
 		}
 
-		db_result = getEntry("Events", "event_id", str(call.data))
+		db_result = getEntry("Events", "event_id", event_id)
 		hours_available = db_result.to_dict()["hours_available"]
+		original_text = db_result.to_dict()["text"]
+
+
+		curr_hours_list = []
+		curr_user_list = []
 		for day in hours_available:
+			ic(day)
 			date = day['date']
-			for hour in day.items():
-				if 
-				
-				
-				
+			
+			for hour, user_list in day.items():
+				if type(user_list) is list:
+					if user_list == curr_user_list and len(user_list) > 0:
+						print("---------------scenario1----------------")
+						curr_hours_list.append(hour)
+						best_date["final_end_timing"] = hour
+						best_date['max_participants'] += 1
+					elif len(user_list) > len(curr_user_list) and len(user_list) >= best_date['max_participants']:
+						print("----------------scenario2----------------")
+						curr_user_list = user_list
+						curr_hours_list = [hour]
+						
+						best_date['final_date'] = date
+						best_date['final_start_timing'] = hour
+
+					else:
+						print("----------------scenario3----------------")
+						curr_hours_list = []
+						curr_user_list = []
+		ic(best_date)
+		date_pattern = r'Best date:\s*\[\]'
+		timing_pattern = r'Best timing:\s*\[\]'
+
+		best_timing_str = best_date['final_start_timing'] + ' - ' + best_date['final_end_timing']
+		new_text = re.sub(date_pattern, f"Best date: {best_date['final_date'].date()}", original_text)
+		new_text = re.sub(timing_pattern, f"Best timing: [{best_timing_str}]", new_text)
+		updateEntry(db_result, "text", new_text)
+
 	else:
-		message_id = call.inline_message_id
+		
 		db_result = getEntry("Events", "event_id", str(call.data))
 		members = db_result.to_dict()["members"]
 		if str(call.from_user.id) in members:
@@ -278,10 +309,12 @@ def handle_join_event(call):
 			ask_availability(call.from_user.id, event_id)
 			ic("Asking Availability...")
 
-		bot.edit_message_text(text = f"{new_text}",
-								inline_message_id=message_id,
-								reply_markup=types.InlineKeyboardMarkup().add(
-									types.InlineKeyboardButton('Join event', callback_data=event_id)))
+
+	bot.edit_message_text(text = f"{new_text}",
+							inline_message_id=message_id,
+							reply_markup=types.InlineKeyboardMarkup().add(
+								types.InlineKeyboardButton('Join event', callback_data=event_id),
+								types.InlineKeyboardButton('Calculate Best Timing', callback_data=str("Calculate " + event_id))))
 
 def ask_availability(tele_id, event_id):
 	ic("here")
@@ -306,11 +339,6 @@ def ask_availability(tele_id, event_id):
 	markup.add(web_app_button)
 
 	bot.send_message(tele_id, text, reply_markup=markup)
-
-
-
-
-
 
 
 ############################# WEBHOOK STUFF ###############################################
