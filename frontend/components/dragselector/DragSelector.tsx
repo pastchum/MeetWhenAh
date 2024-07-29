@@ -124,9 +124,9 @@ export default function DragSelector( {removeNight, startDate, numDays, selected
     const selection = useAreaSelection({ container: selectContainerRef, selectionBox: selectionBoxRef, appendMode: appendMode, setAppendMode: setAppendMode});
 
     
-    useEffect(() => {
-      console.log(selectedElements)
-    }, [selectedElements])
+    // useEffect(() => {
+    //   console.log(selectedElements)
+    // }, [selectedElements])
   
     
     
