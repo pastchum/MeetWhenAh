@@ -245,7 +245,7 @@ def handle_join_event(call):
 			for hour, user_list in day.items():
 				if type(user_list) is list:
 					if user_list == curr_user_list and len(user_list) > 0:
-						print("---------------scenario1----------------")
+						print("scenario1")
 						curr_hours_list.append(hour)
 						best_date["final_end_timing"] = hour
 						best_date['max_participants'] += 1
