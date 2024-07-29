@@ -16,7 +16,8 @@ export default function Details({ nextComponent }) {
     }
     
     return (
-        <div className="relative space-y-5 sm:space-y-14 w-[80vw] sm:w-[60vw] pb-10">
+        <div className="relative space-y-5 sm:space-y-14 w-[80vw] sm:w-[60vw] pb-10"
+             data-testid="details">
             <Name handleInputChange={handleNameChange} />
             <TextArea handleInputChange={handleDetailsChange} />
             <div className="absolute right-0">

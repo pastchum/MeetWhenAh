@@ -13,7 +13,7 @@ export default function CustomDateRangePicker({ prevComponent, nextComponent }) 
     console.log(newData);
     return(
         <div className="relative space-y-14 w-[80vw] sm:w-[60vw]">
-            <div className=''>
+            <div className='' data-testid="daterangepicker">
                 <DateRangePicker 
                     isRequired 
                     defaultOpen
