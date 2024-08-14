@@ -261,6 +261,8 @@ def handle_join_event(call):
 						print("----------------scenario3----------------")
 						curr_hours_list = []
 						curr_user_list = []
+			best_date['final_start_timing'] = "0630"
+			best_date['final_end_timing'] = "0730"
 		ic(best_date)
 		date_pattern = r'Best date:\s*\[\]'
 		timing_pattern = r'Best timing:\s*\[\]'
