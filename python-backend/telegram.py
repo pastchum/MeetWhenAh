@@ -23,10 +23,10 @@ from databases import *
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
-WEBHOOK_HOST = os.getenv('WEBHOOK_HOST')
+#WEBHOOK_HOST = os.getenv('WEBHOOK_HOST')
 #AWS_ENDPOINT = os.getenv('AWS_ENDPOINT')
-WEBHOOK_PORT = 443
-WEBHOOK_URL_BASE = "https://%s:%s" % (WEBHOOK_HOST, WEBHOOK_PORT)
+#WEBHOOK_PORT = 443
+#WEBHOOK_URL_BASE = "https://%s:%s" % (WEBHOOK_HOST, WEBHOOK_PORT)
 WEBHOOK_URL_PATH = "/%s/" % (TOKEN)
 
 
@@ -343,7 +343,7 @@ def ask_availability(tele_id, event_id):
 
 
 ############################# WEBHOOK STUFF ###############################################
-bot.remove_webhook()
+#bot.remove_webhook()
 @app.post(f'/{TOKEN}/')
 def process_webhook(update: dict):
 	"""
@@ -356,7 +356,7 @@ def process_webhook(update: dict):
 		return
 
 #Set webhook
-bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
+#bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
 #				certificate=open(WEBHOOK_SSL_CERT, 'r'))
 
 ########################### LAMBDA STUFF #################################################
@@ -375,7 +375,7 @@ bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
 # 		'statusCode': 200,
 # 		'body': json.dumps('Hello from Lambda!')
 # 	}
-
+bot.polling(none_stop=True)
 """
 @bot.message_handler(commands=['event'])
 def new_event(message):

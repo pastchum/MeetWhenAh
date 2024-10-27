@@ -133,6 +133,31 @@
 "https://www.googleapis.com/auth/cloud-platform"
 ]
 },
+"getConfig": {
+"description": "Get default config for a given project and location.",
+"flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/config",
+"httpMethod": "GET",
+"id": "dataform.projects.locations.getConfig",
+"parameterOrder": [
+"name"
+],
+"parameters": {
+"name": {
+"description": "Required. The config name.",
+"location": "path",
+"pattern": "^projects/[^/]+/locations/[^/]+/config$",
+"required": true,
+"type": "string"
+}
+},
+"path": "v1beta1/{+name}",
+"response": {
+"$ref": "Config"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-platform"
+]
+},
 "list": {
 "description": "Lists information about the supported locations for this service.",
 "flatPath": "v1beta1/projects/{projectsId}/locations",
@@ -169,6 +194,40 @@
 "path": "v1beta1/{+name}/locations",
 "response": {
 "$ref": "ListLocationsResponse"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-platform"
+]
+},
+"updateConfig": {
+"description": "Update default config for a given project and location.",
+"flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/config",
+"httpMethod": "PATCH",
+"id": "dataform.projects.locations.updateConfig",
+"parameterOrder": [
+"name"
+],
+"parameters": {
+"name": {
+"description": "Identifier. The config name.",
+"location": "path",
+"pattern": "^projects/[^/]+/locations/[^/]+/config$",
+"required": true,
+"type": "string"
+},
+"updateMask": {
+"description": "Optional. Specifies the fields to be updated in the config.",
+"format": "google-fieldmask",
+"location": "query",
+"type": "string"
+}
+},
+"path": "v1beta1/{+name}",
+"request": {
+"$ref": "Config"
+},
+"response": {
+"$ref": "Config"
 },
 "scopes": [
 "https://www.googleapis.com/auth/cloud-platform"
@@ -781,6 +840,71 @@
 "scopes": [
 "https://www.googleapis.com/auth/cloud-platform"
 ]
+}
+},
+"resources": {
+"comments": {
+"methods": {
+"getIamPolicy": {
+"description": "Gets the access control policy for a resource. Returns an empty policy if the resource exists and does not have a policy set.",
+"flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/repositories/{repositoriesId}/commentThreads/{commentThreadsId}/comments/{commentsId}:getIamPolicy",
+"httpMethod": "GET",
+"id": "dataform.projects.locations.repositories.commentThreads.comments.getIamPolicy",
+"parameterOrder": [
+"resource"
+],
+"parameters": {
+"options.requestedPolicyVersion": {
+"description": "Optional. The maximum policy version that will be used to format the policy. Valid values are 0, 1, and 3. Requests specifying an invalid value will be rejected. Requests for policies with any conditional role bindings must specify version 3. Policies with no conditional role bindings may specify any valid value or leave the field unset. The policy in the response might use the policy version that you specified, or it might use a lower policy version. For example, if you specify version 3, but the policy has no conditional role bindings, the response uses version 1. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).",
+"format": "int32",
+"location": "query",
+"type": "integer"
+},
+"resource": {
+"description": "REQUIRED: The resource for which the policy is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+"location": "path",
+"pattern": "^projects/[^/]+/locations/[^/]+/repositories/[^/]+/commentThreads/[^/]+/comments/[^/]+$",
+"required": true,
+"type": "string"
+}
+},
+"path": "v1beta1/{+resource}:getIamPolicy",
+"response": {
+"$ref": "Policy"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-platform"
+]
+},
+"setIamPolicy": {
+"description": "Sets the access control policy on the specified resource. Replaces any existing policy. Can return `NOT_FOUND`, `INVALID_ARGUMENT`, and `PERMISSION_DENIED` errors.",
+"flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/repositories/{repositoriesId}/commentThreads/{commentThreadsId}/comments/{commentsId}:setIamPolicy",
+"httpMethod": "POST",
+"id": "dataform.projects.locations.repositories.commentThreads.comments.setIamPolicy",
+"parameterOrder": [
+"resource"
+],
+"parameters": {
+"resource": {
+"description": "REQUIRED: The resource for which the policy is being specified. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+"location": "path",
+"pattern": "^projects/[^/]+/locations/[^/]+/repositories/[^/]+/commentThreads/[^/]+/comments/[^/]+$",
+"required": true,
+"type": "string"
+}
+},
+"path": "v1beta1/{+resource}:setIamPolicy",
+"request": {
+"$ref": "SetIamPolicyRequest"
+},
+"response": {
+"$ref": "Policy"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-platform"
+]
+}
+}
 }
 }
 },
@@ -2171,7 +2295,7 @@
 }
 }
 },
-"revision": "20240504",
+"revision": "20240824",
 "rootUrl": "https://dataform.googleapis.com/",
 "schemas": {
 "Assertion": {
@@ -2478,6 +2602,12 @@
 "readOnly": true,
 "type": "array"
 },
+"createTime": {
+"description": "Output only. The timestamp of when the compilation result was created.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
 "dataEncryptionState": {
 "$ref": "DataEncryptionState",
 "description": "Output only. Only set if the repository has a KMS Key.",
@@ -2524,6 +2654,10 @@
 "canonicalTarget": {
 "$ref": "Target",
 "description": "The action's identifier if the project had been compiled without any overrides configured. Unique within the compilation result."
+},
+"dataPreparation": {
+"$ref": "DataPreparation",
+"description": "The data preparation executed by this action."
 },
 "declaration": {
 "$ref": "Declaration",
@@ -2575,6 +2709,21 @@
 },
 "type": "object"
 },
+"Config": {
+"description": "Config for all repositories in a given project and location.",
+"id": "Config",
+"properties": {
+"defaultKmsKeyName": {
+"description": "Optional. The default KMS key that is used if no encryption key is provided when a repository is created.",
+"type": "string"
+},
+"name": {
+"description": "Identifier. The config name.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "DataEncryptionState": {
 "description": "Describes encryption state of a resource.",
 "id": "DataEncryptionState",
@@ -2582,6 +2731,36 @@
 "kmsKeyVersionName": {
 "description": "The KMS key version name with which data of a resource is encrypted.",
 "type": "string"
+}
+},
+"type": "object"
+},
+"DataPreparation": {
+"description": "Defines a compiled Data Preparation entity",
+"id": "DataPreparation",
+"properties": {
+"contents": {
+"description": "The data preparation definition, stored as a binary encoded proto.",
+"format": "byte",
+"type": "string"
+},
+"dependencyTargets": {
+"description": "A list of actions that this action depends on.",
+"items": {
+"$ref": "Target"
+},
+"type": "array"
+},
+"disabled": {
+"description": "Whether this action is disabled (i.e. should not be run).",
+"type": "boolean"
+},
+"tags": {
+"description": "Arbitrary, user-defined tags on this action.",
+"items": {
+"type": "string"
+},
+"type": "array"
 }
 },
 "type": "object"
@@ -3918,6 +4097,12 @@
 "description": "Represents a Dataform workflow configuration.",
 "id": "WorkflowConfig",
 "properties": {
+"createTime": {
+"description": "Output only. The timestamp of when the WorkflowConfig was created.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
 "cronSchedule": {
 "description": "Optional. Optional schedule (in cron format) for automatic execution of this workflow config.",
 "type": "string"
@@ -3944,6 +4129,12 @@
 },
 "timeZone": {
 "description": "Optional. Specifies the time zone to be used when interpreting cron_schedule. Must be a time zone name from the time zone database (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). If left unspecified, the default is UTC.",
+"type": "string"
+},
+"updateTime": {
+"description": "Output only. The timestamp of when the WorkflowConfig was last updated.",
+"format": "google-datetime",
+"readOnly": true,
 "type": "string"
 }
 },

@@ -8,7 +8,7 @@ from datetime import datetime
 from icecream import ic
 
 
-cred = credentials.Certificate("meetwhenah-firebase-adminsdk-7hrv1-524d5b8822.json")
+cred = credentials.Certificate("meetwhenbot-firebase-adminsdk-gi7ng-23bb4de9f9.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
