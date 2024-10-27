@@ -161,3 +161,4 @@ cython_debug/
 *.env
 python-backend/*.json
 node_modules
+frontend/.babelrc
