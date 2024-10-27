@@ -83,7 +83,7 @@ Need help? Type /help for more info on commands!
 			#	updateEntry(db_result, "callout_cleared", False) 
 
 		markup = types.ReplyKeyboardMarkup(row_width=1)
-		web_app_info = types.WebAppInfo(url="https://meetwhenah.deploy.jensenhshoots.com/datepicker")
+		web_app_info = types.WebAppInfo(url="meet-when-ah.vercel.app/datepicker")
 		web_app_button = types.KeyboardButton(text="Create Event", web_app=web_app_info)
 		markup.add(web_app_button)
 
