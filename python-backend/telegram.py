@@ -333,7 +333,7 @@ def ask_availability(tele_id, event_id):
 	
 
 	markup = types.ReplyKeyboardMarkup(row_width=1)
-	url = create_web_app_url("https://meetwhenah.deploy.jensenhshoots.com/dragselector/", data=data)
+	url = create_web_app_url("meet-when-ah.vercel.app/dragselector/", data=data)
 	print(url)
 	web_app_info = types.WebAppInfo(url=url)
 	web_app_button = types.KeyboardButton(text="Set availability", web_app=web_app_info)
