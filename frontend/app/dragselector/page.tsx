@@ -1,130 +1,76 @@
 'use client'
-import { useEffect, useRef, useContext, createContext, forwardRef, ReactNode, useState } from 'react';
-import DragSelector from '@/components/dragselector/DragSelector'
-import CustomDateTimeSet from '@/components/dragselector/CustomDateTimeSet';
-import NextButton from '@/components/dragselector/NextButton'
-import RemoveNightButton from '@/components/dragselector/RemoveNightButton'
-import PreviousButton from '@/components/dragselector/PreviousButton'
-import SubmitButton from '@/components/dragselector/SubmitButton'
+import React, { useState } from 'react';
+import WeekCalendar from '../../components/dragselector/WeekCalendar';
+import { addDays } from 'date-fns';
 
-export default function Home() { 
-
-  const [selectedElements, setSelectedElements] = useState<CustomDateTimeSet>(new CustomDateTimeSet());
-  const [removeNight, setRemoveNight] = useState<boolean>(true);
-  
-   
-  const [data, setData] = useState({
-    web_app_number: 1,
-    event_name: "",
-    event_id:"",
-    start: new Date(),
-    end: new Date(),
-  })
-
+export default function DragSelectorPage() {
   const [startDate, setStartDate] = useState<Date>(new Date());
-
-  const [tg, setTg] = useState<any>(null);
-  useEffect(() => {
-    if (window.Telegram) {
-      setTg(window.Telegram.WebApp);
-    } else {
-      console.error("Telegram Web App script not loaded");
-    }
-  }, []);
-
-  const submit = () => {
-    const results = {
-      web_app_number: 1,
-      event_name: data.event_name,
-      event_id: data.event_id,
-      start: data.start.toString(),
-      end: data.end.toString(),
-      hours_available: selectedElements.toJSON()
-    }
-    console.log(results);
-    tg.sendData(JSON.stringify(results, null, 4));
-    tg.close()
-  }
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const start = params.get('start');
-    const end = params.get('end');
-    const event_name = params.get("event_name");
-    const event_id = params.get("event_id");
-
-    if (start) setStartDate(new Date(start));
-    
-    setData((oldData) => {
-      if (start && end && event_id && event_name) {
-        return {
-          ...oldData,
-          start: new Date(start),
-          end: new Date(end),
-          event_name: event_name,
-          event_id: event_id
-        }
-      }
-      return oldData;
-    });
-  }, []);
-
-  //console.log(data)
+  const [numDays, setNumDays] = useState<number>(7);
+  const [selectionData, setSelectionData] = useState<Map<string, Set<number>>>(new Map());
   
-  const toggleRemoveNight = () => {
-    setRemoveNight(!removeNight);
-  }
-
-  const startString = data.start.toLocaleDateString("en-GB");
-  const endString = data.end.toLocaleDateString("en-GB");
-
-  function addDays(date:Date, days:number) {
-    var result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
-  }
-
-  function minusDays(date:Date, days:number) {
-    var result = new Date(date);
-    result.setDate(result.getDate() - days);
-    return result;
-  }
-
-  const nextHandler = () => {
-    setStartDate(addDays(startDate, 7))
-  }
-
-  const previousHandler = () => {
-    setStartDate(minusDays(startDate, 7))
-  }
+  // Handle previous/next week
+  const navigatePreviousWeek = () => {
+    setStartDate(prev => addDays(prev, -numDays));
+  };
+  
+  const navigateNextWeek = () => {
+    setStartDate(prev => addDays(prev, numDays));
+  };
+  
+  // Format selection data for display/save
+  const formatSelectionSummary = () => {
+    const summary: string[] = [];
+    
+    selectionData.forEach((times, day) => {
+      const formattedTimes = Array.from(times)
+        .sort((a, b) => a - b)
+        .map(minutes => {
+          const hours = Math.floor(minutes / 60);
+          const mins = minutes % 60;
+          return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+        })
+        .join(', ');
+      
+      summary.push(`${day}: ${formattedTimes}`);
+    });
+    
+    return summary.join('\n');
+  };
   
   return (
-    <main className="dark-mode overscroll-none grid bg-zinc-200 min-h-screen pt-2 pb-11 select-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-      <p className="text-3xl font-bold text-center pt-1"> {data.event_name} </p>
-      <p className="text-lg text-center"> Select timings for this event </p>
-      <p className="text-2sm font-bold text-center"> { startString } - { endString } </p>
-      <p> {startDate.toLocaleDateString("en-GB")} </p>
-
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Weekly Availability Selector</h1>
       
-      <div id="buttons" className="flex justify-center items-center space-x-10 p-1">
-        <div>
-          <PreviousButton onClick={previousHandler} disabled={false} />
-        </div>
-        <div>
-          <RemoveNightButton onClick={toggleRemoveNight} />
-        </div>
-        <div>
-          <NextButton onClick={nextHandler} disabled={false} />
-        </div>
+      <div className="mb-4 flex justify-between items-center">
+        <button
+          onClick={navigatePreviousWeek}
+          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+        >
+          Previous Week
+        </button>
+        
+        <button
+          onClick={navigateNextWeek}
+          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+        >
+          Next Week
+        </button>
       </div>
-
-      <div className="overflow-hidden relative">
-        <DragSelector removeNight={removeNight} startDate={startDate} numDays={7} selectedElements={selectedElements} setSelectedElements={setSelectedElements} /> 
+      
+      <div className="bg-white rounded-lg shadow-md">
+        <WeekCalendar
+          startDate={startDate}
+          numDays={numDays}
+          onSelectionChange={setSelectionData}
+        />
       </div>
-      <div className="absolute right-0 bottom-0">
-          <SubmitButton onClick={submit} disabled={ selectedElements.size() === 0 } />
+      
+      <div className="mt-4">
+        <h2 className="text-xl font-semibold mb-2">Selected Times</h2>
+        <pre className="bg-gray-100 p-4 rounded whitespace-pre-wrap">
+          {selectionData.size > 0 ? formatSelectionSummary() : 'No times selected.'}
+        </pre>
       </div>
-
-    </main>
+    </div>
   );
 }
