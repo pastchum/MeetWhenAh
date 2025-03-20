@@ -1,130 +1,155 @@
 'use client'
-import { useEffect, useRef, useContext, createContext, forwardRef, ReactNode, useState } from 'react';
-import DragSelector from '@/components/dragselector/DragSelector'
-import CustomDateTimeSet from '@/components/dragselector/CustomDateTimeSet';
-import NextButton from '@/components/dragselector/NextButton'
-import RemoveNightButton from '@/components/dragselector/RemoveNightButton'
-import PreviousButton from '@/components/dragselector/PreviousButton'
-import SubmitButton from '@/components/dragselector/SubmitButton'
+import React, { useState } from 'react';
+import WeekCalendar from '../../components/dragselector/WeekCalendar';
+import { addDays, format, parse, startOfWeek } from 'date-fns';
 
-export default function Home() { 
+// Interface for aggregated time periods
+interface TimePeriod {
+  start: number; // minutes from midnight
+  end: number; // minutes from midnight
+}
 
-  const [selectedElements, setSelectedElements] = useState<CustomDateTimeSet>(new CustomDateTimeSet());
-  const [removeNight, setRemoveNight] = useState<boolean>(true);
+export default function DragSelectorPage() {
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [numDays, setNumDays] = useState<number>(7);
+  const [selectionData, setSelectionData] = useState<Map<string, Set<number>>>(new Map());
   
-   
-  const [data, setData] = useState({
-    web_app_number: 1,
-    event_name: "",
-    event_id:"",
-    start: new Date(),
-    end: new Date(),
-  })
-
-  const [tg, setTg] = useState<any>(null);
-  useEffect(() => {
-    if (window.Telegram) {
-      setTg(window.Telegram.WebApp);
-    } else {
-      console.error("Telegram Web App script not loaded");
-    }
-  }, []);
-
-  const submit = () => {
-    const results = {
-      web_app_number: 1,
-      event_name: data.event_name,
-      event_id: data.event_id,
-      start: data.start.toString(),
-      end: data.end.toString(),
-      hours_available: selectedElements.toJSON()
-    }
-    console.log(results);
-    tg.sendData(JSON.stringify(results, null, 4));
-    tg.close()
-  }
-
-  const [startDate, setStartDate] = useState<Date>(new Date(data.start));
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const start = params.get('start');
-    const end = params.get('end');
-    const event_name = params.get("event_name");
-    const event_id = params.get("event_id");
-    setData((oldData:any):any => {
-      if (start && end && event_id && event_name){
-        return {
-          ...oldData,
-          start: new Date(start),
-          end: new Date(end),
-          event_name: event_name,
-          event_id: event_id
-        }
+  // Navigate to this week
+  const navigateToThisWeek = () => {
+    setStartDate(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  };
+  
+  // Handle previous/next week
+  const navigatePreviousWeek = () => {
+    setStartDate(prev => addDays(prev, -numDays));
+  };
+  
+  const navigateNextWeek = () => {
+    setStartDate(prev => addDays(prev, numDays));
+  };
+  
+  // Format minutes as HH:MM
+  const formatTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  };
+  
+  // Aggregate consecutive time slots into periods
+  const aggregateTimePeriods = (timeSet: Set<number>): TimePeriod[] => {
+    if (timeSet.size === 0) return [];
+    
+    // Convert set to sorted array
+    const times = Array.from(timeSet).sort((a, b) => a - b);
+    
+    const periods: TimePeriod[] = [];
+    let currentPeriod: TimePeriod = {
+      start: times[0],
+      end: times[0] + 30 // Each slot is 30 minutes
+    };
+    
+    // Group consecutive time slots
+    for (let i = 1; i < times.length; i++) {
+      const time = times[i];
+      // If this time slot continues the current period (30 min increments)
+      if (time === currentPeriod.end) {
+        currentPeriod.end = time + 30;
+      } else {
+        // Save current period and start a new one
+        periods.push({...currentPeriod});
+        currentPeriod = {
+          start: time,
+          end: time + 30
+        };
       }
-      
-    })
-    if (start) setStartDate(new Date(start))
-  }, [])
-
-
-
-  //console.log(data)
+    }
+    
+    // Add the last period
+    periods.push(currentPeriod);
+    
+    return periods;
+  };
   
-  const toggleRemoveNight = () => {
-    setRemoveNight(!removeNight);
-  }
-
-  const startString = data.start.toLocaleDateString("en-GB");
-  const endString = data.end.toLocaleDateString("en-GB");
-
-  function addDays(date:Date, days:number) {
-    var result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
-  }
-
-  function minusDays(date:Date, days:number) {
-    var result = new Date(date);
-    result.setDate(result.getDate() - days);
-    return result;
-  }
-
-  const nextHandler = () => {
-    setStartDate(addDays(startDate, 7))
-  }
-
-  const previousHandler = () => {
-    setStartDate(minusDays(startDate, 7))
-  }
+  // Format selection data for display
+  const formatSelectionSummary = () => {
+    const days = Array.from(selectionData.keys()).sort();
+    
+    return (
+      <div>
+        {days.map(day => {
+          const displayDate = format(parse(day, 'yyyy-MM-dd', new Date()), 'EEE, MMM d');
+          const periods = aggregateTimePeriods(selectionData.get(day) || new Set());
+          
+          return (
+            <div key={day} className="mb-2">
+              <div className="font-semibold">{displayDate}</div>
+              <ul className="ml-4">
+                {periods.map((period, idx) => (
+                  <li key={idx}>
+                    {formatTime(period.start)} - {formatTime(period.end)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
   
   return (
-    <main className="dark-mode overscroll-none grid bg-zinc-200 min-h-screen pt-2 pb-11 select-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-      <p className="text-3xl font-bold text-center pt-1"> {data.event_name} </p>
-      <p className="text-lg text-center"> Select timings for this event </p>
-      <p className="text-2sm font-bold text-center"> { startString } - { endString } </p>
-      <p> {startDate.toLocaleDateString("en-GB")} </p>
-
+    <div className="container mx-auto p-4">
+      <div className="flex items-center mb-4">
+        <h1 className="text-2xl font-bold">Weekly Availability Selector</h1>
+        <span className="ml-4 text-sm px-3 py-1 bg-white rounded shadow-sm text-gray-600">
+          Click on a day header to select the entire day, or drag across time slots to select specific periods.
+        </span>
+      </div>
       
-      <div id="buttons" className="flex justify-center items-center space-x-10 p-1">
-        <div>
-          <PreviousButton onClick={previousHandler} disabled={false} />
-        </div>
-        <div>
-          <RemoveNightButton onClick={toggleRemoveNight} />
-        </div>
-        <div>
-          <NextButton onClick={nextHandler} disabled={false} />
+      <div className="mb-4 flex justify-between items-center">
+        <button
+          onClick={navigatePreviousWeek}
+          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+        >
+          Previous Week
+        </button>
+        
+        <button
+          onClick={navigateToThisWeek}
+          className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded"
+        >
+          This Week
+        </button>
+        
+        <button
+          onClick={navigateNextWeek}
+          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+        >
+          Next Week
+        </button>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow-md">
+        <WeekCalendar
+          startDate={startDate}
+          numDays={numDays}
+          onSelectionChange={setSelectionData}
+        />
+      </div>
+      
+      <div className="mt-4">
+        <h2 className="text-xl font-semibold mb-2">Selected Times</h2>
+        <div className="bg-gray-100 p-4 rounded text-gray-800 h-48 overflow-y-auto">
+          {selectionData.size > 0 ? (
+            formatSelectionSummary()
+          ) : (
+            <div className="text-gray-600 italic">
+              No times selected. Click on a day header to select the entire day, 
+              or drag across time slots to select specific periods.
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="overflow-hidden relative">
-        <DragSelector removeNight={removeNight} startDate={startDate} numDays={7} selectedElements={selectedElements} setSelectedElements={setSelectedElements} /> 
-      </div>
-      <div className="absolute right-0 bottom-0">
-          <SubmitButton onClick={submit} disabled={ selectedElements.size() === 0 } />
-      </div>
-
-    </main>
+    </div>
   );
 }

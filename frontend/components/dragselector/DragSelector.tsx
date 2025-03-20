@@ -55,37 +55,49 @@ const Container = forwardRef<HTMLDivElement, ContainerProps>(function Component(
   }, [startDate])
 
   const finalContainerStyles = {
-    gridTemplateColumns: `repeat(${numberOfDays+1}, 2rem)`,
-    gridTemplateRows: `repeat(${timeIntervals.length}, 1rem)`,
+    gridTemplateColumns: `minmax(3rem, auto) repeat(${numberOfDays}, minmax(2.5rem, 1fr))`,
+    gridTemplateRows: `repeat(${timeIntervals.length}, minmax(1.5rem, auto))`,
   };
 
   return (
-    <div ref={ref} className="grid gap-y-0.5 gap-x-3 w-screen max-w-full bg-transparent items-center justify-center" style={finalContainerStyles}>
-      {/* Empty top-left cell */}
-      <div className="flex justify-center items-center text-sm font-bold"></div>
+    <div className="relative w-full max-w-screen-lg mx-auto px-2 overflow-x-auto">
+      <div ref={ref} 
+           className="grid gap-y-1 gap-x-2 bg-transparent items-center justify-start min-w-fit" 
+           style={finalContainerStyles}>
+        {/* Time column header */}
+        <div className="sticky left-0 top-0 z-10 bg-zinc-200 dark:bg-zinc-800 py-2 px-1 text-center font-bold">
+          Time
+        </div>
 
-        {/* Date labels */}
+        {/* Date headers */}
         {dates.map((date) => (
-          <div key={date.toISOString()} className="flex justify-center items-center text-sm sm:text-sm font-bold">
-            {date.toLocaleDateString('en-GB', { month: 'numeric', day: 'numeric' })}
+          <div key={date.toISOString()} 
+               className="py-2 px-1 text-center font-bold text-sm whitespace-nowrap">
+            {date.toLocaleDateString('en-GB', { weekday: 'short', month: 'numeric', day: 'numeric' })}
           </div>
         ))}
 
         {/* Time labels and boxes */}
         {timeIntervals.map((time) => (
           <Fragment key={time}>
-            {/* Time label */}
-            <div className="flex justify-center items-center text-sm font-bold ">{time}</div>
+            {/* Time label - sticky on mobile scroll */}
+            <div className="sticky left-0 bg-zinc-200 dark:bg-zinc-800 py-1 px-2 text-sm font-medium text-center">
+              {`${time.slice(0, 2)}:${time.slice(2)}`}
+            </div>
 
             {/* Boxes for each date */}
             {dates.map((date) => (
-              <Box key={`${date.toISOString()}-${time}`} date={date} time={time} appendMode={appendMode} />
+              <Box key={`${date.toISOString()}-${time}`} 
+                   date={date} 
+                   time={time} 
+                   appendMode={appendMode} />
             ))}
-        </Fragment>
+          </Fragment>
         ))}
+      </div>
     </div>
   );
-  });
+});
 
 
 export interface DateTime {
@@ -121,23 +133,88 @@ export default function DragSelector( {removeNight, startDate, numDays, selected
     const selectContainerRef = useRef<HTMLDivElement | null>(null);
     const selectionBoxRef = useRef<HTMLDivElement | null>(null);
     const [appendMode, setAppendMode] = useState<boolean>(false);
-    const selection = useAreaSelection({ container: selectContainerRef, selectionBox: selectionBoxRef, appendMode: appendMode, setAppendMode: setAppendMode});
 
-    
-    // useEffect(() => {
-    //   console.log(selectedElements)
-    // }, [selectedElements])
-  
-    
+    // Log component initialization and ref setup
+    useEffect(() => {
+        console.log('%c🎯 DragSelector Initialized', 'color: #0ea5e9', {
+            removeNight,
+            startDate: startDate.toISOString(),
+            numDays,
+            totalSelected: selectedElements.size(),
+            containerRef: {
+                exists: !!selectContainerRef.current,
+                className: selectContainerRef.current?.className,
+                id: selectContainerRef.current?.id,
+                rect: selectContainerRef.current?.getBoundingClientRect()
+            },
+            selectionBoxRef: {
+                exists: !!selectionBoxRef.current,
+                className: selectionBoxRef.current?.className,
+                style: selectionBoxRef.current?.style.cssText
+            }
+        });
+    }, [selectContainerRef.current, selectionBoxRef.current]);
+
+    // Log when refs are updated
+    useEffect(() => {
+        console.log('%c📌 Container Ref Update', 'color: #059669', {
+            containerExists: !!selectContainerRef.current,
+            containerClass: selectContainerRef.current?.className,
+            containerRect: selectContainerRef.current?.getBoundingClientRect()
+        });
+    }, [selectContainerRef.current]);
+
+    // Log selection box ref updates
+    useEffect(() => {
+        console.log('%c🎨 Selection Box Ref Update', 'color: #8b5cf6', {
+            exists: !!selectionBoxRef.current,
+            style: selectionBoxRef.current?.style.cssText,
+            rect: selectionBoxRef.current?.getBoundingClientRect()
+        });
+    }, [selectionBoxRef.current]);
+
+    const selection = useAreaSelection({ 
+        container: selectContainerRef, 
+        selectionBox: selectionBoxRef, 
+        appendMode: appendMode, 
+        setAppendMode: setAppendMode
+    });
+
+    // Log selection updates
+    useEffect(() => {
+        if (selection) {
+            console.log('%c📍 Selection Updated', 'color: #8b5cf6', {
+                selectionRect: {
+                    left: Math.round(selection.left),
+                    top: Math.round(selection.top),
+                    width: Math.round(selection.width),
+                    height: Math.round(selection.height)
+                },
+                appendMode
+            });
+        }
+    }, [selection, appendMode]);
     
     return (
-        <div>
-            <SelectionContext.Provider value={{selectionRect: selection, selectedElements: selectedElements, setSelectedElements: setSelectedElements}}>
-                <Container removeNight={removeNight} ref={selectContainerRef} startDate={startDate} numberOfDays={numDays} appendMode={appendMode}  />
-                <div ref={selectionBoxRef} className="fixed bg-custom-blue shadow-custom-inset rounded pointer-events-none mix-blend-multiply"></div>
+        <div className="relative">
+            <SelectionContext.Provider value={{
+              selectionRect: selection, 
+              selectedElements: selectedElements, 
+              setSelectedElements: setSelectedElements
+            }}>
+                <Container 
+                  removeNight={removeNight} 
+                  ref={selectContainerRef} 
+                  startDate={startDate} 
+                  numberOfDays={numDays} 
+                  appendMode={appendMode} 
+                />
+                <div 
+                  ref={selectionBoxRef} 
+                  className="fixed bg-blue-500/20 border-2 border-blue-600/40 rounded pointer-events-none"
+                  style={{ zIndex: 50 }}
+                />
             </SelectionContext.Provider>
-      </div>
-
-    )
-
+        </div>
+    );
 }
