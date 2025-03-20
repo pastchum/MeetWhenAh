@@ -1,10 +1,6 @@
-import useSelected from "@/components/dragselector/useSelected";
-import { useRef, useContext, useEffect } from "react";
-import {
-  SelectionContext,
-  DateTime,
-} from "@/components/dragselector/DragSelector";
-import CustomDateTimeSet from "@/components/dragselector/CustomDateTimeSet";
+import { useContext, useEffect, useState, useCallback } from 'react';
+import { SelectionContext } from './DragSelector';
+import CustomDateTimeSet from './CustomDateTimeSet';
 
 interface BoxProps {
   date: Date;
@@ -13,52 +9,106 @@ interface BoxProps {
 }
 
 export default function Box({ date, time, appendMode }: BoxProps) {
-  const newDateTime: DateTime = {
-    date: date.toLocaleDateString("en-GB"),
-    time: time,
-  };
-  const ref = useRef<HTMLDivElement>(null);
-  const { selectionRect, selectedElements, setSelectedElements } =
-    useContext(SelectionContext);
+  const { selectionRect, selectedElements, setSelectedElements } = useContext(SelectionContext);
+  const [isSelected, setIsSelected] = useState(false);
+  const [isBeingSelected, setIsBeingSelected] = useState(false);
 
-  const isAlreadySelected = selectedElements.has(newDateTime);
-  const isSelected = useSelected(
-    ref,
-    selectionRect,
-    isAlreadySelected,
-    appendMode
-  );
+  // Check if this box is already selected
+  const checkIsSelected = useCallback(() => {
+    const dateTime = { date: date.toLocaleDateString("en-GB"), time };
+    return selectedElements.has(dateTime);
+  }, [date, time, selectedElements]);
+
+  // Update selection state when selectedElements changes
+  useEffect(() => {
+    setIsSelected(checkIsSelected());
+  }, [checkIsSelected]);
 
   useEffect(() => {
-    if (isSelected) {
-      setSelectedElements(
-        (prevElements: CustomDateTimeSet): CustomDateTimeSet => {
-          const newSet = new CustomDateTimeSet(prevElements);
-          newSet.add(newDateTime);
-          return newSet;
-        }
+    const boxElement = document.getElementById(`box-${date.toISOString()}-${time}`);
+    if (boxElement && selectionRect) {
+      const boxRect = boxElement.getBoundingClientRect();
+      const isOverlapping = !(
+        boxRect.right < selectionRect.left ||
+        boxRect.left > selectionRect.right ||
+        boxRect.bottom < selectionRect.top ||
+        boxRect.top > selectionRect.bottom
       );
+
+      console.log('%c📦 Box Intersection Check', 'color: #0d9488', {
+        boxId: `box-${date.toISOString()}-${time}`,
+        isOverlapping,
+        boxRect: {
+          left: Math.round(boxRect.left),
+          right: Math.round(boxRect.right),
+          top: Math.round(boxRect.top),
+          bottom: Math.round(boxRect.bottom)
+        },
+        selectionRect: {
+          left: Math.round(selectionRect.left),
+          right: Math.round(selectionRect.right),
+          top: Math.round(selectionRect.top),
+          bottom: Math.round(selectionRect.bottom)
+        }
+      });
+
+      setIsBeingSelected(isOverlapping);
+      
+      if (!isOverlapping && !appendMode) {
+        const dateTime = { date: date.toLocaleDateString("en-GB"), time };
+        console.log('%c🗑️ Box Deselected', 'color: #ef4444', { dateTime });
+        selectedElements.delete(dateTime);
+        setSelectedElements(new CustomDateTimeSet(selectedElements));
+      }
+      
+      if (isOverlapping) {
+        const dateTime = { date: date.toLocaleDateString("en-GB"), time };
+        console.log('%c✅ Box Selected', 'color: #22c55e', { dateTime });
+        selectedElements.add(dateTime);
+        setSelectedElements(new CustomDateTimeSet(selectedElements));
+      }
     } else {
-      setSelectedElements(
-        (prevElements: CustomDateTimeSet): CustomDateTimeSet => {
-          const newSet = new CustomDateTimeSet();
-          newSet.delete(newDateTime);
-          return newSet;
-        }
-      );
+      setIsBeingSelected(false);
     }
-  }, [isSelected]);
+  }, [selectionRect, date, time, appendMode]);
+
+  // Log selection state changes
+  useEffect(() => {
+    console.log('%c🔄 Box State Update', 'color: #f59e0b', {
+      boxId: `box-${date.toISOString()}-${time}`,
+      isSelected,
+      isBeingSelected,
+      appendMode
+    });
+  }, [isSelected, isBeingSelected]);
+
+  // Enhanced visual feedback classes
+  const baseClasses = "w-full h-8 rounded-md transition-all duration-150 border border-transparent";
+  const selectedClasses = isSelected 
+    ? "bg-blue-500/80 border-blue-600 shadow-[inset_0_1px_4px_rgba(0,0,0,0.3)]" 
+    : "bg-gray-200/80 hover:bg-gray-300/80 dark:bg-gray-700/80 dark:hover:bg-gray-600/80";
+  const hoverClasses = "hover:border-blue-400";
+  const activeClasses = isBeingSelected 
+    ? "scale-95 bg-blue-600/90 border-blue-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]" 
+    : "";
+  const touchFeedbackClasses = "active:scale-95 active:bg-blue-600/90 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]";
 
   return (
     <div
-      ref={ref}
-      className="flex justify-center items-center bg-white w-8 h-4 rounded transition-all duration-200 ease-in-out"
-      style={{
-        ...(isSelected && {
-          boxShadow: "inset 0 0 0 .25rem hsl(206deg 100% 50%)",
-        }),
-      }}
+      id={`box-${date.toISOString()}-${time}`}
       data-testid="box"
+      className={`
+        ${baseClasses}
+        ${selectedClasses}
+        ${hoverClasses}
+        ${activeClasses}
+        ${touchFeedbackClasses}
+      `}
+      style={{
+        touchAction: 'none',
+        WebkitTapHighlightColor: 'transparent',
+        cursor: 'pointer',
+      }}
     />
   );
 }

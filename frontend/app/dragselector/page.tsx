@@ -21,6 +21,8 @@ export default function Home() {
     end: new Date(),
   })
 
+  const [startDate, setStartDate] = useState<Date>(new Date());
+
   const [tg, setTg] = useState<any>(null);
   useEffect(() => {
     if (window.Telegram) {
@@ -44,16 +46,17 @@ export default function Home() {
     tg.close()
   }
 
-  const [startDate, setStartDate] = useState<Date>(new Date(data.start));
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const start = params.get('start');
     const end = params.get('end');
     const event_name = params.get("event_name");
     const event_id = params.get("event_id");
-    setData((oldData:any):any => {
-      if (start && end && event_id && event_name){
+
+    if (start) setStartDate(new Date(start));
+    
+    setData((oldData) => {
+      if (start && end && event_id && event_name) {
         return {
           ...oldData,
           start: new Date(start),
@@ -62,12 +65,9 @@ export default function Home() {
           event_id: event_id
         }
       }
-      
-    })
-    if (start) setStartDate(new Date(start))
-  }, [])
-
-
+      return oldData;
+    });
+  }, []);
 
   //console.log(data)
   
