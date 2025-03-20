@@ -7,6 +7,8 @@ interface TimeSlotProps {
   time: number;
   isSelected: boolean;
   isEvenHour: boolean;
+  isHalfHour: boolean;
+  isLastRow: boolean;
   isDragging: boolean;
   onDragStart: (day: string, time: number, isSelected: boolean) => void;
   onDragOver: (day: string, time: number) => void;
@@ -18,6 +20,8 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   time,
   isSelected,
   isEvenHour,
+  isHalfHour,
+  isLastRow,
   isDragging,
   onDragStart,
   onDragOver,
@@ -51,12 +55,31 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       onDragEnd();
     }
   }, [isDragging, onDragEnd]);
+
+  // Determine border style based on time - SWAPPED HIERARCHY
+  const getBorderStyle = () => {
+    // Make the last row's bottom border transparent
+    if (isLastRow) {
+      return 'border-b-0';
+    }
+    
+    if (isHalfHour) {
+      // Half hour mark (e.g. 1:30) - darker border
+      return 'border-b-2 border-gray-800';
+    } else if (isEvenHour) {
+      // Start of hour (e.g. 1:00) - medium border
+      return 'border-b border-gray-400';
+    } else {
+      // Other time marks - light border
+      return 'border-b border-gray-200';
+    }
+  };
   
   return (
     <div
       ref={slotRef}
       className={`
-        h-8 border-b ${isEvenHour ? 'border-gray-200' : 'border-gray-100'}
+        h-8 ${getBorderStyle()}
         ${isSelected ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white hover:bg-gray-50'}
         transition-colors duration-100 ease-in-out
         ${isSelected ? 'text-white' : 'text-gray-700'}

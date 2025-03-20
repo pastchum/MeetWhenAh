@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import DayHeader from './DayHeader';
 import TimeColumn from './TimeColumn';
 import TimeGrid from './TimeGrid';
@@ -37,18 +37,42 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   // Container ref for position calculations
   const containerRef = useRef<HTMLDivElement>(null);
   
+  // Handle day header click - select whole day
+  const handleSelectWholeDay = useCallback((date: Date) => {
+    const dayKey = format(date, 'yyyy-MM-dd');
+    
+    // Check if any slots for this day are already selected
+    const isAnySlotSelected = selectedSlots.has(dayKey) && selectedSlots.get(dayKey)!.size > 0;
+    
+    setSelectedSlots(prev => {
+      const newMap = new Map(prev);
+      
+      if (isAnySlotSelected) {
+        // If any slots are selected, deselect the whole day
+        newMap.delete(dayKey);
+      } else {
+        // Select all time slots for the day
+        const allTimes = new Set<number>();
+        timeSlots.forEach(time => allTimes.add(time));
+        newMap.set(dayKey, allTimes);
+      }
+      
+      return newMap;
+    });
+  }, [selectedSlots, timeSlots]);
+  
   // Handle drag start
-  const handleDragStart = (day: string, time: number, isSelected: boolean) => {
+  const handleDragStart = useCallback((day: string, time: number, isSelected: boolean) => {
     setIsDragging(true);
     setDragOperation(isSelected ? 'deselect' : 'select');
     setLastSlot({ day, time });
     
     // Update initial selection
     updateSelection(day, time, isSelected ? 'deselect' : 'select');
-  };
+  }, []);
   
   // Handle drag over time slot
-  const handleDragOver = (day: string, time: number) => {
+  const handleDragOver = useCallback((day: string, time: number) => {
     if (!isDragging || !lastSlot) return;
     
     // If we moved to a new slot
@@ -56,13 +80,13 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       updateSelection(day, time, dragOperation);
       setLastSlot({ day, time });
     }
-  };
+  }, [isDragging, lastSlot, dragOperation]);
   
   // Handle drag end
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setIsDragging(false);
     setLastSlot(null);
-  };
+  }, []);
   
   // Update selection based on drag operation
   const updateSelection = (day: string, time: number, operation: 'select' | 'deselect') => {
@@ -122,7 +146,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('touchend', handleMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, handleDragEnd]);
   
   return (
     <div 
@@ -138,7 +162,8 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
             <DayHeader 
               key={idx} 
               date={day} 
-              width={`${100 / numDays}%`} 
+              width={`${100 / numDays}%`}
+              onSelectDay={handleSelectWholeDay}
             />
           ))}
         </div>

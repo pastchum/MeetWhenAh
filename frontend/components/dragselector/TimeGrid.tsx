@@ -33,6 +33,16 @@ const TimeGrid: React.FC<TimeGridProps> = ({
     return !!selectedSlots.get(dayKey)?.has(time);
   };
   
+  // Determine if time is at an hour mark
+  const isEvenHour = (time: number): boolean => {
+    return time % 60 === 0;
+  };
+  
+  // Determine if time is at a half hour mark
+  const isHalfHour = (time: number): boolean => {
+    return time % 60 === 30;
+  };
+  
   return (
     <div className="flex-1 flex">
       {days.map((day, dayIdx) => {
@@ -51,7 +61,9 @@ const TimeGrid: React.FC<TimeGridProps> = ({
                 day={dayKey}
                 time={time}
                 isSelected={isSlotSelected(dayKey, time)}
-                isEvenHour={timeIdx % 4 === 0}
+                isEvenHour={isEvenHour(time)}
+                isHalfHour={isHalfHour(time)}
+                isLastRow={timeIdx === timeSlots.length - 1}
                 isDragging={isDragging}
                 onDragStart={onDragStart}
                 onDragOver={onDragOver}

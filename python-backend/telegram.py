@@ -16,10 +16,12 @@ import random
 import string
 import urllib.parse
 import re
+import json
 
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 
 from databases import *
+from scheduling import calculate_optimal_meeting_time  # Import the new scheduling module
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
@@ -50,7 +52,7 @@ bot.set_my_commands(
 	commands=[
 		telebot.types.BotCommand("/start", "Starts the bot!"),
 		telebot.types.BotCommand("/help", "Help"),
-		#telebot.types.BotCommand("/event", "Creates a new event")
+		telebot.types.BotCommand("/sleep", "Set your sleep hours")
 	],
 	# scope=telebot.types.BotCommandScopeChat(12345678)  # use for personal command for users
 	# scope=telebot.types.BotCommandScopeAllPrivateChats()  # use for all private chats
@@ -97,6 +99,8 @@ Need help? Type /help for more info on commands!
 @bot.message_handler(commands=['help'])
 def help(message):
 	reply_message = """New to <b>meet when ah?</b> <b>DM</b> me <b>/start</b> to create a new event!
+
+Use <b>/sleep</b> to set your sleep hours to improve scheduling.
 	
 	"""
 	bot.reply_to(message, reply_message)
@@ -112,6 +116,9 @@ def handle_webapp(message):
 		event_details = web_app_data["event_details"]
 		start_date = web_app_data["start"]
 		end_date = web_app_data["end"]
+		
+		# Add optional event type field (if provided)
+		event_type = web_app_data.get("event_type", "general")
 
 		if start_date is None or end_date is None:
 			bot.send_message(message.chat.id, "Enter in valid date pls")
@@ -152,6 +159,7 @@ Joining:
 			"start_date" : start_date,
 			"end_date" : end_date,
 			"hours_available": hours_available,
+			"event_type": event_type,  # Store the event type
 			"text" : text,
 			
 		}
@@ -168,18 +176,58 @@ Joining:
 		new_hours_available = web_app_data["hours_available"]["dateTimes"] #data from web app. new.
 		event_id = web_app_data["event_id"]
 		db_result = getEntry("Events", "event_id", str(event_id))
-		hours_already_available = db_result.to_dict()["hours_available"] #data existing in database
+		
+		if not db_result:
+			bot.send_message(message.chat.id, "Could not find this event. Please try again.")
+			return
+			
+		event_data = db_result.to_dict()
+		hours_already_available = event_data["hours_available"] #data existing in database
+		event_type = event_data.get("event_type", "general")  # Get event type
 
-		for new_day in new_hours_available:             # old_day = [date][][][][]
+		# Save the user's availability for this specific event
+		for new_day in new_hours_available:
 			for old_day in hours_already_available:
 				if datetime.strptime(new_day['date'], '%d/%m/%Y').date() == old_day["date"].date():
 					old_day[new_day['time']].append(tele_id)
 
-		ic(hours_already_available)
-		#write back to db
+		# Also save this availability pattern to user's profile for this event type
+		user_doc = getEntry("Users", "tele_id", str(tele_id))
+		
+		if user_doc:
+			user_data = user_doc.to_dict()
+			
+			# Initialize availability_patterns if it doesn't exist
+			if "availability_patterns" not in user_data:
+				user_data["availability_patterns"] = {}
+				
+			# Initialize this event type if it doesn't exist
+			if event_type not in user_data["availability_patterns"]:
+				user_data["availability_patterns"][event_type] = {}
+				
+			# Save patterns by day of week
+			for new_day in new_hours_available:
+				day_date = datetime.strptime(new_day['date'], '%d/%m/%Y')
+				day_of_week = day_date.strftime('%A')  # Monday, Tuesday, etc.
+				
+				# Save time slot for this day of week
+				if day_of_week not in user_data["availability_patterns"][event_type]:
+					user_data["availability_patterns"][event_type][day_of_week] = []
+					
+				user_data["availability_patterns"][event_type][day_of_week].append(new_day['time'])
+				
+			# Update the user document
+			updateEntry(user_doc, "availability_patterns", user_data["availability_patterns"])
+			
+			bot.send_message(
+				message.chat.id, 
+				f"Your availability for {event_type} events has been saved to your profile and will be suggested for future events!"
+			)
+
+		# Update the event's availability
 		updateEntry(db_result, "hours_available", hours_already_available)
 
-	
+
 
 
 @bot.inline_handler(lambda query: len(query.query) > 0)
@@ -221,54 +269,73 @@ def handle_join_event(call):
 	if "Calculate" in str(call.data): 
 		event_id = str(call.data).split()[1]
 		
-
-		#get the longest contiguous series of numbers 
-		
-		best_date = {
-			'final_date': "",
-			'final_start_timing': "",
-			'final_end_timing': "",
-			'max_participants': 0
-		}
-
 		db_result = getEntry("Events", "event_id", event_id)
 		hours_available = db_result.to_dict()["hours_available"]
 		original_text = db_result.to_dict()["text"]
-
-
-		curr_hours_list = []
-		curr_user_list = []
-		for day in hours_available:
-			ic(day)
-			date = day['date']
+		
+		# Get sleep preferences for event members
+		event_sleep_prefs = getEventSleepPreferences(event_id)
+		
+		# Calculate average sleep hours if preferences exist
+		if event_sleep_prefs:
+			total_start = 0
+			total_end = 0
+			total_users = len(event_sleep_prefs)
 			
-			for hour, user_list in day.items():
-				if type(user_list) is list:
-					if user_list == curr_user_list and len(user_list) > 0:
-						print("scenario1")
-						curr_hours_list.append(hour)
-						best_date["final_end_timing"] = hour
-						best_date['max_participants'] += 1
-					elif len(user_list) > len(curr_user_list) and len(user_list) >= best_date['max_participants']:
-						print("----------------scenario2----------------")
-						curr_user_list = user_list
-						curr_hours_list = [hour]
-						
-						best_date['final_date'] = date
-						best_date['final_start_timing'] = hour
-
-					else:
-						print("----------------scenario3----------------")
-						curr_hours_list = []
-						curr_user_list = []
+			for user_id, prefs in event_sleep_prefs.items():
+				total_start += int(prefs["start"])
+				total_end += int(prefs["end"])
+			
+			avg_start = round(total_start / total_users)
+			avg_end = round(total_end / total_users)
+			
+			# Format to proper string format
+			avg_start_str = f"{avg_start:04d}"
+			avg_end_str = f"{avg_end:04d}"
+			
+			sleep_hours = {
+				"start": avg_start_str,
+				"end": avg_end_str
+			}
+			
+			# Use the new scheduling algorithm with sleep preferences
+			best_date = calculate_optimal_meeting_time(hours_available, sleep_hours)
+		else:
+			# Use default sleep hours if no preferences
+			best_date = calculate_optimal_meeting_time(hours_available)
+		
 		ic(best_date)
 		date_pattern = r'Best date:\s*\[\]'
 		timing_pattern = r'Best timing:\s*\[\]'
-		best_date['final_start_timing'] = "0630"
-		best_date['final_end_timing'] = "0730"
-		best_timing_str = best_date['final_start_timing'] + ' - ' + best_date['final_end_timing']
-		new_text = re.sub(date_pattern, f"Best date: {best_date['final_date'].date()}", original_text)
-		new_text = re.sub(timing_pattern, f"Best timing: [{best_timing_str}]", new_text)
+
+		# Format the date for display
+		if best_date['final_date'] is not None:
+			formatted_date = best_date['final_date'].date()
+			# Format the time in a readable format
+			start_time = best_date['final_start_timing']
+			end_time = best_date['final_end_timing']
+			
+			# Convert from HHMM to more readable format
+			start_formatted = f"{start_time[:2]}:{start_time[2:]}"
+			end_formatted = f"{end_time[:2]}:{end_time[2:]}"
+			
+			best_timing_str = f"{start_formatted} - {end_formatted}"
+			
+			# Format participants list
+			participants_str = ""
+			if best_date['participants']:
+				participants_str = ", ".join([f"@{bot.get_chat(int(p)).username}" for p in best_date['participants'] if bot.get_chat(int(p)).username])
+				
+			new_text = re.sub(date_pattern, f"Best date: {formatted_date}", original_text)
+			new_text = re.sub(timing_pattern, f"Best timing: [{best_timing_str}]", new_text)
+			
+			# Add participants info if available
+			if participants_str:
+				new_text += f"\n\nAvailable participants: {participants_str}"
+		else:
+			new_text = re.sub(date_pattern, "Best date: No suitable date found", original_text)
+			new_text = re.sub(timing_pattern, "Best timing: No suitable time found", new_text)
+			
 		updateEntry(db_result, "text", new_text)
 
 	else:
@@ -324,12 +391,29 @@ def ask_availability(tele_id, event_id):
 	start_date = db_result.to_dict()["start_date"]
 	end_date = db_result.to_dict()["end_date"]
 	event_name = db_result.to_dict()["event_name"]
+	event_type = db_result.to_dict().get("event_type", "general")  # Get event type
 
-	data = {"event_id": event_id,
-		 	"start" : start_date.strftime('%Y-%m-%d'),
-			"end" : end_date.strftime('%Y-%m-%d'),
-			"event_name": event_name
-		}
+	# Get user's saved availability pattern for this event type
+	user_doc = getEntry("Users", "tele_id", str(tele_id))
+	saved_pattern = None
+	
+	if user_doc and "availability_patterns" in user_doc.to_dict():
+		patterns = user_doc.to_dict()["availability_patterns"]
+		if event_type in patterns:
+			saved_pattern = patterns[event_type]
+			text = "Click the button below to set your availability! We've pre-filled it with your saved preferences for this type of event."
+
+	data = {
+		"event_id": event_id,
+		"start" : start_date.strftime('%Y-%m-%d'),
+		"end" : end_date.strftime('%Y-%m-%d'),
+		"event_name": event_name,
+		"event_type": event_type
+	}
+	
+	# Add saved pattern if available
+	if saved_pattern:
+		data["saved_pattern"] = json.dumps(saved_pattern)
 	
 
 	markup = types.ReplyKeyboardMarkup(row_width=1)
@@ -455,4 +539,109 @@ def cal(c):
 			#ic(start_date)
 			#ic(end_date)
 """
+
+# New command to set sleep preferences
+@bot.message_handler(commands=['sleep'])
+def sleep_command(message):
+	# This command only works in private chats
+	if message.chat.type != 'private':
+		bot.reply_to(message, "This command only works in private chat. Please message me directly.")
+		return
+		
+	markup = types.ForceReply(selective=False)
+	bot.send_message(
+		message.chat.id, 
+		"When do you usually go to sleep? Please enter in 24-hour format (e.g., 2300 for 11:00 PM):",
+		reply_markup=markup
+	)
+	bot.register_next_step_handler(message, process_sleep_start)
+
+def process_sleep_start(message):
+	try:
+		sleep_start = message.text.strip()
+		
+		# Validate format (HHMM)
+		if not (len(sleep_start) == 4 and sleep_start.isdigit()):
+			raise ValueError("Invalid format")
+			
+		hours = int(sleep_start[:2])
+		minutes = int(sleep_start[2:])
+		
+		if hours < 0 or hours > 23 or minutes < 0 or minutes > 59:
+			raise ValueError("Invalid time")
+			
+		# Store temporarily
+		user_id = message.from_user.id
+		db_result = getEntry("Users", "tele_id", str(user_id))
+		if not db_result:
+			setEntry("Users", {
+				"tele_id": str(user_id),
+				"tele_user": str(message.from_user.username),
+				"initialised": True,
+				"callout_cleared": True,
+				"temp_sleep_start": sleep_start
+			})
+		else:
+			updateEntry(db_result, "temp_sleep_start", sleep_start)
+			
+		# Ask for wake up time
+		markup = types.ForceReply(selective=False)
+		bot.send_message(
+			message.chat.id, 
+			"When do you usually wake up? Please enter in 24-hour format (e.g., 0700 for 7:00 AM):",
+			reply_markup=markup
+		)
+		bot.register_next_step_handler(message, process_sleep_end)
+		
+	except ValueError as e:
+		bot.send_message(
+			message.chat.id,
+			"Invalid time format. Please use HHMM format (e.g., 2300 for 11:00 PM). Try /sleep again."
+		)
+
+def process_sleep_end(message):
+	try:
+		sleep_end = message.text.strip()
+		
+		# Validate format (HHMM)
+		if not (len(sleep_end) == 4 and sleep_end.isdigit()):
+			raise ValueError("Invalid format")
+			
+		hours = int(sleep_end[:2])
+		minutes = int(sleep_end[2:])
+		
+		if hours < 0 or hours > 23 or minutes < 0 or minutes > 59:
+			raise ValueError("Invalid time")
+			
+		# Get the temp sleep start time
+		user_id = message.from_user.id
+		db_result = getEntry("Users", "tele_id", str(user_id))
+		
+		if not db_result or "temp_sleep_start" not in db_result.to_dict():
+			bot.send_message(
+				message.chat.id,
+				"Something went wrong. Please try /sleep again."
+			)
+			return
+			
+		sleep_start = db_result.to_dict()["temp_sleep_start"]
+		
+		# Save to database
+		setUserSleepPreferences(user_id, sleep_start, sleep_end)
+		
+		# Provide formatted times for confirmation
+		start_formatted = f"{sleep_start[:2]}:{sleep_start[2:]}"
+		end_formatted = f"{sleep_end[:2]}:{sleep_end[2:]}"
+		
+		bot.send_message(
+			message.chat.id,
+			f"Your sleep hours have been set: {start_formatted} to {end_formatted}.\n\n"
+			f"These will be used to improve scheduling for your events!"
+		)
+		
+	except ValueError as e:
+		bot.send_message(
+			message.chat.id,
+			"Invalid time format. Please use HHMM format (e.g., 0700 for 7:00 AM). Try /sleep again."
+		)
 

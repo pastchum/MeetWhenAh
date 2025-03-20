@@ -1,12 +1,23 @@
 'use client'
 import React, { useState } from 'react';
 import WeekCalendar from '../../components/dragselector/WeekCalendar';
-import { addDays } from 'date-fns';
+import { addDays, format, parse, startOfWeek } from 'date-fns';
+
+// Interface for aggregated time periods
+interface TimePeriod {
+  start: number; // minutes from midnight
+  end: number; // minutes from midnight
+}
 
 export default function DragSelectorPage() {
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [numDays, setNumDays] = useState<number>(7);
   const [selectionData, setSelectionData] = useState<Map<string, Set<number>>>(new Map());
+  
+  // Navigate to this week
+  const navigateToThisWeek = () => {
+    setStartDate(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  };
   
   // Handle previous/next week
   const navigatePreviousWeek = () => {
@@ -17,29 +28,83 @@ export default function DragSelectorPage() {
     setStartDate(prev => addDays(prev, numDays));
   };
   
-  // Format selection data for display/save
+  // Format minutes as HH:MM
+  const formatTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  };
+  
+  // Aggregate consecutive time slots into periods
+  const aggregateTimePeriods = (timeSet: Set<number>): TimePeriod[] => {
+    if (timeSet.size === 0) return [];
+    
+    // Convert set to sorted array
+    const times = Array.from(timeSet).sort((a, b) => a - b);
+    
+    const periods: TimePeriod[] = [];
+    let currentPeriod: TimePeriod = {
+      start: times[0],
+      end: times[0] + 30 // Each slot is 30 minutes
+    };
+    
+    // Group consecutive time slots
+    for (let i = 1; i < times.length; i++) {
+      const time = times[i];
+      // If this time slot continues the current period (30 min increments)
+      if (time === currentPeriod.end) {
+        currentPeriod.end = time + 30;
+      } else {
+        // Save current period and start a new one
+        periods.push({...currentPeriod});
+        currentPeriod = {
+          start: time,
+          end: time + 30
+        };
+      }
+    }
+    
+    // Add the last period
+    periods.push(currentPeriod);
+    
+    return periods;
+  };
+  
+  // Format selection data for display
   const formatSelectionSummary = () => {
-    const summary: string[] = [];
+    const days = Array.from(selectionData.keys()).sort();
     
-    selectionData.forEach((times, day) => {
-      const formattedTimes = Array.from(times)
-        .sort((a, b) => a - b)
-        .map(minutes => {
-          const hours = Math.floor(minutes / 60);
-          const mins = minutes % 60;
-          return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-        })
-        .join(', ');
-      
-      summary.push(`${day}: ${formattedTimes}`);
-    });
-    
-    return summary.join('\n');
+    return (
+      <div>
+        {days.map(day => {
+          const displayDate = format(parse(day, 'yyyy-MM-dd', new Date()), 'EEE, MMM d');
+          const periods = aggregateTimePeriods(selectionData.get(day) || new Set());
+          
+          return (
+            <div key={day} className="mb-2">
+              <div className="font-semibold">{displayDate}</div>
+              <ul className="ml-4">
+                {periods.map((period, idx) => (
+                  <li key={idx}>
+                    {formatTime(period.start)} - {formatTime(period.end)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
   
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Weekly Availability Selector</h1>
+      <div className="flex items-center mb-4">
+        <h1 className="text-2xl font-bold">Weekly Availability Selector</h1>
+        <span className="ml-4 text-sm px-3 py-1 bg-white rounded shadow-sm text-gray-600">
+          Click on a day header to select the entire day, or drag across time slots to select specific periods.
+        </span>
+      </div>
       
       <div className="mb-4 flex justify-between items-center">
         <button
@@ -47,6 +112,13 @@ export default function DragSelectorPage() {
           className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
         >
           Previous Week
+        </button>
+        
+        <button
+          onClick={navigateToThisWeek}
+          className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded"
+        >
+          This Week
         </button>
         
         <button
@@ -67,9 +139,16 @@ export default function DragSelectorPage() {
       
       <div className="mt-4">
         <h2 className="text-xl font-semibold mb-2">Selected Times</h2>
-        <pre className="bg-gray-100 p-4 rounded whitespace-pre-wrap">
-          {selectionData.size > 0 ? formatSelectionSummary() : 'No times selected.'}
-        </pre>
+        <div className="bg-gray-100 p-4 rounded text-gray-800 h-48 overflow-y-auto">
+          {selectionData.size > 0 ? (
+            formatSelectionSummary()
+          ) : (
+            <div className="text-gray-600 italic">
+              No times selected. Click on a day header to select the entire day, 
+              or drag across time slots to select specific periods.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
