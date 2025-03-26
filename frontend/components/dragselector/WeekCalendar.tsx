@@ -4,17 +4,21 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import DayHeader from './DayHeader';
 import TimeColumn from './TimeColumn';
 import TimeGrid from './TimeGrid';
-import { format, addDays, startOfWeek } from 'date-fns';
+import { format, addDays, startOfWeek, parse } from 'date-fns';
 
 interface WeekCalendarProps {
   startDate?: Date;
   numDays?: number;
+  username?: string;
+  eventId?: string;
   onSelectionChange?: (selectedSlots: Map<string, Set<number>>) => void;
 }
 
 const WeekCalendar: React.FC<WeekCalendarProps> = ({
   startDate = new Date(),
   numDays = 7,
+  username = '',
+  eventId = '',
   onSelectionChange
 }) => {
   // Selected slots: Map<dayKey, Set<timeInMinutes>>
@@ -27,6 +31,10 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   const [dragOperation, setDragOperation] = useState<'select' | 'deselect'>('select');
   const [lastSlot, setLastSlot] = useState<{day: string, time: number} | null>(null);
   
+  // Loading state
+  const [isLoading, setIsLoading] = useState(false);
+  const [syncedWithBackend, setSyncedWithBackend] = useState(false);
+  
   // Generate days array
   const weekStart = startOfWeek(startDate, { weekStartsOn: 1 }); // Week starts Monday
   const days = Array.from({ length: numDays }, (_, i) => addDays(weekStart, i));
@@ -36,6 +44,174 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   
   // Container ref for position calculations
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Throttle backend updates
+  const [pendingSync, setPendingSync] = useState(false);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Fetch user availability from backend
+  const fetchUserAvailability = useCallback(async () => {
+    if (!username || !eventId) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/availability/${encodeURIComponent(username)}/${encodeURIComponent(eventId)}`);
+      const data = await response.json();
+      
+      if (data.status === 'success' && Array.isArray(data.data)) {
+        // Convert backend data to our format
+        const newSelectedSlots = new Map<string, Set<number>>();
+        
+        data.data.forEach((slot: { date: string; time: string }) => {
+          const dayKey = slot.date;
+          const timeMinutes = parseInt(slot.time.slice(0, 2)) * 60 + parseInt(slot.time.slice(2));
+          
+          if (!newSelectedSlots.has(dayKey)) {
+            newSelectedSlots.set(dayKey, new Set<number>());
+          }
+          
+          newSelectedSlots.get(dayKey)?.add(timeMinutes);
+        });
+        
+        setSelectedSlots(newSelectedSlots);
+      }
+    } catch (error) {
+      console.error('Error fetching user availability:', error);
+    } finally {
+      setIsLoading(false);
+      setSyncedWithBackend(true);
+    }
+  }, [username, eventId]);
+  
+  // Sync to backend
+  const syncToBackend = useCallback(async () => {
+    if (!username || !eventId || !syncedWithBackend) return;
+    
+    try {
+      // Convert our data format to backend format
+      const availabilityData: { date: string; time: string }[] = [];
+      
+      selectedSlots.forEach((timeSet, dayKey) => {
+        timeSet.forEach(timeMinutes => {
+          const hours = Math.floor(timeMinutes / 60);
+          const minutes = timeMinutes % 60;
+          const timeString = `${hours.toString().padStart(2, '0')}${minutes.toString().padStart(2, '0')}`;
+          
+          availabilityData.push({
+            date: dayKey,
+            time: timeString
+          });
+        });
+      });
+      
+      // Send to backend
+      await fetch('/api/availability', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username,
+          event_id: eventId,
+          availability_data: availabilityData
+        })
+      });
+      
+      console.log('Availability synced with backend');
+    } catch (error) {
+      console.error('Error syncing to backend:', error);
+    } finally {
+      setPendingSync(false);
+    }
+  }, [username, eventId, selectedSlots, syncedWithBackend]);
+  
+  // Load initial data
+  useEffect(() => {
+    fetchUserAvailability();
+  }, [fetchUserAvailability]);
+  
+  // Throttled syncing to backend
+  useEffect(() => {
+    if (pendingSync && syncedWithBackend) {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+      
+      syncTimeoutRef.current = setTimeout(() => {
+        syncToBackend();
+      }, 2000); // Wait 2 seconds before syncing to reduce API calls
+    }
+    
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
+  }, [pendingSync, syncToBackend, syncedWithBackend]);
+  
+  // Load saved pattern or current availability if provided in URL query params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Check for saved pattern
+    const savedPattern = urlParams.get('saved_pattern');
+    if (savedPattern) {
+      try {
+        const patternData = JSON.parse(savedPattern);
+        
+        // Get current day of week
+        const newSelectedSlots = new Map<string, Set<number>>(selectedSlots);
+        
+        days.forEach(day => {
+          const dayOfWeek = format(day, 'EEEE'); // Monday, Tuesday, etc.
+          const dayKey = format(day, 'yyyy-MM-dd');
+          
+          if (patternData[dayOfWeek] && Array.isArray(patternData[dayOfWeek])) {
+            if (!newSelectedSlots.has(dayKey)) {
+              newSelectedSlots.set(dayKey, new Set<number>());
+            }
+            
+            patternData[dayOfWeek].forEach((timeString: string) => {
+              const hours = parseInt(timeString.slice(0, 2));
+              const minutes = parseInt(timeString.slice(2));
+              newSelectedSlots.get(dayKey)?.add(hours * 60 + minutes);
+            });
+          }
+        });
+        
+        setSelectedSlots(newSelectedSlots);
+      } catch (error) {
+        console.error('Error parsing saved pattern:', error);
+      }
+    }
+    
+    // Check for current availability
+    const currentAvailability = urlParams.get('current_availability');
+    if (currentAvailability) {
+      try {
+        const availabilityData = JSON.parse(currentAvailability);
+        
+        if (Array.isArray(availabilityData)) {
+          const newSelectedSlots = new Map<string, Set<number>>();
+          
+          availabilityData.forEach((slot: { date: string; time: string }) => {
+            const dayKey = slot.date;
+            const timeMinutes = parseInt(slot.time.slice(0, 2)) * 60 + parseInt(slot.time.slice(2));
+            
+            if (!newSelectedSlots.has(dayKey)) {
+              newSelectedSlots.set(dayKey, new Set<number>());
+            }
+            
+            newSelectedSlots.get(dayKey)?.add(timeMinutes);
+          });
+          
+          setSelectedSlots(newSelectedSlots);
+        }
+      } catch (error) {
+        console.error('Error parsing current availability:', error);
+      }
+    }
+  }, [days]);
   
   // Handle day header click - select whole day
   const handleSelectWholeDay = useCallback((date: Date) => {
@@ -59,6 +235,9 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       
       return newMap;
     });
+    
+    // Mark for syncing to backend
+    setPendingSync(true);
   }, [selectedSlots, timeSlots]);
   
   // Handle drag start
@@ -86,6 +265,9 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   const handleDragEnd = useCallback(() => {
     setIsDragging(false);
     setLastSlot(null);
+    
+    // Mark for syncing to backend
+    setPendingSync(true);
   }, []);
   
   // Update selection based on drag operation
@@ -154,6 +336,12 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       style={{ userSelect: 'none' }}
       ref={containerRef}
     >
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+      
       {/* Day headers row */}
       <div className="sticky top-0 z-10 flex bg-white">
         <div className="w-16 flex-shrink-0 border-r border-b border-gray-200" />

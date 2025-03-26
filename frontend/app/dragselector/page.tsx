@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import WeekCalendar from '../../components/dragselector/WeekCalendar';
 import { addDays, format, parse, startOfWeek } from 'date-fns';
 
@@ -13,6 +13,54 @@ export default function DragSelectorPage() {
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [numDays, setNumDays] = useState<number>(7);
   const [selectionData, setSelectionData] = useState<Map<string, Set<number>>>(new Map());
+  const [username, setUsername] = useState<string>('@kaungzinye'); // Default username
+  const [eventId, setEventId] = useState<string>('');
+  
+  // Parse URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Set event_id from URL parameters
+    const urlEventId = urlParams.get('event_id');
+    if (urlEventId) {
+      setEventId(urlEventId);
+    }
+    
+    // Try to get username from URL or use a default
+    const urlUsername = urlParams.get('username');
+    if (urlUsername) {
+      setUsername(urlUsername);
+    }
+    
+    // Parse start date if provided
+    const urlStart = urlParams.get('start');
+    if (urlStart) {
+      try {
+        const parsedDate = new Date(urlStart);
+        if (!isNaN(parsedDate.getTime())) {
+          setStartDate(parsedDate);
+        }
+      } catch (error) {
+        console.error('Error parsing start date:', error);
+      }
+    }
+    
+    // Parse end date to calculate number of days if provided
+    const urlEnd = urlParams.get('end');
+    if (urlStart && urlEnd) {
+      try {
+        const start = new Date(urlStart);
+        const end = new Date(urlEnd);
+        
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+          setNumDays(daysDiff);
+        }
+      } catch (error) {
+        console.error('Error calculating days difference:', error);
+      }
+    }
+  }, []);
   
   // Navigate to this week
   const navigateToThisWeek = () => {
@@ -106,6 +154,8 @@ export default function DragSelectorPage() {
         </span>
       </div>
       
+      {username && <div className="mb-2 text-sm text-gray-500">Setting availability for: {username}</div>}
+      
       <div className="mb-4 flex justify-between items-center">
         <button
           onClick={navigatePreviousWeek}
@@ -133,6 +183,8 @@ export default function DragSelectorPage() {
         <WeekCalendar
           startDate={startDate}
           numDays={numDays}
+          username={username}
+          eventId={eventId}
           onSelectionChange={setSelectionData}
         />
       </div>
