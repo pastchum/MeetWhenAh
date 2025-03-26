@@ -4,6 +4,7 @@ from ..services.user_service import getEntry
 from ..services.availability_service import getUserAvailability
 from ..services.scheduling_service import format_availability_summary
 from ..utils.web_app import create_web_app_url
+#from ..utils.native_interface import create_native_availability_selector, handle_native_availability_callback
 
 @bot.message_handler(commands=['myavailability'])
 def check_availability(message):
@@ -46,38 +47,40 @@ def update_availability(message):
     if message.chat.type != 'private':
         bot.reply_to(message, "This command only works in private chat. Please message me directly.")
         return
-        
-    # Get user's events
-    user_id = str(message.from_user.id)
-    events = get_user_events(user_id)
     
-    if not events:
-        bot.send_message(
-            message.chat.id,
-            "You are not a member of any events. Join an event first!"
-        )
-        return
-        
-    # Create inline keyboard with events
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    for event in events:
-        button = types.InlineKeyboardButton(
-            text=event['name'],
-            callback_data=f"event:{event['id']}"
-        )
-        markup.add(button)
-        
+    # Create web app URL for the drag selector
+    web_app_url = create_web_app_url(
+        path='/dragselector',
+        web_app_number=1  # 1 for update availability
+    )
+    
+    # Create inline keyboard with web app button
+    markup = types.InlineKeyboardMarkup()
+    webapp_button = types.InlineKeyboardButton(
+        text="Update Your Availability",
+        web_app=types.WebAppInfo(url=web_app_url)
+    )
+    markup.add(webapp_button)
+    
     bot.send_message(
         message.chat.id,
-        "Select an event to update your availability:",
+        "Click below to update your global availability schedule:",
         reply_markup=markup
     )
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith(('slot_', 'save_', 'cancel_', 'date_')))
+def handle_availability_callback(call):
+    """Handle callbacks from the native availability selector."""
+    handle_native_availability_callback(bot, call)
 
 def get_user_events(user_id):
     """Get all events that a user is a member of."""
     try:
         events = []
-        event_docs = bot.firestore_client.collection('Events').where('members', 'array_contains', user_id).stream()
+        from ..services.user_service import db
+        
+        # Query events where user is a member
+        event_docs = db.collection('Events').where('members', 'array_contains', str(user_id)).stream()
         
         for doc in event_docs:
             event_data = doc.to_dict()
@@ -93,16 +96,19 @@ def get_user_events(user_id):
 
 def ask_availability(chat_id, event_id):
     """Ask a user to update their availability for an event."""
-    web_app_url = create_web_app_url(event_id=event_id)
+    web_app_url = create_web_app_url(
+        path='/dragselector',
+        web_app_number=1  # 1 for update availability
+    )
     markup = types.InlineKeyboardMarkup()
     webapp_button = types.InlineKeyboardButton(
-        text="Update Availability",
+        text="Update Your Global Availability",
         web_app=types.WebAppInfo(url=web_app_url)
     )
     markup.add(webapp_button)
     
     bot.send_message(
         chat_id,
-        "Please update your availability for this event:",
+        "Click below to update your global availability schedule:",
         reply_markup=markup
     ) 
