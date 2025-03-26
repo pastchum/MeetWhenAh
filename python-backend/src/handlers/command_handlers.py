@@ -5,6 +5,7 @@ from ..services.user_service import setEntry, getEntry, updateEntry, updateUsern
 from ..services.availability_service import getUserAvailability, setUserSleepPreferences
 from ..utils.message_templates import WELCOME_MESSAGE, HELP_MESSAGE
 from ..utils.web_app import create_web_app_url
+from urllib.parse import urlencode
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -22,7 +23,12 @@ def send_welcome(message):
                 updateEntry(db_result, "initialised", True)
                 updateEntry(db_result, "callout_cleared", True)
 
-        web_app_url = create_web_app_url(web_app_number=0)
+        # Create web app URL for datepicker
+        web_app_url = create_web_app_url(
+            path='/datepicker',
+            web_app_number=0  # 0 for create event
+        )
+        
         markup = types.ReplyKeyboardMarkup(row_width=1)
         web_app_info = types.WebAppInfo(url=web_app_url)
         web_app_button = types.KeyboardButton(text="Create Event", web_app=web_app_info)

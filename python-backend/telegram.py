@@ -22,8 +22,21 @@ from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from utils.web_app import create_web_app_url
 
 from databases import *
-from scheduling import calculate_optimal_meeting_time  # Import the new scheduling module
-from native_interface import create_native_availability_selector, handle_native_availability_callback
+# from scheduling import calculate_optimal_meeting_time  # Import the new scheduling module
+# from native_interface import create_native_availability_selector, handle_native_availability_callback
+
+# Import the bot instance and configuration
+from src.config.config import bot, logger
+
+# Import all handlers
+from src.handlers.command_handlers import *
+from src.handlers.event_handlers import *
+from src.handlers.availability_handlers import *
+from src.handlers.inline_handlers import *
+
+# Import services
+from src.services.availability_service import getUserAvailability, updateUserAvailability
+from src.services.user_service import getEntry
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
@@ -32,8 +45,6 @@ TOKEN = os.getenv('TOKEN')
 #WEBHOOK_PORT = 443
 #WEBHOOK_URL_BASE = "https://%s:%s" % (WEBHOOK_HOST, WEBHOOK_PORT)
 WEBHOOK_URL_PATH = "/%s/" % (TOKEN)
-
-
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.DEBUG)
@@ -47,492 +58,73 @@ app.type = "00"
 def index():
 	return ''
 
-
-
-#"""######################################COMMANDS"""
-bot.set_my_commands(
-	commands=[
-		telebot.types.BotCommand("/start", "Starts the bot!"),
-		telebot.types.BotCommand("/help", "Help"),
-		telebot.types.BotCommand("/sleep", "Set your sleep hours"),
-		telebot.types.BotCommand("/myavailability", "Check your availability for an event"),
-		telebot.types.BotCommand("/updateavailability", "Update your availability for an event")
-	],
-	# scope=telebot.types.BotCommandScopeChat(12345678)  # use for personal command for users
-	# scope=telebot.types.BotCommandScopeAllPrivateChats()  # use for all private chats
-)
-
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-	reply_message = """<b>meet when ah? –</b> Say hello to efficient planning and wave goodbye to "so when r we meeting ah?". 
-This bot is for the trip that <b>will</b> make it out of the groupchat. 
-
-Click <b>Create Event</b> to get started <b>now</b>!
-
-Need help? Type /help for more info on commands!
-	""" # Create events in private messages using /event, and send your invites to the group!
-
-	if message.chat.type == 'private':
-		try:
-			ic(f"Processing start command for user {message.from_user.id}")
-			db_result = getEntry("Users", "tele_id", str(message.from_user.id))
-			if db_result == None:
-				ic("Creating new user entry")
-				setEntry("Users", {
-					"tele_id": str(message.from_user.id),
-					"tele_user": str(message.from_user.username),
-					"initialised": True,
-					"callout_cleared": True
-				})
-			else:
-				ic("Updating existing user")
-				if db_result.to_dict()["initialised"] == False:
-					updateEntry(db_result, "initialised", True)
-					updateEntry(db_result, "callout_cleared", True)
-				##if db_result.to_dict()["callout_cleared"] == True: #this is in case an initialised user tries to /start again
-                	##pass
-            #else:
-            #   updateEntry(db_result, "callout_cleared", False) 
-
-			markup = types.ReplyKeyboardMarkup(row_width=1)
-			webapp_url = "https://meet-when-ah.vercel.app/datepicker"
-			ic(f"Setting up web app with URL: {webapp_url}")
-			web_app_info = types.WebAppInfo(url=webapp_url)
-			web_app_button = types.KeyboardButton(text="Create Event", web_app=web_app_info)
-			markup.add(web_app_button)
-
-			bot.reply_to(message, reply_message, reply_markup=markup)
-			ic("Start command processed successfully")
-		except Exception as e:
-			ic(f"Error in start command: {type(e).__name__}: {str(e)}")
-			bot.reply_to(message, "Sorry, something went wrong. Please try again.")
+# Webhook endpoint
+@app.post(f'/{TOKEN}/')
+def process_webhook(update: dict):
+	"""Process webhook calls"""
+	if update:
+		update = telebot.types.Update.de_json(update)
+		bot.process_new_updates([update])
 	else:
-		bot.reply_to(message, reply_message)
-	  
+		return
 
+# FastAPI models for API endpoints
+class AvailabilityRequest(BaseModel):
+	username: str
+	event_id: str
+	availability_data: list = None
 
-@bot.message_handler(commands=['help'])
-def help(message):
-	reply_message = """New to <b>meet when ah?</b> <b>DM</b> me <b>/start</b> to create a new event!
-
-Available commands:
-- <b>/start</b> - Create a new event
-- <b>/sleep</b> - Set your sleep hours to improve scheduling
-- <b>/myavailability</b> - Check your availability for an event
-- <b>/updateavailability</b> - Update your availability for an existing event
-	
-	"""
-	bot.reply_to(message, reply_message)
-	
-@bot.message_handler(content_types=['web_app_data'])
-def handle_webapp(message):
-	try:
-		ic("Received web app data")
-		if not hasattr(message, 'web_app_data'):
-			ic("No web_app_data in message")
-			return
-			
-		ic(f"Raw web app data: {message.web_app_data.data}")
-		web_app_data = json.loads(message.web_app_data.data)
-		ic(f"Parsed web app data: {web_app_data}")
-		
-		web_app_number = web_app_data.get("web_app_number")
-		ic(f"Web app number: {web_app_number}")
-		
-		if web_app_number == 0:
-			ic("Processing event creation")
-			event_name = web_app_data["event_name"]
-			event_details = web_app_data["event_details"]
-			start_date = web_app_data["start"]
-			end_date = web_app_data["end"]
-			auto_join = web_app_data.get("auto_join", True)  # Default to True if not specified
-			
-			# Add optional event type field (if provided)
-			event_type = web_app_data.get("event_type", "general")
-
-			if start_date is None or end_date is None:
-				bot.send_message(message.chat.id, "Enter in valid date pls")
-				return
-			start_date = datetime.strptime(start_date, '%Y-%m-%d')
-			end_date = datetime.strptime(end_date, '%Y-%m-%d')
-
-			def daterange(start_date, end_date):
-				for n in range(int((end_date - start_date).days)):
-					yield start_date + timedelta(n)
-			hours_available = []
-
-			for single_date in daterange(start_date, end_date + timedelta(days=1)):
-				time_values = []
-				for hour in range(24):
-					for minute in range(0, 60, 30):
-						time_values.append(f"{hour:02}{minute:02}")
-
-				day = { str(time): [] for time in time_values }
-				day["date"] = single_date
-				hours_available.append(day)
-
-			text = f"""Date range: {start_date.strftime("%-d %b %Y")} - {end_date.strftime("%-d %b %Y")}
-
-Best date: []
-Best timing: []
-
-Join this event by clicking the join button below! 
-
-Joining:
----------------
-"""
-			data = {
-				"event_name": str(event_name),
-				"event_details": str(event_details),
-				"event_id": ''.join(random.choices(string.ascii_letters + string.digits, k=16)),
-				"members": [str(message.chat.id)] if auto_join else [],  # Add creator to members if auto_join is True
-				"creator": str(message.chat.id),
-				"start_date": start_date,
-				"end_date": end_date,
-				"hours_available": hours_available,
-				"event_type": event_type,
-				"text": text + (f"\n <b>{message.from_user.username}</b>" if auto_join else ""),  # Add creator to text if auto_join is True
-			}
-			
-			setEntry("Events", data)
-			
-			# If auto_join is True, ask for availability
-			if auto_join:
-				ask_availability(message.chat.id, data["event_id"])
-			
-			# Create share button
-			markup = types.InlineKeyboardMarkup()
-			share_button = types.InlineKeyboardButton(text="Share", switch_inline_query=data["event_name"] + ":" + data["event_id"])
-			markup.add(share_button)
-			bot.send_message(message.chat.id, text + (f"\n <b>{message.from_user.username}</b>" if auto_join else ""), reply_markup=markup, parse_mode='HTML')
-
-
-		elif web_app_number == 1:
-			tele_id = message.from_user.id
-			tele_username = message.from_user.username
-			new_hours_available = web_app_data["hours_available"]["dateTimes"] #data from web app. new.
-			event_id = web_app_data["event_id"]
-			
-			# Check if username changed
-			user_doc = getEntry("Users", "tele_id", str(tele_id))
-			if user_doc and user_doc.to_dict().get("tele_user") != tele_username:
-				# Update username
-				updateUsername(tele_id, tele_username)
-			
-			# Update availability for specific event
-			db_result = getEntry("Events", "event_id", str(event_id))
-			
-			if not db_result:
-				bot.send_message(message.chat.id, "Could not find this event. Please try again.")
-				return
-				
-			# Use the new function to update availability
-			updateUserAvailability(tele_username, event_id, new_hours_available)
-			
-			bot.send_message(
-				message.chat.id, 
-				f"Your availability has been saved for this event!"
-			)
-	except Exception as e:
-			ic(f"Error in handle_webapp: {e}")
-			bot.answer_inline_query(inline_query.id, [])
-
-
-
-
-@bot.inline_handler(lambda query: len(query.query) > 0)
-def query_text(inline_query):
-    try:
-        event_name = inline_query.query.split(":")[0]
-        event_id = inline_query.query.split(":")[1]
-        result = getEntry("Events", "event_id", event_id)
-        
-        if not result:
-            bot.answer_inline_query(inline_query.id, [])
-            return
-            
-        event_data = result.to_dict()
-        text = event_data["text"]
-        
-        # Create a more descriptive title
-        title = f"📅 {event_name}"
-        
-        # Create the inline result with HTML parse mode
-        r = types.InlineQueryResultArticle(
-            id='1',
-            title=title,
-            description="Click to join this event!",
-            input_message_content=types.InputTextMessageContent(
-                message_text=text,
-                parse_mode='HTML'
-            ),
-            reply_markup=types.InlineKeyboardMarkup().row(
-                types.InlineKeyboardButton('Join event', callback_data=f"Join_{event_id}"),
-                types.InlineKeyboardButton('Update Availability', callback_data=f"Update_{event_id}")
-            ).add(
-                types.InlineKeyboardButton('Calculate Best Timing', callback_data=f"Calculate_{event_id}")
-            )
-        )
-        bot.answer_inline_query(inline_query.id, [r], cache_time=1)
-    except Exception as e:
-        ic(f"Error in inline query: {e}")
-        bot.answer_inline_query(inline_query.id, [])
-
-@bot.callback_query_handler(func=lambda call: True)
-def handle_callback_query(call):
-	try:
-		if call.data.startswith("Join_"):
-			event_id = call.data.split("_")[1]
-			handle_join_event(call, event_id)
-		elif call.data.startswith("Update_"):
-			event_id = call.data.split("_")[1]
-			ask_availability(call.from_user.id, event_id)
-			bot.answer_callback_query(call.id, "Opening availability selector...")
-		elif call.data.startswith("Calculate_"):
-			event_id = call.data.split("_")[1]
-			handle_calculate(call, event_id)
-	except Exception as e:
-		ic(f"Error in callback query: {e}")
-		bot.answer_callback_query(call.id, "An error occurred. Please try again.")
-
-	def handle_join_event(call, event_id):
-		db_result = getEntry("Events", "event_id", event_id)
-		if not db_result:
-			bot.answer_callback_query(call.id, "Event not found!")
-			return
-			
-		event_data = db_result.to_dict()
-		members = event_data.get("members", [])
-		
-		if str(call.from_user.id) in members:
-			bot.answer_callback_query(call.id, "You've already joined this event!")
-			return
-		
-		# Check if user is initialized
-		db_result2 = getEntry("Users", "tele_id", str(call.from_user.id))
-		if not db_result2:
-			new_text = event_data["text"] + f"\n <b>@{call.from_user.username}, please do /start in a direct message with me at @meetwhenah_bot. Click the join button again when you are done!</b>"
-			updateEntry(db_result, "text", new_text)
-			setEntry("Users", {
-				"tele_id": str(call.from_user.id),
-				"tele_user": str(call.from_user.username),
-				"initialised": False,
-				"callout_cleared": False
-			})
-		else:
-			# Add user to members
-			members.append(str(call.from_user.id))
-			new_text = event_data["text"] + f"\n <b>{call.from_user.username}</b>"
-			updateEntry(db_result, "text", new_text)
-			updateEntry(db_result, "members", members)
-			ask_availability(call.from_user.id, event_id)
-			bot.answer_callback_query(call.id, "Welcome to the event! Setting up availability selector...")
-		
-		# Update the message with new text and buttons
-		bot.edit_message_text(
-			text=new_text,
-			inline_message_id=call.inline_message_id,
-			parse_mode='HTML',
-			reply_markup=types.InlineKeyboardMarkup().row(
-				types.InlineKeyboardButton('Join event', callback_data=f"Join_{event_id}"),
-				types.InlineKeyboardButton('Update Availability', callback_data=f"Update_{event_id}")
-			).add(
-				types.InlineKeyboardButton('Calculate Best Timing', callback_data=f"Calculate_{event_id}")
-			)
-		)
-
-	def handle_calculate(call, event_id):
-		db_result = getEntry("Events", "event_id", event_id)
-		if not db_result:
-			bot.answer_callback_query(call.id, "Event not found!")
-			return
-			
-		event_data = db_result.to_dict()
-		hours_available = event_data["hours_available"]
-		original_text = event_data["text"]
-		
-		# Get sleep preferences for event members
-		event_sleep_prefs = getEventSleepPreferences(event_id)
-		
-		# Calculate optimal meeting time
-		if event_sleep_prefs:
-			total_start = sum(int(prefs["start"]) for prefs in event_sleep_prefs.values())
-			total_end = sum(int(prefs["end"]) for prefs in event_sleep_prefs.values())
-			total_users = len(event_sleep_prefs)
-			
-			avg_start = round(total_start / total_users)
-			avg_end = round(total_end / total_users)
-			
-			sleep_hours = {
-				"start": f"{avg_start:04d}",
-				"end": f"{avg_end:04d}"
-			}
-			best_date = calculate_optimal_meeting_time(hours_available, sleep_hours)
-		else:
-			best_date = calculate_optimal_meeting_time(hours_available)
-		
-		# Update text with results
-		if best_date['final_date'] is not None:
-			formatted_date = best_date['final_date'].date()
-			start_time = f"{best_date['final_start_timing'][:2]}:{best_date['final_start_timing'][2:]}"
-			end_time = f"{best_date['final_end_timing'][:2]}:{best_date['final_end_timing'][2:]}"
-			best_timing_str = f"{start_time} - {end_time}"
-			
-			participants_str = ""
-			if best_date['participants']:
-				participants_str = ", ".join([f"@{bot.get_chat(int(p)).username}" for p in best_date['participants'] if bot.get_chat(int(p)).username])
-			
-			new_text = re.sub(r'Best date:\s*\[\]', f"Best date: {formatted_date}", original_text)
-			new_text = re.sub(r'Best timing:\s*\[\]', f"Best timing: [{best_timing_str}]", new_text)
-			
-			if participants_str:
-				new_text += f"\n\nAvailable participants: {participants_str}"
-		else:
-			new_text = re.sub(r'Best date:\s*\[\]', "Best date: No suitable date found", original_text)
-			new_text = re.sub(r'Best timing:\s*\[\]', "Best timing: No suitable time found", new_text)
-		
-		updateEntry(db_result, "text", new_text)
-		
-		# Update the message
-		bot.edit_message_text(
-			text=new_text,
-			inline_message_id=call.inline_message_id,
-			parse_mode='HTML',
-			reply_markup=types.InlineKeyboardMarkup().row(
-				types.InlineKeyboardButton('Join event', callback_data=f"Join_{event_id}"),
-				types.InlineKeyboardButton('Update Availability', callback_data=f"Update_{event_id}")
-			).add(
-				types.InlineKeyboardButton('Calculate Best Timing', callback_data=f"Calculate_{event_id}")
-			)
-		)
-
-	def ask_availability(tele_id, event_id):
-		ic("here")
-		db_result = getEntry("Events", "event_id", str(event_id))
-		if not db_result:
-			bot.send_message(tele_id, "Could not find this event. Please try again.")
-			return
-			
-		event_data = db_result.to_dict()
-		start_date = event_data["start_date"]
-		end_date = event_data["end_date"]
-		event_name = event_data["event_name"]
-		event_type = event_data.get("event_type", "general")
-
-		# Get user's saved availability pattern for this event type
-		user_doc = getEntry("Users", "tele_id", str(tele_id))
-		saved_pattern = None
-		
-		if user_doc and "availability_patterns" in user_doc.to_dict():
-			patterns = user_doc.to_dict()["availability_patterns"]
-			if event_type in patterns:
-				saved_pattern = patterns[event_type]
-				text = "We've pre-filled your availability with your saved preferences for this type of event."
-			else:
-				text = "Click the button below to set your availability!"
-		else:
-			text = "Click the button below to set your availability!"
-
-		# Create data for web app
-		data = {
-			"event_id": event_id,
-			"start": start_date.strftime('%Y-%m-%d'),
-			"end": end_date.strftime('%Y-%m-%d'),
-			"event_name": event_name,
-			"event_type": event_type
-		}
-		
-		# Add saved pattern if available
-		if saved_pattern:
-			data["saved_pattern"] = json.dumps(saved_pattern)
-		
-		# Create inline keyboard with both options
-		markup = types.InlineKeyboardMarkup(row_width=2)
-		
-		# Web app button
-		web_app_info = types.WebAppInfo(url=create_web_app_url("https://meet-when-ah.vercel.app/dragselector", data))
-		web_app_button = types.InlineKeyboardButton("Web Interface", web_app=web_app_info)
-		
-		# Native interface button
-		native_button = types.InlineKeyboardButton("Native Interface", callback_data=f"Native_{event_id}")
-		
-		markup.add(web_app_button, native_button)
-		
-		bot.send_message(tele_id, text, reply_markup=markup)
-
-	@bot.callback_query_handler(func=lambda call: call.data.startswith("Native_"))
-	def handle_native_interface(call):
-		event_id = call.data.split("_")[1]
-		db_result = getEntry("Events", "event_id", str(event_id))
-		
-		if not db_result:
-			bot.answer_callback_query(call.id, "Could not find this event!")
-			return
-			
-		event_data = db_result.to_dict()
-		
-		# Create native interface
-		text, markup = create_native_availability_selector(bot, call.message, event_id, event_data)
-		
-		# Edit the message to show the native interface
-		bot.edit_message_text(
-			text,
-			call.message.chat.id,
-			call.message.message_id,
-			reply_markup=markup
-		)
-		
-		# Answer the callback query
-		bot.answer_callback_query(call.id)
-
-	# Update the callback query handler to handle native interface callbacks
-	@bot.callback_query_handler(func=lambda call: call.data.startswith(("Slot_", "Save_", "Cancel_")))
-	def handle_native_callbacks(call):
-		handle_native_availability_callback(bot, call)
-
-	############################# WEBHOOK STUFF ###############################################
-	#bot.remove_webhook()
-	@app.post(f'/{TOKEN}/')
-	def process_webhook(update: dict):
-		"""
-		Process webhook calls
-		"""
-		if update:
-			update = telebot.types.Update.de_json(update)
-			bot.process_new_updates([update])
-		else:
-			return
-
-	#Set webhook
-	#bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
-	#				certificate=open(WEBHOOK_SSL_CERT, 'r'))
-
-	########################### LAMBDA STUFF #################################################
-	#bot.remove_webhook()
-	# time.sleep(0.1)
-
-	# webhook_info = bot.get_webhook_info()
-	# ic(webhook_info)
-	# if not webhook_info.url:
-	# 	bot.set_webhook(url=AWS_ENDPOINT)
-
-	# def lambda_handler(event, context):
-	# 	update = types.Update.de_json(json.loads(event['body']))
-	# 	bot.process_new_updates([update])
-	# 	return {
-	# 		'statusCode': 200,
-	# 		'body': json.dumps('Hello from Lambda!')
-	# 	}
-
-	# If the file is run directly, start polling
-	if __name__ == "__main__":
-		print("Starting Telegram bot polling...")
-		bot.polling(none_stop=True)
+# API endpoints
+@app.get('/api/availability/{username}/{event_id}')
+async def get_availability(username: str, event_id: str):
+	availability = getUserAvailability(username, event_id)
+	if availability:
+		return {"status": "success", "data": availability}
 	else:
-		# When imported as a module, don't start polling
-		# Remove this line
-		# bot.polling(none_stop=True)
-		pass
+		return {"status": "error", "message": "Could not retrieve availability"}
+
+@app.post('/api/availability')
+async def update_availability(request: AvailabilityRequest):
+	success = updateUserAvailability(
+		request.username,
+		request.event_id,
+		request.availability_data
+	)
+	
+	if success:
+		return {"status": "success", "message": "Availability updated successfully"}
+	else:
+		return {"status": "error", "message": "Failed to update availability"}
+
+@app.get('/api/event/{event_id}')
+async def get_event(event_id: str):
+	event_doc = getEntry("Events", "event_id", str(event_id))
+	
+	if not event_doc:
+		return {"status": "error", "message": "Event not found"}
+		
+	event_data = event_doc.to_dict()
+	
+	# Format dates for JSON serialization
+	if "start_date" in event_data:
+		event_data["start_date"] = event_data["start_date"].strftime("%Y-%m-%d")
+	if "end_date" in event_data:
+		event_data["end_date"] = event_data["end_date"].strftime("%Y-%m-%d")
+		
+	# Format hours_available dates
+	for day in event_data.get("hours_available", []):
+		if "date" in day and hasattr(day["date"], "strftime"):
+			day["date"] = day["date"].strftime("%Y-%m-%d")
+	
+	return {"status": "success", "data": event_data}
+
+# Start the bot if running directly
+if __name__ == "__main__":
+	logger.info("Starting Telegram bot polling...")
+	bot.polling(none_stop=True)
+else:
+	# When imported as a module, don't start polling
+	logger.info("Telegram bot loaded as module")
 
 	"""
 	@bot.message_handler(commands=['event'])
@@ -865,56 +457,4 @@ def handle_callback_query(call):
 			"Select an event to update your availability:",
 			reply_markup=markup
 		)
-
-	# Add FastAPI model for API requests
-	class AvailabilityRequest(BaseModel):
-		username: str
-		event_id: str
-		availability_data: list = None
-		
-	# API endpoint to get a user's availability
-	@app.get('/api/availability/{username}/{event_id}')
-	async def get_availability(username: str, event_id: str):
-		availability = getUserAvailability(username, event_id)
-		if availability:
-			return {"status": "success", "data": availability}
-		else:
-			return {"status": "error", "message": "Could not retrieve availability"}
-
-	# API endpoint to update a user's availability
-	@app.post('/api/availability')
-	async def update_availability(request: AvailabilityRequest):
-		success = updateUserAvailability(
-			request.username, 
-			request.event_id, 
-			request.availability_data
-		)
-		
-		if success:
-			return {"status": "success", "message": "Availability updated successfully"}
-		else:
-			return {"status": "error", "message": "Failed to update availability"}
-		
-	# API endpoint to get event details
-	@app.get('/api/event/{event_id}')
-	async def get_event(event_id: str):
-		event_doc = getEntry("Events", "event_id", str(event_id))
-		
-		if not event_doc:
-			return {"status": "error", "message": "Event not found"}
-			
-		event_data = event_doc.to_dict()
-		
-		# Format dates for JSON serialization
-		if "start_date" in event_data:
-			event_data["start_date"] = event_data["start_date"].strftime("%Y-%m-%d")
-		if "end_date" in event_data:
-			event_data["end_date"] = event_data["end_date"].strftime("%Y-%m-%d")
-			
-		# Format hours_available dates
-		for day in event_data.get("hours_available", []):
-			if "date" in day and hasattr(day["date"], "strftime"):
-				day["date"] = day["date"].strftime("%Y-%m-%d")
-		
-		return {"status": "success", "data": event_data}
 
