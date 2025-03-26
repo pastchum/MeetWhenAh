@@ -99,6 +99,212 @@ def getEventSleepPreferences(event_id):
     
     return sleep_preferences
 
+def getUserByUsername(username):
+    """
+    Get a user by their Telegram username
+    
+    Args:
+        username: The Telegram username (without the @ symbol)
+        
+    Returns:
+        The user document or None if not found
+    """
+    username = username.lstrip('@')  # Remove @ if it exists
+    
+    ref = db.collection("Users")
+    query_ref = ref.where(filter=FieldFilter("tele_user", "==", username))
+    
+    for doc in query_ref.stream():
+        return doc
+    
+    return None
+
+def updateUsername(user_id, new_username):
+    """
+    Update a user's Telegram username
+    
+    Args:
+        user_id: The telegram user ID
+        new_username: The new username
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    user_doc = getEntry("Users", "tele_id", str(user_id))
+    
+    if user_doc:
+        updateEntry(user_doc, "tele_user", new_username)
+        
+        # Also update any references in previous availability
+        # This ensures consistency when username changes
+        user_dict = user_doc.to_dict()
+        
+        if "previous_usernames" not in user_dict:
+            updateEntry(user_doc, "previous_usernames", [user_dict.get("tele_user", "")])
+            
+        return True
+    
+    return False
+
+def updateUserAvailability(username, event_id, availability_data):
+    """
+    Update a user's availability for an event
+    
+    Args:
+        username: The user's Telegram username
+        event_id: The event ID
+        availability_data: List of availability data objects with date and time info
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    user_doc = getUserByUsername(username)
+    
+    if not user_doc:
+        ic(f"User with username {username} not found")
+        return False
+    
+    user_id = user_doc.to_dict().get("tele_id")
+    
+    event_doc = getEntry("Events", "event_id", str(event_id))
+    
+    if not event_doc:
+        ic(f"Event with ID {event_id} not found")
+        return False
+    
+    # Get current availability data
+    hours_available = event_doc.to_dict().get("hours_available", [])
+    event_type = event_doc.to_dict().get("event_type", "general")
+    
+    # Remove this user's previous selections
+    for day in hours_available:
+        for time_slot, users in day.items():
+            if time_slot != "date" and isinstance(users, list):
+                if user_id in users:
+                    users.remove(user_id)
+    
+    # Add new selections
+    for day_data in availability_data:
+        date_str = day_data.get("date")
+        time_slot = day_data.get("time")
+        
+        # Find the right day in hours_available
+        for day in hours_available:
+            if hasattr(day["date"], "date"):
+                day_date = day["date"].date()
+            else:
+                day_date = day["date"]
+                
+            # Convert incoming date format (could be DD/MM/YYYY)
+            if "/" in date_str:
+                try:
+                    date_obj = datetime.strptime(date_str, "%d/%m/%Y").date()
+                except ValueError:
+                    try:
+                        date_obj = datetime.strptime(date_str, "%m/%d/%Y").date()
+                    except ValueError:
+                        ic(f"Could not parse date {date_str}")
+                        continue
+            else:
+                try:
+                    date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    ic(f"Could not parse date {date_str}")
+                    continue
+            
+            # Check if this is the right day
+            if day_date == date_obj:
+                if time_slot in day:
+                    # Add user to this time slot
+                    if user_id not in day[time_slot]:
+                        day[time_slot].append(user_id)
+                else:
+                    ic(f"Time slot {time_slot} not found in day {day_date}")
+                    
+    # Update the event
+    updateEntry(event_doc, "hours_available", hours_available)
+    
+    # Also save this availability pattern to user's profile for this event type
+    user_data = user_doc.to_dict()
+    
+    # Initialize availability_patterns if it doesn't exist
+    if "availability_patterns" not in user_data:
+        user_data["availability_patterns"] = {}
+    
+    # Initialize this event type if it doesn't exist
+    if event_type not in user_data["availability_patterns"]:
+        user_data["availability_patterns"][event_type] = {}
+    
+    # Save patterns by day of week
+    for day_data in availability_data:
+        try:
+            if "/" in day_data["date"]:
+                day_date = datetime.strptime(day_data["date"], "%d/%m/%Y")
+            else:
+                day_date = datetime.strptime(day_data["date"], "%Y-%m-%d")
+                
+            day_of_week = day_date.strftime("%A")  # Monday, Tuesday, etc.
+            
+            # Save time slot for this day of week
+            if day_of_week not in user_data["availability_patterns"][event_type]:
+                user_data["availability_patterns"][event_type][day_of_week] = []
+            
+            user_data["availability_patterns"][event_type][day_of_week].append(day_data["time"])
+        except Exception as e:
+            ic(f"Error processing day data: {e}")
+    
+    # Update user profile
+    updateEntry(user_doc, "availability_patterns", user_data["availability_patterns"])
+    
+    return True
+
+def getUserAvailability(username, event_id):
+    """
+    Get a user's availability for an event
+    
+    Args:
+        username: The user's Telegram username
+        event_id: The event ID
+        
+    Returns:
+        List of availability data or None if not found
+    """
+    user_doc = getUserByUsername(username)
+    
+    if not user_doc:
+        ic(f"User with username {username} not found")
+        return None
+    
+    user_id = user_doc.to_dict().get("tele_id")
+    
+    event_doc = getEntry("Events", "event_id", str(event_id))
+    
+    if not event_doc:
+        ic(f"Event with ID {event_id} not found")
+        return None
+    
+    # Get current availability data
+    hours_available = event_doc.to_dict().get("hours_available", [])
+    
+    # Extract this user's availability
+    user_availability = []
+    
+    for day in hours_available:
+        if hasattr(day["date"], "date"):
+            date_str = day["date"].date().strftime("%Y-%m-%d")
+        else:
+            date_str = day["date"].strftime("%Y-%m-%d")
+            
+        for time_slot, users in day.items():
+            if time_slot != "date" and isinstance(users, list):
+                if user_id in users:
+                    user_availability.append({
+                        "date": date_str,
+                        "time": time_slot
+                    })
+    
+    return user_availability
+
 """
 data = {
     "group_id" : "21039",
