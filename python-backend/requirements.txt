@@ -2,5 +2,8 @@ python-telegram-bot==20.7
 pyTelegramBotAPI==4.15.4
 google-cloud-firestore==2.14.0
 python-dotenv==1.0.1
-supabase
 uvicorn==0.22.0
+icecream
+supabase>=1.0.0
+gotrue>=2.0.0
+httpx>=0.24.0
