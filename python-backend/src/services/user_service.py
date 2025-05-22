@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # initialise supabase client
-url: str(os.getenv("SUPABASE_URL"))
-key: str(os.getenv("SUPABASE_KEY"))
+url = str(os.getenv("SUPABASE_URL"))
+key = str(os.getenv("SUPABASE_KEY"))
 options = ClientOptions(
     auto_refresh_token=True,
     persist_session=True,
@@ -25,7 +25,7 @@ def setEntry(table, data):
         table: The table name.
         data: The data to insert (as a dictionary).
     """
-    response = supabase.table(table).insert(data).execute()
+    response = supabase_client.from_(table).insert(data).execute()
     return response
 
 def getEntry(table, field, value, field2=None, value2=None): 
@@ -40,9 +40,9 @@ def getEntry(table, field, value, field2=None, value2=None):
         The first matching record in a dictionary or None if not found.
     """
     if field2 and value2:
-        response = supabase.table(table).select("*").eq(field, value).eq(field2, value2)
+        response = supabase_client.from_(table).select("*").eq(field, value).eq(field2, value2).execute()
     else:
-        response = supabase.table(table).select("*").eq(field, value)
+        response = supabase_client.from_(table).select("*").eq(field, value).execute()
 
     if response.status_code == 200:
         data = response.data
@@ -64,7 +64,7 @@ def updateEntry(table, id_field, id_value, field, value):
     Returns:
         The response from the Supabase API.
     """
-    response = supabase.table(table).update({field: value}).eq(id_field, id_value).execute()
+    response = supabase_client.from_(table).update({field: value}).eq(id_field, id_value).execute()
     return response
 
 def updateUsername(tele_id, new_username):

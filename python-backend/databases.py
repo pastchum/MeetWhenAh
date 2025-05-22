@@ -19,8 +19,8 @@ load_dotenv()
 #cred = credentials.Certificate("meetwhenbot-firebase-adminsdk-gi7ng-23bb4de9f9.json")
 #firebase_admin.initialize_app(cred)
 #db = firestore.client()
-url: str(os.getenv("SUPABASE_URL"))
-key: str(os.getenv("SUPABASE_KEY"))
+url = str(os.getenv("SUPABASE_URL"))
+key = str(os.getenv("SUPABASE_KEY"))
 options = ClientOptions(
     auto_refresh_token=True,
     persist_session=True,
@@ -37,7 +37,7 @@ def setEntry(table, data): #ref is a file path. data is python dict
         table: The table name.
         data: The data to insert (as a dictionary).
     """
-    response = supabase.table(table).insert(data).execute()
+    response = supabase_client.from_(table).insert(data).execute()
     if response.status_code == 201:
         ic(f"Data inserted successfully into {table}")
     else:
@@ -64,9 +64,9 @@ def getEntry(table, field, value, field2=None, value2=None): #col is the collect
         The first matching record in a dictionary or None if not found.
     """
     if field2 and value2:
-        response = supabase.table(table).select("*").eq(field, value).eq(field2, value2)
+        response = supabase_client.from_(table).select("*").eq(field, value).eq(field2, value2)
     else:
-        response = supabase.table(table).select("*").eq(field, value)
+        response = supabase_client.from_(table).select("*").eq(field, value)
 
     if response.status_code == 200:
         data = response.data
@@ -89,7 +89,7 @@ def updateEntry(table, id_field, id_value, field, value):
     Returns:
         The response from the Supabase API.
     """
-    response = supabase.table(table).update({field: value}).eq(id_field, id_value).execute()
+    response = supabase_client.from_(table).update({field: value}).eq(id_field, id_value).execute()
     if response.status_code == 200:
         ic(f"Field '{field}' updated successfully in {table} where {id_field} = {id_value}")
     else:
@@ -177,7 +177,7 @@ def getUserByUsername(username):
     """
     username = username.lstrip('@')  # Remove @ if it exists
     
-    response = supabase.table("Users").select("*").eq("tele_user", username).execute()
+    response = supabase_client.from_("Users").select("*").eq("tele_user", username).execute()
     if response.status_code == 200:
         data = response.data
         if data:

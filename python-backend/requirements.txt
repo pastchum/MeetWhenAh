@@ -6,4 +6,5 @@ uvicorn==0.22.0
 icecream
 supabase>=1.0.0
 gotrue>=2.0.0
-httpx>=0.24.0
+httpx>=0.26.0
+fastapi

@@ -77,13 +77,12 @@ def get_user_events(user_id):
     """Get all events that a user is a member of."""
     try:
         events = []
-        from ..services.user_service import db
+        from ..services.user_service import supabase_client
         
         # Query events where user is a member
-        event_docs = db.collection('Events').where('members', 'array_contains', str(user_id)).stream()
+        event_data = supabase_client.from_('Events').select('*').filter('members', 'cs', str(user_id)).execute()
         
-        for doc in event_docs:
-            event_data = doc.to_dict()
+        for event_data in event_data['data']:
             events.append({
                 'id': event_data.get('event_id'),
                 'name': event_data.get('event_name', 'Unnamed Event')
