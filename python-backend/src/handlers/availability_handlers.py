@@ -80,7 +80,7 @@ def get_user_events(user_id):
         from ..services.user_service import supabase_client
         
         # Query events where user is a member
-        event_data = supabase_client.from_('Events').select('*').filter('members', 'cs', str(user_id)).execute()
+        event_data = supabase_client.from_('events').select('*').filter('members', 'cs', str(user_id)).execute()
         
         for event_data in event_data['data']:
             events.append({

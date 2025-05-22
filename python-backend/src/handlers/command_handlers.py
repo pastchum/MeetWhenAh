@@ -10,18 +10,19 @@ from urllib.parse import urlencode
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     if message.chat.type == 'private':
-        db_result = getEntry("Users", "tele_id", str(message.from_user.id))
+        db_result = getEntry("users", "tele_user", str(message.from_user.username))
+        print("DB result:", db_result)
         if db_result is None:
-            setEntry("Users", {
-                "tele_id": str(message.from_user.id),
+            print("User not found in DB, creating new entry.", message.from_user.username)
+            setEntry("users", {
                 "tele_user": str(message.from_user.username),
                 "initialised": True,
                 "callout_cleared": True
             })
         else:
             if not db_result["initialised"]:
-                updateEntry("Users", "tele_user", db_result["tele_user"], "initialised", True)
-                updateEntry("Users", "tele_user", db_result["tele_user"], "callout_cleared", True)
+                updateEntry("users", "tele_user", db_result["tele_user"], "initialised", True)
+                updateEntry("users", "tele_user", db_result["tele_user"], "callout_cleared", True)
 
         # Create web app URL for datepicker
         web_app_url = create_web_app_url(
@@ -71,18 +72,18 @@ def process_sleep_start(message):
             raise ValueError("Invalid time")
             
         # Store temporarily
-        user_id = message.from_user.id
-        db_result = getEntry("Users", "tele_id", str(user_id))
+        user_id = message.from_user.username
+        db_result = getEntry("users", "tele_user", str(user_id))
         if not db_result:
-            setEntry("Users", {
-                "tele_id": str(user_id),
+            setEntry("users", {
+                "tele_user": str(user_id),
                 "tele_user": str(message.from_user.username),
                 "initialised": True,
                 "callout_cleared": True,
-                "temp_sleep_start": sleep_start
+                "sleep_start": sleep_start
             })
         else:
-            updateEntry("Users", "tele_user", db_result["tele_user"], "temp_sleep_start", sleep_start)
+            updateEntry("users", "tele_user", db_result["tele_user"], "sleep_start", sleep_start)
             
         # Ask for wake up time
         markup = types.ForceReply(selective=False)
@@ -114,17 +115,17 @@ def process_sleep_end(message):
             raise ValueError("Invalid time")
             
         # Get the temp sleep start time
-        user_id = message.from_user.id
-        db_result = getEntry("Users", "tele_id", str(user_id))
+        user_id = message.from_user.username
+        db_result = getEntry("users", "tele_user", str(user_id))
         
-        if not db_result or "temp_sleep_start" not in db_result:
+        if not db_result or "sleep_start" not in db_result:
             bot.send_message(
                 message.chat.id,
                 "Something went wrong. Please try /sleep again."
             )
             return
             
-        sleep_start = db_result["temp_sleep_start"]
+        sleep_start = db_result["sleep_start"]
         
         # Save to database
         setUserSleepPreferences(user_id, sleep_start, sleep_end)

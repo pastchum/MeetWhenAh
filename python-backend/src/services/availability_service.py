@@ -13,7 +13,7 @@ def getUserAvailability(username, event_id=None):
         dict: The user's availability data.
     """
     try:
-        user_data = getEntry("Users", "tele_user", username)
+        user_data = getEntry("users", "tele_user", username)
         if not user_data:
             return None
             
@@ -21,7 +21,7 @@ def getUserAvailability(username, event_id=None):
         
         # If event_id is provided, filter availability for event dates
         if event_id:
-            event_data = getEntry("Events", "event_id", event_id)
+            event_data = getEntry("events", "event_id", event_id)
             if event_data:
                 start_date = event_data['start_date']
                 end_date = event_data['end_date']
@@ -52,16 +52,16 @@ def updateUserAvailability(username, event_id=None, availability_data=None):
         bool: True if successful, False otherwise.
     """
     try:
-        user_data = getEntry("Users", "tele_user", username)
+        user_data = getEntry("users", "tele_user", username)
         if not user_data:
             return False
             
         # Update the user's global availability
-        updateEntry("Users", "tele_user", username, 'global_availability', availability_data)
+        updateEntry("users", "tele_user", username, 'global_availability', availability_data)
         
         # If event_id is provided, also update event's hours_available
         if event_id:
-            event_data = getEntry("Events", "event_id", event_id)
+            event_data = getEntry("events", "event_id", event_id)
             if event_data:
                 hours_available = event_data.get('hours_available', [])
                 
@@ -82,7 +82,7 @@ def updateUserAvailability(username, event_id=None, availability_data=None):
                                 day[time_key].append(username)
                 
                 # Update the event
-                updateEntry("Events", "id", event_data["id"], 'hours_available', hours_available)
+                updateEntry("events", "event_id", event_data["event_id"], 'hours_available', hours_available)
         
         return True
     except Exception as e:
@@ -100,7 +100,7 @@ def getAvailabilityForEvent(event_id):
         dict: A dictionary mapping dates to available users.
     """
     try:
-        event_data = getEntry("Events", "event_id", event_id)
+        event_data = getEntry("events", "event_id", event_id)
         if not event_data:
             return None
             
@@ -110,7 +110,7 @@ def getAvailabilityForEvent(event_id):
         
         availability = {}
         for member_id in members:
-            user_data = getEntry("Users", "tele_id", member_id)
+            user_data = getEntry("users", "tele_user", member_id)
             if user_data:
                 username = user_data.get('tele_user')
                 global_availability = user_data.get('global_availability', [])
@@ -134,12 +134,12 @@ def getAvailabilityForEvent(event_id):
         print(f"Error getting event availability: {e}")
         return None
 
-def setUserSleepPreferences(tele_id, sleep_start, sleep_end):
+def setUserSleepPreferences(tele_user, sleep_start, sleep_end):
     """
     Set a user's sleep preferences.
     
     Args:
-        tele_id (int): The user's Telegram ID.
+        tele_user (int): The user's Telegram ID.
         sleep_start (str): Sleep start time in HHMM format.
         sleep_end (str): Sleep end time in HHMM format.
         
@@ -147,17 +147,15 @@ def setUserSleepPreferences(tele_id, sleep_start, sleep_end):
         bool: True if successful, False otherwise.
     """
     try:
-        user_data = getEntry("Users", "tele_id", str(tele_id))
+        user_data = getEntry("users", "tele_user", str(tele_user))
         if user_data:
-            updateEntry("Users", "tele_user", tele_id, {
-                "sleep_start": sleep_start,
-                "sleep_end": sleep_end,
-                "temp_sleep_start": None  # Clear temporary storage
-            })
+            updateEntry("users", "tele_user", tele_user, "sleep_start", sleep_start)
+            updateEntry("users", "tele_user", tele_user, "sleep_end", sleep_end)
+            updateEntry("users", "tele_user", tele_user, "temp_sleep_start", None)  # Clear temporary storage
             return True
             
-        setEntry("Users", {
-            "tele_id": str(tele_id),
+        setEntry("users", {
+            "tele_user": str(tele_user),
             "sleep_start": sleep_start,
             "sleep_end": sleep_end
         })

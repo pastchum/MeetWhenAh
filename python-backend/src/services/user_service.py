@@ -39,17 +39,20 @@ def getEntry(table, field, value, field2=None, value2=None):
     Returns:
         The first matching record in a dictionary or None if not found.
     """
-    if field2 and value2:
-        response = supabase_client.from_(table).select("*").eq(field, value).eq(field2, value2).execute()
-    else:
-        response = supabase_client.from_(table).select("*").eq(field, value).execute()
+    try:
+        if field2 and value2:
+            response = supabase_client.from_(table).select("*").eq(field, value).eq(field2, value2).execute()
+        else:
+            response = supabase_client.from_(table).select("*").eq(field, value).execute()
 
-    if response.status_code == 200:
         data = response.data
         if data:
-            return data[0]
+            return data[0]  # Return the first matching record
         else:
             return None
+    except Exception as e:
+        print(f"Exception in getEntry: {e}")
+        return None
 
 def updateEntry(table, id_field, id_value, field, value):
     """
@@ -67,52 +70,52 @@ def updateEntry(table, id_field, id_value, field, value):
     response = supabase_client.from_(table).update({field: value}).eq(id_field, id_value).execute()
     return response
 
-def updateUsername(tele_id, new_username):
+def updateUsername(tele_user, new_username):
     """
     Update a user's username.
     
     Args:
-        tele_id (int): The user's Telegram ID.
+        tele_user (int): The user's Telegram ID.
         new_username (str): The new username.
         
     Returns:
         bool: True if successful, False otherwise.
     """
     try:
-        user_data = getEntry("Users", "tele_id", str(tele_id))
+        user_data = getEntry("users", "tele_user", str(tele_user))
         if user_data:
-            updateEntry("Users", "tele_id", user_data["tele_id"], "tele_user", new_username)
+            updateEntry("users", "tele_user", user_data["tele_user"], "tele_user", new_username)
             return True
         return False
     except Exception as e:
         print(f"Error updating username: {e}")
         return False
 
-def getUserSleepPreferences(tele_id):
+def getUserSleepPreferences(tele_user):
     """
     Get a user's sleep preferences.
     
     Args:
-        tele_id (int): The user's Telegram ID.
+        tele_user (int): The user's Telegram ID.
         
     Returns:
         tuple: A tuple of (sleep_start, sleep_end), or (None, None) if not found.
     """
     try:
-        user_data = getEntry("Users", "tele_id", str(tele_id))
-        if user_data and "sleep_preferences" in user_data:
-            return user_data["sleep_preferences"]
+        user_data = getEntry("users", "tele_user", str(tele_user))
+        if user_data and "sleep_start" and "sleep_end" in user_data:
+            return user_data["sleep_start"], user_data["sleep_end"]
         return None, None
     except Exception as e:
         print(f"Error getting sleep preferences: {e}")
         return None, None
 
-def setSleepPreferences(tele_id, sleep_start, sleep_end):
+def setSleepPreferences(tele_user, sleep_start, sleep_end):
     """
     Set a user's sleep preferences.
     
     Args:
-        tele_id (int): The user's Telegram ID.
+        tele_user (int): The user's Telegram ID.
         sleep_start (str): Sleep start time in HHMM format.
         sleep_end (str): Sleep end time in HHMM format.
         
@@ -120,22 +123,19 @@ def setSleepPreferences(tele_id, sleep_start, sleep_end):
         bool: True if successful, False otherwise.
     """
     try:
-        user_data = getEntry("Users", "tele_id", str(tele_id))
-        
-        sleep_prefs = {
-            "start": sleep_start,
-            "end": sleep_end
-        }
+        user_data = getEntry("users", "tele_user", str(tele_user))
         
         if user_data:
-            updateEntry("Users", "tele_id", user_data["tele_id"], "sleep_preferences", sleep_prefs)
+            updateEntry("users", "tele_user", user_data["tele_user"], "sleep_start", sleep_start)
+            updateEntry("users", "tele_user", user_data["tele_user"], "sleep_end", sleep_end)
         else:
             # Create new user record if it doesn't exist
-            setEntry("Users", {
-                "tele_id": str(tele_id),
+            setEntry("users", {
+                "tele_user": str(tele_user),
                 "initialised": True,
                 "callout_cleared": True,
-                "sleep_preferences": sleep_prefs
+                "sleep_start": sleep_start,
+                "sleep_end": sleep_end
             })
         return True
     except Exception as e:

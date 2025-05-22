@@ -4,8 +4,8 @@ import random
 import string
 from datetime import datetime, timedelta
 from ..config.config import bot
-from ..services.user_service import getEntry, setEntry, updateEntry
-from ..services.event_service import getEventSleepPreferences
+from ..services.user_service import getEntry, setEntry, updateEntry, updateUsername
+from ..services.event_service import getEventSleepPreferences, getUserAvailability, updateUserAvailability
 from ..services.scheduling_service import calculate_optimal_meeting_time
 from ..utils.web_app import create_web_app_url
 from ..utils.date_utils import daterange
@@ -104,14 +104,14 @@ def handle_event_creation(message, web_app_data):
             "event_id": event_id,
             "members": [str(message.from_user.id)] if auto_join else [],
             "creator": str(message.from_user.id),
-            "start_date": start_date,
-            "end_date": end_date,
+            "start_date": str(start_date),
+            "end_date": str(end_date),
             "hours_available": hours_available,
             "event_type": event_type,
             "text": text + (f"\n <b>{message.from_user.username}</b>" if auto_join else ""),
         }
         
-        setEntry("Events", data)
+        setEntry("events", data)
         
         if auto_join:
             ask_availability(message.chat.id, event_id)
@@ -142,24 +142,24 @@ def handle_availability_update(message, web_app_data):
             bot.send_message(message.chat.id, "Missing required availability data.")
             return
             
-        tele_id = message.from_user.id
-        tele_username = message.from_user.username
+        tele_user = message.from_user.id
+        new_tele_user = message.from_user.username
         new_hours_available = web_app_data["hours_available"]["dateTimes"]
         event_id = web_app_data["event_id"]
         
         # Check if username changed
-        user_doc = getEntry("Users", "tele_id", str(tele_id))
-        if user_doc and user_doc.to_dict().get("tele_user") != tele_username:
-            updateUsername(tele_id, tele_username)
+        user_data = getEntry("users", "tele_user", str(tele_user))
+        if user_data and user_data.get("tele_user") != new_tele_user:
+            updateUsername(tele_user, new_tele_user)
         
         # Update availability for specific event
-        db_result = getEntry("Events", "event_id", str(event_id))
+        db_result = getEntry("events", "event_id", str(event_id))
         
         if not db_result:
             bot.send_message(message.chat.id, "Could not find this event. Please try again.")
             return
         
-        updateUserAvailability(tele_username, event_id, new_hours_available)
+        updateUserAvailability(new_tele_user, event_id, new_hours_available)
         bot.send_message(message.chat.id, "Your availability has been saved for this event!")
         
     except Exception as e:

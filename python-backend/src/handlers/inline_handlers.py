@@ -9,7 +9,7 @@ def handle_inline_query(query):
     try:
         if ':' in query.query:
             event_name, event_id = query.query.split(':')
-            event_data = getEntry("Events", "event_id", event_id)
+            event_data = getEntry("events", "event_id", event_id)
             
             if not event_data:
                 return
@@ -48,7 +48,7 @@ def handle_callback_query(call):
         bot.answer_callback_query(call.id, "An error occurred. Please try again.")
 
 def handle_join_event(message, event_id, user):
-    event_data = getEntry("Events", "event_id", event_id)
+    event_data = getEntry("events", "event_id", event_id)
     
     if not event_data:
         bot.send_message(message.chat.id, "This event no longer exists.")
@@ -64,7 +64,7 @@ def handle_join_event(message, event_id, user):
     event_data['members'] = members
     event_data['text'] = event_data['text'] + f"\n <b>{user.username}</b>"
     
-    setEntry("Events", event_data)
+    setEntry("events", event_data)
     
     # Update the original message with new member list
     try:
@@ -89,7 +89,7 @@ def handle_join_event(message, event_id, user):
         print(f"Failed to send private message: {e}")
 
 def handle_event_selection(message, event_id):
-    event_data = getEntry("Events", "event_id", event_id)
+    event_data = getEntry("events", "event_id", event_id)
     
     if not event_data:
         bot.send_message(message.chat.id, "This event no longer exists.")
