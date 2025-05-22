@@ -1,36 +1,74 @@
-import firebase_admin
-from firebase_admin import firestore
-from firebase_admin import credentials
-from google.cloud.firestore_v1.base_query import FieldFilter
+#import firebase_admin
+#from firebase_admin import firestore
+#from firebase_admin import credentials
+#from google.cloud.firestore_v1.base_query import FieldFilter
+
+import os
+from supabase import create_client, Client
 
 import json
 from datetime import datetime
 from icecream import ic
 
 
-cred = credentials.Certificate("meetwhenbot-firebase-adminsdk-gi7ng-23bb4de9f9.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+#cred = credentials.Certificate("meetwhenbot-firebase-adminsdk-gi7ng-23bb4de9f9.json")
+#firebase_admin.initialize_app(cred)
+#db = firestore.client()
+url: str(os.getenv("SUPABASE_URL"))
+key: str(os.getenv("SUPABASE_KEY"))
+supabase: Client = create_client(url, key)
 
 
-def setEntry(col, data): #ref is a file path. data is python dict
+
+def setEntry(table, data): #ref is a file path. data is python dict
     #data = json.dumps(data, indent=2, sort_keys=True, default=str)
-    db.collection(col).add(data)
-
-def getEntry(col, field, value, field2=None, value2=None): #col is the collection, whereas field is the data field that fits
-    ref = db.collection(col)
-    if field2 == None or value2 == None or (field2 == None and value2 == None): #if there is only one set of values to query
-        query_ref = ref.where(filter=FieldFilter(field, "==", value))
+    #db.collection(col).add(data)
+    response = supabase.table(table).insert(data).execute()
+    if response.status_code == 201:
+        ic(f"Data inserted successfully into {table}")
     else:
-        query_ref = ref.where(filter=FieldFilter(field, "==", value)).where(filter=FieldFilter(field2, "==", value2))
- 
-    for doc in query_ref.stream():
-        return doc
+        ic(f"Error inserting data into {table}: {response.status_code} - {response.data}")
+    return response
 
-def updateEntry(doc, field, value):
-    doc.reference.update({
-        field: value
-    })
+def getEntry(table, field, value, field2=None, value2=None): #col is the collection, whereas field is the data field that fits
+    #ref = db.collection(col)
+    #if field2 == None or value2 == None or (field2 == None and value2 == None): #if there is only one set of values to query
+    #    query_ref = ref.where(filter=FieldFilter(field, "==", value))
+    #else:
+    #    query_ref = ref.where(filter=FieldFilter(field, "==", value)).where(filter=FieldFilter(field2, "==", value2))
+ 
+    #for doc in query_ref.stream():
+    #    return doc
+    if field2 and value2:
+        response = supabase.table(table).select("*").eq(field, value).eq(field2, value2)
+    else:
+        response = supabase.table(table).select("*").eq(field, value)
+
+    if response.status_code == 200:
+        data = response.data
+        if data:
+            return data[0]
+        else:
+            ic(f"No data found for {field} = {value} in {table}")
+            return None
+
+def updateEntry(table, id_field, id_value, field, value):
+    """
+    Update a specific field in a record in the Supabase table.
+
+    Args:
+        table: The table name.
+        id_field: The field used to identify the record (e.g., primary key).
+        id_value: The value of the identifier field.
+        field: The field to update.
+        value: The new value to set for the field.
+    """
+    response = supabase.table(table).update({field: value}).eq(id_field, id_value).execute()
+    if response.status_code == 200:
+        ic(f"Field '{field}' updated successfully in {table} where {id_field} = {id_value}")
+    else:
+        ic(f"Error updating field '{field}' in {table}: {response.status_code} - {response.data}")
+    return response
 
 def getUserSleepPreferences(user_id):
     """

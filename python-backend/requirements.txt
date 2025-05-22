@@ -2,4 +2,5 @@ python-telegram-bot==20.7
 pyTelegramBotAPI==4.15.4
 google-cloud-firestore==2.14.0
 python-dotenv==1.0.1
-firebase-admin==6.4.0
+supabase
+uvicorn==0.22.0
