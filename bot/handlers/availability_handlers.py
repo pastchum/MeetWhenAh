@@ -1,5 +1,6 @@
 from telebot import types
 import logging
+from ..services.scheduling_service import calculate_optimal_meeting_time
 
 logger = logging.getLogger(__name__)
 

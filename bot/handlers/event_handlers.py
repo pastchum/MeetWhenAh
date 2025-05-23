@@ -2,6 +2,7 @@ from telebot import types
 from telebot.util import quick_markup
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 import logging
+from ..services.scheduling_service import calculate_optimal_meeting_time
 
 logger = logging.getLogger(__name__)
 

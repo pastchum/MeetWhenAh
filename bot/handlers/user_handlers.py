@@ -1,5 +1,7 @@
 from telebot import types
 import logging
+from ..services.scheduling_service import DEFAULT_SLEEP_HOURS
+from ..services.user_service import setUserSleepPreferences
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +63,7 @@ def register_user_handlers(bot):
             return
 
         # Store sleep preferences
-        # This will be implemented in the next step
+        setUserSleepPreferences(message.from_user.id, start_time, end_time)
         bot.reply_to(
             message,
             f"Sleep preferences saved!\n"
