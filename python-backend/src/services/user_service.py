@@ -1,110 +1,121 @@
 import os
-from google.cloud import firestore
-import firebase_admin
-from firebase_admin import credentials
+import supabase
+from supabase import create_client, Client, ClientOptions
 from pathlib import Path
 
-# Get the path to the service account file
-service_account_path = Path(__file__).parent.parent.parent / 'meetwhenbot-firebase-adminsdk-gi7ng-23bb4de9f9.json'
+from datetime import datetime
+from dotenv import load_dotenv
 
-# Initialize Firebase Admin SDK if not already initialized
-if not firebase_admin._apps:
-    cred = credentials.Certificate(str(service_account_path))
-    firebase_admin.initialize_app(cred)
+# Load environment variables
+load_dotenv()
 
-# Initialize Firestore client
-db = firestore.Client.from_service_account_json(str(service_account_path))
+# initialise supabase client
+url = str(os.getenv("SUPABASE_URL"))
+key = str(os.getenv("SUPABASE_KEY"))
+options = ClientOptions(
+    auto_refresh_token=True,
+    persist_session=True,
+    schema="public",
+)
+supabase_client: Client = create_client(url, key, options=options)
 
-def getEntry(collection, field, value):
-    """
-    Get a document from a collection where field matches value.
-    
+def setEntry(table, data): 
+    """Insert a new record into the Supabase table.
     Args:
-        collection (str): The collection name.
-        field (str): The field to match.
-        value: The value to match.
-        
-    Returns:
-        DocumentSnapshot: The matching document, or None if not found.
+        table: The table name.
+        data: The data to insert (as a dictionary).
     """
-    docs = db.collection(collection).where(field, '==', value).limit(1).stream()
-    return next(docs, None)
+    response = supabase_client.from_(table).insert(data).execute()
+    return response
 
-def setEntry(collection, data):
-    """
-    Set a document in a collection.
-    
+def getEntry(table, field, value, field2=None, value2=None): 
+    """Get a record from the Supabase table based on a field and value.
     Args:
-        collection (str): The collection name.
-        data (dict): The document data.
-        
+        table: The table name.
+        field: The field to filter by.
+        value: The value to filter by.
+        field2: An optional second field to filter by.
+        value2: An optional second value to filter by.
     Returns:
-        DocumentReference: The reference to the created document.
+        The first matching record in a dictionary or None if not found.
     """
-    return db.collection(collection).document().set(data)
+    try:
+        if field2 and value2:
+            response = supabase_client.from_(table).select("*").eq(field, value).eq(field2, value2).execute()
+        else:
+            response = supabase_client.from_(table).select("*").eq(field, value).execute()
 
-def updateEntry(collection, doc_id, data):
+        data = response.data
+        if data:
+            return data[0]  # Return the first matching record
+        else:
+            return None
+    except Exception as e:
+        print(f"Exception in getEntry: {e}")
+        return None
+
+def updateEntry(table, id_field, id_value, field, value):
     """
-    Update a document in a collection.
-    
+    Update a specific field in a record in the Supabase table.
+
     Args:
-        collection (str): The collection name.
-        doc_id (str): The document ID.
-        data (dict): The update data.
-        
+        table: The table name.
+        id_field: The field used to identify the record (e.g., primary key).
+        id_value: The value of the identifier field.
+        field: The field to update.
+        value: The new value to set for the field.
     Returns:
-        DocumentReference: The reference to the updated document.
+        The response from the Supabase API.
     """
-    return db.collection(collection).document(doc_id).update(data)
+    response = supabase_client.from_(table).update({field: value}).eq(id_field, id_value).execute()
+    return response
 
-def updateUsername(tele_id, new_username):
+def updateUsername(tele_user, new_username):
     """
     Update a user's username.
     
     Args:
-        tele_id (int): The user's Telegram ID.
+        tele_user (int): The user's Telegram ID.
         new_username (str): The new username.
         
     Returns:
         bool: True if successful, False otherwise.
     """
     try:
-        user_doc = getEntry("Users", "tele_id", str(tele_id))
-        if user_doc:
-            doc_id = user_doc.id
-            updateEntry("Users", doc_id, {"tele_user": new_username})
+        user_data = getEntry("users", "tele_user", str(tele_user))
+        if user_data:
+            updateEntry("users", "tele_user", user_data["tele_user"], "tele_user", new_username)
             return True
         return False
     except Exception as e:
         print(f"Error updating username: {e}")
         return False
 
-def getUserSleepPreferences(tele_id):
+def getUserSleepPreferences(tele_user):
     """
     Get a user's sleep preferences.
     
     Args:
-        tele_id (int): The user's Telegram ID.
+        tele_user (int): The user's Telegram ID.
         
     Returns:
         tuple: A tuple of (sleep_start, sleep_end), or (None, None) if not found.
     """
     try:
-        user_doc = getEntry("Users", "tele_id", str(tele_id))
-        if user_doc:
-            user_data = user_doc.to_dict()
-            return user_data.get("sleep_start"), user_data.get("sleep_end")
+        user_data = getEntry("users", "tele_user", str(tele_user))
+        if user_data and "sleep_start" and "sleep_end" in user_data:
+            return user_data["sleep_start"], user_data["sleep_end"]
         return None, None
     except Exception as e:
         print(f"Error getting sleep preferences: {e}")
         return None, None
 
-def setSleepPreferences(tele_id, sleep_start, sleep_end):
+def setSleepPreferences(tele_user, sleep_start, sleep_end):
     """
     Set a user's sleep preferences.
     
     Args:
-        tele_id (int): The user's Telegram ID.
+        tele_user (int): The user's Telegram ID.
         sleep_start (str): Sleep start time in HHMM format.
         sleep_end (str): Sleep end time in HHMM format.
         
@@ -112,20 +123,20 @@ def setSleepPreferences(tele_id, sleep_start, sleep_end):
         bool: True if successful, False otherwise.
     """
     try:
-        user_doc = getEntry("Users", "tele_id", str(tele_id))
-        if user_doc:
-            doc_id = user_doc.id
-            updateEntry("Users", doc_id, {
+        user_data = getEntry("users", "tele_user", str(tele_user))
+        
+        if user_data:
+            updateEntry("users", "tele_user", user_data["tele_user"], "sleep_start", sleep_start)
+            updateEntry("users", "tele_user", user_data["tele_user"], "sleep_end", sleep_end)
+        else:
+            # Create new user record if it doesn't exist
+            setEntry("users", {
+                "tele_user": str(tele_user),
+                "initialised": True,
+                "callout_cleared": True,
                 "sleep_start": sleep_start,
                 "sleep_end": sleep_end
             })
-            return True
-            
-        setEntry("Users", {
-            "tele_id": str(tele_id),
-            "sleep_start": sleep_start,
-            "sleep_end": sleep_end
-        })
         return True
     except Exception as e:
         print(f"Error setting sleep preferences: {e}")

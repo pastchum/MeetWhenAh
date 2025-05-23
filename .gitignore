@@ -162,3 +162,5 @@ cython_debug/
 python-backend/*.json
 node_modules
 frontend/.babelrc
+
+*.DS_Store

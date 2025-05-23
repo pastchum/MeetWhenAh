@@ -9,13 +9,11 @@ def handle_inline_query(query):
     try:
         if ':' in query.query:
             event_name, event_id = query.query.split(':')
-            event = getEntry("Events", "event_id", event_id)
+            event_data = getEntry("events", "event_id", event_id)
             
-            if not event:
+            if not event_data:
                 return
-                
-            event_dict = event.to_dict()
-            text = event_dict.get('text', '')
+            text = event_data.get('text', '')
             
             r = types.InlineQueryResultArticle(
                 id='1',
@@ -50,31 +48,30 @@ def handle_callback_query(call):
         bot.answer_callback_query(call.id, "An error occurred. Please try again.")
 
 def handle_join_event(message, event_id, user):
-    event = getEntry("Events", "event_id", event_id)
+    event_data = getEntry("events", "event_id", event_id)
     
-    if not event:
+    if not event_data:
         bot.send_message(message.chat.id, "This event no longer exists.")
         return
         
-    event_dict = event.to_dict()
-    members = event_dict.get('members', [])
+    members = event_data.get('members', [])
     
     if str(user.id) in members:
         bot.send_message(message.chat.id, "You have already joined this event!")
         return
         
     members.append(str(user.id))
-    event_dict['members'] = members
-    event_dict['text'] = event_dict['text'] + f"\n <b>{user.username}</b>"
+    event_data['members'] = members
+    event_data['text'] = event_data['text'] + f"\n <b>{user.username}</b>"
     
-    setEntry("Events", event_dict)
+    setEntry("events", event_data)
     
     # Update the original message with new member list
     try:
         bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=message.message_id,
-            text=event_dict['text'],
+            text=event_data['text'],
             reply_markup=create_join_markup(event_id),
             parse_mode='HTML'
         )
@@ -92,9 +89,9 @@ def handle_join_event(message, event_id, user):
         print(f"Failed to send private message: {e}")
 
 def handle_event_selection(message, event_id):
-    event = getEntry("Events", "event_id", event_id)
+    event_data = getEntry("events", "event_id", event_id)
     
-    if not event:
+    if not event_data:
         bot.send_message(message.chat.id, "This event no longer exists.")
         return
         

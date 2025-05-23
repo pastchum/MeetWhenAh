@@ -13,18 +13,16 @@ def getEventSleepPreferences(event_id):
         list: A list of tuples (username, sleep_start, sleep_end).
     """
     try:
-        event = getEntry("Events", "event_id", event_id)
-        if not event:
+        event_data = getEntry("events", "event_id", event_id)
+        if not event_data:
             return []
             
-        event_dict = event.to_dict()
-        members = event_dict.get('members', [])
+        members = event_data.get('members', [])
         
         sleep_prefs = []
         for member_id in members:
-            user_doc = getEntry("Users", "tele_id", member_id)
-            if user_doc:
-                user_data = user_doc.to_dict()
+            user_data = getEntry("users", "tele_user", member_id)
+            if user_data:
                 sleep_prefs.append((
                     user_data.get('tele_user'),
                     user_data.get('sleep_start'),
@@ -48,12 +46,11 @@ def getUserAvailability(username, event_id):
         dict: The user's availability data.
     """
     try:
-        event = getEntry("Events", "event_id", event_id)
-        if not event:
+        event_data = getEntry("events", "event_id", event_id)
+        if not event_data:
             return None
             
-        event_dict = event.to_dict()
-        hours_available = event_dict.get('hours_available', [])
+        hours_available = event_data.get('hours_available', [])
         
         user_availability = []
         for day in hours_available:
@@ -84,12 +81,11 @@ def updateUserAvailability(username, event_id, new_availability):
         bool: True if successful, False otherwise.
     """
     try:
-        event = getEntry("Events", "event_id", event_id)
-        if not event:
+        event_data = getEntry("events", "event_id", event_id)
+        if not event_data:
             return False
             
-        event_dict = event.to_dict()
-        hours_available = event_dict.get('hours_available', [])
+        hours_available = event_data.get('hours_available', [])
         
         # Create a mapping of dates to times for quick lookup
         availability_map = {}
@@ -110,8 +106,7 @@ def updateUserAvailability(username, event_id, new_availability):
                             users.append(username)
                             
         # Update the event document
-        doc_id = event.id
-        updateEntry("Events", doc_id, {'hours_available': hours_available})
+        updateEntry("events", "event_id", event_data["event_id"], 'hours_available', hours_available)
         return True
     except Exception as e:
         print(f"Error updating user availability: {e}")
@@ -128,13 +123,12 @@ def calculateBestTimes(event_id):
         tuple: A tuple of (best_date, best_time).
     """
     try:
-        event = getEntry("Events", "event_id", event_id)
-        if not event:
+        event_data = getEntry("events", "event_id", event_id)
+        if not event_data:
             return None, None
             
-        event_dict = event.to_dict()
-        hours_available = event_dict.get('hours_available', [])
-        members = event_dict.get('members', [])
+        hours_available = event_data.get('hours_available', [])
+        members = event_data.get('members', [])
         
         if not members:
             return None, None
