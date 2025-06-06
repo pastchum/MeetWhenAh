@@ -1,210 +1,194 @@
-from telebot import types
+import os
 import json
-import random
-import string
 from datetime import datetime, timedelta
-
 import uuid
+import telebot
+from telebot import types
 
-from ..config.config import bot
-from ..services.database_service import getEntry, setEntry, updateEntry
-from ..services.user_service import updateUsername
-from ..services.event_service import getEventSleepPreferences, getUserAvailability, updateUserAvailability
-from ..services.scheduling_service import calculate_optimal_meeting_time
-from ..utils.web_app import create_web_app_url
-from ..utils.date_utils import daterange
-from ..handlers.availability_handlers import ask_availability
+# Import from config
+from config.config import bot
+from utils.web_app import create_web_app_url
+from services.scheduling_service import create_event, get_event_by_id, join_event
+from services.database_service import getEntry, setEntry, updateEntry
+from services.user_service import updateUsername
+from services.event_service import getEventSleepPreferences, getUserAvailability, updateUserAvailability
+from services.scheduling_service import calculate_optimal_meeting_time
+from utils.date_utils import daterange
+from handlers.availability_handlers import ask_availability
 
 # Keep track of processed message IDs to prevent duplicate processing
 processed_messages = set()
 
-@bot.message_handler(content_types=['web_app_data'])
-def handle_webapp(message):
-    """Handle web app data with proper error handling and state clearing."""
-    try:
-        # Check if we've already processed this message
-        if message.message_id in processed_messages:
-            return
-        processed_messages.add(message.message_id)
-        
-        # Keep set size manageable
-        if len(processed_messages) > 1000:
-            processed_messages.clear()
-        
-        # Clear any pending next step handlers
-        #bot.clear_step_handler_by_chat_id(message.chat.id)
-        
-        if not hasattr(message, 'web_app_data') or not message.web_app_data:
-            bot.send_message(message.chat.id, "Invalid web app data received.")
-            return
-            
-        try:
-            web_app_data = json.loads(message.web_app_data.data)
-            print(f"Received web app data: {web_app_data}")  # Debug log
-        except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")  # Debug log
-            bot.send_message(message.chat.id, "Invalid data format received.")
-            return
-            
-        if 'web_app_number' not in web_app_data:
-            print("Missing web_app_number in data")  # Debug log
-            bot.send_message(message.chat.id, "Missing required data.")
-            return
-            
-        web_app_number = web_app_data.get("web_app_number")
-        print(f"Processing web_app_number: {web_app_number}")  # Debug log
-        
-        if web_app_number == 0:
-            handle_event_creation(message, web_app_data)
-        elif web_app_number == 1:
-            handle_availability_update(message, web_app_data)
-        else:
-            print(f"Invalid web_app_number: {web_app_number}")  # Debug log
-            bot.send_message(message.chat.id, "Invalid web app type.")
-            
-    except Exception as e:
-        print(f"Error in web app handler: {e}")
-        bot.send_message(message.chat.id, "An error occurred. Please try again.")
-    finally:
-        try:
-            # Remove keyboard and send completion message
-            bot.send_message(
-                message.chat.id,
-                "Operation completed.",
-                reply_markup=types.ReplyKeyboardRemove()
+def register_event_handlers(bot):
+    """Register all event-related handlers"""
+    
+    @bot.message_handler(commands=['start'])
+    def start_command(message):
+        """Handle the /start command"""
+        welcome_text = (
+            "👋 Welcome to MeetWhenAh!\n\n"
+            "I can help you schedule meetings by:\n"
+            "1️⃣ Creating events\n"
+            "2️⃣ Managing your availability\n"
+            "3️⃣ Finding the best meeting time for everyone\n\n"
+        )
+
+        if message.chat.type == 'private':
+            # In private chat, show the web app button
+            welcome_text += "To get started, use the button below to create a new event!"
+            markup = types.InlineKeyboardMarkup()
+            create_event_button = types.InlineKeyboardButton(
+                text="Create Event",
+                web_app=types.WebAppInfo(url=create_web_app_url(
+                    path='/create-event',
+                    web_app_number=1
+                ))
             )
-        except Exception as e:
-            print(f"Error in cleanup: {e}")
+            markup.add(create_event_button)
+        else:
+            # In group chat, provide instructions to message the bot privately
+            welcome_text += "To create an event, please message me privately!"
+            markup = None
 
-def handle_event_creation(message, web_app_data):
-    """Handle event creation from web app data."""
-    try:
-        required_fields = ['event_name', 'event_details', 'start', 'end']
-        if not all(field in web_app_data for field in required_fields):
-            bot.send_message(message.chat.id, "Missing required event data.")
-            return
+        # Send welcome message with appropriate markup
+        bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
+
+    @bot.message_handler(content_types=['web_app_data'])
+    def handle_webapp_data(message):
+        """Handle data received from the web app"""
+        try:
+            # Check if we've already processed this message
+            if message.message_id in processed_messages:
+                return
+            processed_messages.add(message.message_id)
             
-        event_name = web_app_data["event_name"]
-        event_description = web_app_data["event_details"]
-        start_date = web_app_data["start"]
-        end_date = web_app_data["end"]
-        auto_join = web_app_data.get("auto_join", True)
-        event_type = web_app_data.get("event_type", "general")
+            # Keep set size manageable
+            if len(processed_messages) > 1000:
+                processed_messages.clear()
+            
+            # Parse the web app data
+            if not hasattr(message, 'web_app_data') or not message.web_app_data:
+                bot.send_message(message.chat.id, "Invalid web app data received.")
+                return
+                
+            try:
+                data = json.loads(message.web_app_data.data)
+                web_app_number = data.get('web_app_number')
+                
+                if web_app_number == 1:  # Event creation
+                    handle_event_creation(message, data)
+                elif web_app_number == 2:  # Availability update
+                    handle_availability_update(message, data)
+                else:
+                    bot.reply_to(message, "Invalid web app data received")
+            
+            except json.JSONDecodeError:
+                bot.reply_to(message, "Invalid data format received from web app")
+                
+        except Exception as e:
+            bot.reply_to(message, f"Error processing web app data: {str(e)}")
 
-        if start_date is None or end_date is None:
-            bot.send_message(message.chat.id, "Enter in valid date pls")
+    # Return the bot instance
+    return bot
+
+def handle_event_creation(message, data):
+    """Handle event creation from web app data"""
+    try:
+        # Extract event details
+        name = data.get('name')
+        details = data.get('details')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        # Validate required fields
+        if not all([name, details, start_date, end_date]):
+            bot.reply_to(message, "Missing required event details")
             return
         
-        # get user uuid
-        user_data = getEntry("users", "tele_id", str(message.from_user.id))
-        if not user_data:
-            bot.send_message(message.chat.id, "User not found in database.")
+        # Create the event
+        event_id = create_event(
+            name=name,
+            details=details,
+            start_date=start_date,
+            end_date=end_date,
+            creator_id=str(message.from_user.id),
+            auto_join=True
+        )
+        
+        if not event_id:
+            bot.reply_to(message, "Failed to create event")
             return
-        user_uuid = user_data.get("uuid")
-        print(f"User UUID: {user_uuid}")  # Debug log
-
-        start_date = datetime.strptime(start_date, '%Y-%m-%d')
-        end_date = datetime.strptime(end_date, '%Y-%m-%d')
-
-        text = create_event_text(start_date, end_date)
-        event_id = str(uuid.uuid4())
-
-        data = {
-            "event_name": str(event_name),
-            "event_description": str(event_description),
-            "event_id": event_id,
-            "creator": user_uuid,
-            "start_date": start_date.isoformat(),
-            "end_date": end_date.isoformat(),
-            "event_type": event_type,
-        }
-
-        print(f"Creating event with data: {data}")  # Debug log
         
-        setEntry("events", data)
-        
-        if auto_join:
-            ask_availability(message.chat.id, event_id)
-
-            # add membership of user to event
-            membership_data = {
-                "event_id": event_id,
-                "user_uuid": user_uuid,
-                "emoji_icon": "👤",
-            }
-
-            setEntry("membership", membership_data)
-        
+        # Create share button
         markup = types.InlineKeyboardMarkup()
         share_button = types.InlineKeyboardButton(
-            text="Share",
-            switch_inline_query=f"{event_name}:{event_id}"
+            text="Share Event",
+            switch_inline_query=event_id
         )
         markup.add(share_button)
         
-        bot.send_message(
-            message.chat.id,
-            text + (f"\n <b>{message.from_user.username}</b>" if auto_join else ""),
-            reply_markup=markup,
-            parse_mode='HTML'
+        # Send confirmation message
+        bot.reply_to(
+            message,
+            f"Event created successfully!\n\nName: {name}\nDetails: {details}\nDates: {start_date} to {end_date}\n\nShare this event with others:",
+            reply_markup=markup
         )
         
+        # Ask creator for availability
+        ask_availability(message.chat.id, event_id)
+        
     except Exception as e:
-        print(f"Error in event creation: {e}")
-        bot.send_message(message.chat.id, "Failed to create event. Please try again.")
+        bot.reply_to(message, f"Error creating event: {str(e)}")
 
-def handle_availability_update(message, web_app_data):
-    """Handle availability update from web app data."""
+def handle_availability_update(message, data):
+    """Handle availability update from web app data"""
     try:
-        required_fields = ['hours_available', 'event_id']
-        if not all(field in web_app_data for field in required_fields):
-            bot.send_message(message.chat.id, "Missing required availability data.")
-            return
+        # Extract availability details
+        event_id = data.get('event_id')
+        availability_data = data.get('availability')
+        username = message.from_user.username or str(message.from_user.id)
+        
+        # Update username in database
+        updateUsername(str(message.from_user.id), username)
+        
+        # Update availability
+        success = updateUserAvailability(username, event_id, availability_data)
+        
+        if success:
+            bot.reply_to(message, "Your availability has been updated successfully!")
             
-        tele_user = message.from_user.id
-        new_tele_user = message.from_user.username
-        new_hours_available = web_app_data["hours_available"]["dateTimes"]
-        event_id = web_app_data["event_id"]
-        
-        # Check if username changed
-        user_data = getEntry("users", "tele_user", str(tele_user))
-        if user_data and user_data.get("tele_user") != new_tele_user:
-            updateUsername(tele_user, new_tele_user)
-        
-        # Update availability for specific event
-        db_result = getEntry("events", "event_id", str(event_id))
-        
-        if not db_result:
-            bot.send_message(message.chat.id, "Could not find this event. Please try again.")
-            return
-        
-        updateUserAvailability(new_tele_user, event_id, new_hours_available)
-        bot.send_message(message.chat.id, "Your availability has been saved for this event!")
-        
+            # Get event details
+            event = get_event_by_id(event_id)
+            if event and len(event.get('participants', [])) > 1:
+                # Calculate optimal meeting time
+                hours_available = getUserAvailability(username, event_id)
+                sleep_prefs = getEventSleepPreferences(event_id)
+                optimal_time = calculate_optimal_meeting_time(hours_available, sleep_prefs)
+                
+                if optimal_time.get('max_participants', 0) > 0:
+                    bot.reply_to(
+                        message,
+                        f"Based on everyone's availability, the best meeting time would be:\n"
+                        f"Date: {optimal_time['final_date']}\n"
+                        f"Time: {optimal_time['final_start_timing']}-{optimal_time['final_end_timing']}\n"
+                        f"Participants available: {optimal_time['max_participants']}"
+                    )
+        else:
+            bot.reply_to(message, "Failed to update your availability")
+            
     except Exception as e:
-        print(f"Error in availability update: {e}")
-        bot.send_message(message.chat.id, "Failed to update availability. Please try again.")
+        bot.reply_to(message, f"Error updating availability: {str(e)}")
 
 def create_hours_available(start_date, end_date):
+    """Create hours available structure"""
     hours_available = []
-    for single_date in daterange(start_date, end_date + timedelta(days=1)):
-        time_values = []
-        for hour in range(24):
-            for minute in range(0, 60, 30):
-                time_values.append(f"{hour:02d}{minute:02d}")
-
-        day = {str(time): [] for time in time_values}
-        day["date"] = single_date.isoformat()
-        hours_available.append(day)
+    for date in daterange(start_date, end_date):
+        hours_available.append({
+            'date': date.strftime('%Y-%m-%d'),
+            'hours': []
+        })
     return hours_available
 
 def create_event_text(start_date, end_date):
-    return f"""Date range: {start_date.strftime("%-d %b %Y")} - {end_date.strftime("%-d %b %Y")}
-Best date: []
-Best timing: []
-
-Join this event by clicking the join button below! 
-
-Joining:
----------------
-""" 
+    """Create event text for sharing"""
+    return f"New event from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}" 

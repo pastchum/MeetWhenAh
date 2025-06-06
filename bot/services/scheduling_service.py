@@ -3,6 +3,9 @@ from typing import List, Dict, Set, Tuple, Any
 from collections import defaultdict
 import math
 import logging
+import uuid
+from .database_service import getEntry, setEntry, updateEntry
+from .event_service import getEvent
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -14,6 +17,40 @@ DEFAULT_SLEEP_HOURS = {
 }
 DEFAULT_MIN_BLOCK_SIZE = 60  # minutes
 TIME_SLOT_SIZE = 30  # minutes
+
+def create_event(name: str, details: str, start_date: str, end_date: str, creator_id: str, auto_join: bool = True) -> str:
+    """Create a new event and return its ID"""
+    event_id = str(uuid.uuid4())
+    event_data = {
+        "event_id": event_id,
+        "name": name,
+        "details": details,
+        "start_date": datetime.strptime(start_date, "%Y-%m-%d"),
+        "end_date": datetime.strptime(end_date, "%Y-%m-%d"),
+        "creator_id": creator_id,
+        "participants": [creator_id] if auto_join else [],
+        "created_at": datetime.now()
+    }
+    
+    success = setEntry("Events", event_id, event_data)
+    return event_id if success else None
+
+def get_event_by_id(event_id: str) -> Dict:
+    """Get event details by ID"""
+    event = getEntry("Events", "event_id", event_id)
+    return event.to_dict() if event else None
+
+def join_event(event_id: str, user_id: str) -> bool:
+    """Add a user to an event's participants"""
+    event = getEntry("Events", "event_id", event_id)
+    if not event:
+        return False
+        
+    event_data = event.to_dict()
+    if user_id not in event_data.get("participants", []):
+        event_data["participants"] = event_data.get("participants", []) + [user_id]
+        return updateEntry("Events", event_id, event_data)
+    return True
 
 class AvailabilityProcessor:
     """
@@ -285,4 +322,37 @@ def calculate_optimal_meeting_time(hours_available, user_sleep_hours=None, min_b
         Dict with optimal meeting information
     """
     processor = AvailabilityProcessor(sleep_hours=user_sleep_hours, min_block_size=min_block_size)
-    return processor.find_optimal_meeting_times(hours_available) 
+    return processor.find_optimal_meeting_times(hours_available)
+
+def format_availability_summary(event_id: str, username: str) -> str:
+    """Format a summary of a user's availability for an event"""
+    event = getEvent(event_id)
+    if not event:
+        return "Event not found"
+    
+    availability = getEntry("Availability", "event_id", event_id)
+    if not availability or username not in availability:
+        return "No availability data found"
+    
+    user_availability = availability[username]
+    if not user_availability:
+        return "No availability data found"
+    
+    # Format the summary
+    summary = f"Your availability for {event['name']}:\n\n"
+    
+    # Group availability by date
+    by_date = defaultdict(list)
+    for slot in user_availability:
+        date = slot['date']
+        time = f"{slot['start_time']}-{slot['end_time']}"
+        by_date[date].append(time)
+    
+    # Format each date's availability
+    for date in sorted(by_date.keys()):
+        summary += f"{date}:\n"
+        for time in sorted(by_date[date]):
+            summary += f"  {time}\n"
+        summary += "\n"
+    
+    return summary 

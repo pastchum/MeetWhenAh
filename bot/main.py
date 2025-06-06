@@ -10,8 +10,9 @@ from handlers.user_handlers import register_user_handlers
 from handlers.availability_handlers import register_availability_handlers
 from handlers.inline_handlers import register_inline_handlers
 
-# Import bot instance from config
+# Import bot instance and configs
 from config.config import bot, logger
+from config.webhook_config import setup_webhook, remove_webhook, get_webhook_info
 
 def signal_handler(signum, frame):
     """Handle shutdown signals gracefully."""
@@ -20,23 +21,39 @@ def signal_handler(signum, frame):
         # Clear any pending handlers
         bot.stop_polling()
         # Remove webhook if any
-        bot.remove_webhook()
+        remove_webhook()
     except Exception as e:
         print(f"Error during cleanup: {e}")
     sys.exit(0)
 
-def setup_bot():
+def setup_bot(use_webhook=False):
     """Setup the bot with proper configuration."""
     try:
         # Remove any existing webhook
-        bot.remove_webhook()
-        # Clear any pending updates
-        bot.get_updates(offset=-1)
-        # Clear any step handlers
-        bot._step_handlers = {}
-        print("Bot setup completed successfully.")
+        remove_webhook()
+        
+        if use_webhook:
+            # Setup webhook if URL is configured
+            webhook_url = os.getenv('WEBHOOK_URL')
+            if webhook_url:
+                success = setup_webhook(webhook_url)
+                if success:
+                    logger.info("Webhook setup completed successfully")
+                    return True
+                else:
+                    logger.warning("Webhook setup failed, falling back to polling")
+                    return False
+            else:
+                logger.warning("No webhook URL configured, falling back to polling")
+                return False
+        else:
+            # Clear any pending updates when using polling
+            bot.get_updates(offset=-1)
+            logger.info("Polling setup completed successfully")
+            return True
+            
     except Exception as e:
-        print(f"Error during bot setup: {e}")
+        logger.error(f"Error during bot setup: {e}")
         sys.exit(1)
 
 def register_handlers():
@@ -53,14 +70,25 @@ def main():
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
         
+        # Check if webhook is configured
+        use_webhook = bool(os.getenv('USE_WEBHOOK', 'false').lower() == 'true')
+        
         # Setup the bot
-        setup_bot()
+        setup_successful = setup_bot(use_webhook)
         
         # Register handlers
         register_handlers()
         
-        logger.info("Starting bot...")
-        bot.infinity_polling(timeout=60, long_polling_timeout=60)
+        if use_webhook and setup_successful:
+            logger.info("Starting bot with webhook...")
+            # Webhook setup successful, start Flask server or other web server here
+            # This part will be implemented in the next step
+            pass
+        else:
+            # Fall back to polling
+            logger.info("Starting bot with polling...")
+            bot.infinity_polling(timeout=60, long_polling_timeout=60)
+            
     except Exception as e:
         logger.error(f"Error starting bot: {e}")
         sys.exit(1)

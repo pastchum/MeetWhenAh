@@ -1,7 +1,9 @@
+import telebot
 from telebot import types
 import logging
-from ..services.scheduling_service import DEFAULT_SLEEP_HOURS
-from ..services.user_service import setUserSleepPreferences
+from services.scheduling_service import DEFAULT_SLEEP_HOURS
+from services.user_service import setUserSleepPreferences
+from config.config import bot
 
 logger = logging.getLogger(__name__)
 
