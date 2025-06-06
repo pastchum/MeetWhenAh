@@ -1,12 +1,10 @@
+import os
+import sys
+import signal
 from dotenv import load_dotenv
 import telebot
 from telebot import types
 import logging
-import os
-import fastapi
-from fastapi import Request
-from pydantic import BaseModel
-import uvicorn
 
 # Import handlers
 from handlers.event_handlers import register_event_handlers
@@ -14,14 +12,9 @@ from handlers.user_handlers import register_user_handlers
 from handlers.availability_handlers import register_availability_handlers
 from handlers.inline_handlers import register_inline_handlers
 
-# Import services
-from services.availability_service import getUserAvailability, updateUserAvailability
-from services.user_service import getEntry
-
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
-WEBHOOK_URL_PATH = "/%s/" % (TOKEN)
 
 # Setup logging
 logger = telebot.logger
@@ -30,73 +23,31 @@ telebot.logger.setLevel(logging.DEBUG)
 # Initialize bot
 bot = telebot.TeleBot(TOKEN, parse_mode='HTML', threaded=False)
 
-# Initialize FastAPI app
-app = fastapi.FastAPI(docs=None, redoc_url=None)
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    print("\nSignal received. Cleaning up...")
+    try:
+        # Clear any pending handlers
+        bot.stop_polling()
+        # Remove webhook if any
+        bot.remove_webhook()
+    except Exception as e:
+        print(f"Error during cleanup: {e}")
+    sys.exit(0)
 
-# FastAPI models for API endpoints
-class AvailabilityRequest(BaseModel):
-    username: str
-    event_id: str
-    availability_data: list = None
-
-# Empty webserver index
-@app.get('/')
-def index():
-    return ''
-
-# Webhook endpoint
-@app.post(f'/{TOKEN}/')
-def process_webhook(update: dict):
-    """Process webhook calls"""
-    if update:
-        update = telebot.types.Update.de_json(update)
-        bot.process_new_updates([update])
-    else:
-        return
-
-# API endpoints
-@app.get('/api/availability/{username}/{event_id}')
-async def get_availability(username: str, event_id: str):
-    availability = getUserAvailability(username, event_id)
-    if availability:
-        return {"status": "success", "data": availability}
-    else:
-        return {"status": "error", "message": "Could not retrieve availability"}
-
-@app.post('/api/availability')
-async def update_availability(request: AvailabilityRequest):
-    success = updateUserAvailability(
-        request.username,
-        request.event_id,
-        request.availability_data
-    )
-    
-    if success:
-        return {"status": "success", "message": "Availability updated successfully"}
-    else:
-        return {"status": "error", "message": "Failed to update availability"}
-
-@app.get('/api/event/{event_id}')
-async def get_event(event_id: str):
-    event_doc = getEntry("Events", "event_id", str(event_id))
-    
-    if not event_doc:
-        return {"status": "error", "message": "Event not found"}
-        
-    event_data = event_doc.to_dict()
-    
-    # Format dates for JSON serialization
-    if "start_date" in event_data:
-        event_data["start_date"] = event_data["start_date"].strftime("%Y-%m-%d")
-    if "end_date" in event_data:
-        event_data["end_date"] = event_data["end_date"].strftime("%Y-%m-%d")
-        
-    # Format hours_available dates
-    for day in event_data.get("hours_available", []):
-        if "date" in day and hasattr(day["date"], "strftime"):
-            day["date"] = day["date"].strftime("%Y-%m-%d")
-    
-    return {"status": "success", "data": event_data}
+def setup_bot():
+    """Setup the bot with proper configuration."""
+    try:
+        # Remove any existing webhook
+        bot.remove_webhook()
+        # Clear any pending updates
+        bot.get_updates(offset=-1)
+        # Clear any step handlers
+        bot._step_handlers = {}
+        print("Bot setup completed successfully.")
+    except Exception as e:
+        print(f"Error during bot setup: {e}")
+        sys.exit(1)
 
 def register_handlers():
     """Register all bot handlers"""
@@ -105,12 +56,24 @@ def register_handlers():
     register_availability_handlers(bot)
     register_inline_handlers(bot)
 
-# Start the bot if running directly
+def main():
+    """Main function to start the Telegram bot."""
+    try:
+        # Register signal handlers
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        # Setup the bot
+        setup_bot()
+        
+        # Register handlers
+        register_handlers()
+        
+        print("Starting bot...")
+        bot.infinity_polling(timeout=60, long_polling_timeout=60)
+    except Exception as e:
+        print(f"Error starting bot: {e}")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    logger.info("Starting Telegram bot polling...")
-    register_handlers()
-    bot.polling(none_stop=True)
-else:
-    # When imported as a module, don't start polling
-    logger.info("Telegram bot loaded as module")
-    register_handlers() 
+    main() 

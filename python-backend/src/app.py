@@ -1,60 +1,73 @@
-import os
-import sys
-import signal
+from fastapi import FastAPI, Request
+from pydantic import BaseModel
+import uvicorn
 from dotenv import load_dotenv
-from config.config import bot
-from handlers.command_handlers import *
-from handlers.event_handlers import *
-from handlers.availability_handlers import *
-from handlers.inline_handlers import *
+import os
 
-def signal_handler(signum, frame):
-    """Handle shutdown signals gracefully."""
-    print("\nSignal received. Cleaning up...")
-    try:
-        # Clear any pending handlers
-        bot.stop_polling()
-        # Remove webhook if any
-        bot.remove_webhook()
-    except Exception as e:
-        print(f"Error during cleanup: {e}")
-    sys.exit(0)
+# Import services
+from services.availability_service import getUserAvailability, updateUserAvailability
+from services.event_service import getEvent
+from services.user_service import getEntry
 
-def setup_bot():
-    """Setup the bot with proper configuration."""
-    try:
-        # Remove any existing webhook
-        bot.remove_webhook()
-        # Clear any pending updates
-        bot.get_updates(offset=-1)
-        # Clear any step handlers
-        bot._step_handlers = {}
-        print("Bot setup completed successfully.")
-    except Exception as e:
-        print(f"Error during bot setup: {e}")
-        sys.exit(1)
+# Initialize FastAPI app
+app = FastAPI(title="MeetWhenAh API")
 
-def main():
-    """
-    Main function to start the Telegram bot.
-    """
-    try:
-        # Register signal handlers
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
+# FastAPI models for API endpoints
+class AvailabilityRequest(BaseModel):
+    username: str
+    event_id: str
+    availability_data: list = None
+
+# API endpoints
+@app.get('/api/availability/{username}/{event_id}')
+async def get_availability(username: str, event_id: str):
+    availability = getUserAvailability(username, event_id)
+    if availability:
+        return {"status": "success", "data": availability}
+    else:
+        return {"status": "error", "message": "Could not retrieve availability"}
+
+@app.post('/api/availability')
+async def update_availability(request: AvailabilityRequest):
+    success = updateUserAvailability(
+        request.username,
+        request.event_id,
+        request.availability_data
+    )
+    
+    if success:
+        return {"status": "success", "message": "Availability updated successfully"}
+    else:
+        return {"status": "error", "message": "Failed to update availability"}
+
+@app.get('/api/event/{event_id}')
+async def get_event(event_id: str):
+    event_doc = getEntry("Events", "event_id", str(event_id))
+    
+    if not event_doc:
+        return {"status": "error", "message": "Event not found"}
         
-        # Setup the bot
-        setup_bot()
+    event_data = event_doc.to_dict()
+    
+    # Format dates for JSON serialization
+    if "start_date" in event_data:
+        event_data["start_date"] = event_data["start_date"].strftime("%Y-%m-%d")
+    if "end_date" in event_data:
+        event_data["end_date"] = event_data["end_date"].strftime("%Y-%m-%d")
         
-        print("Starting bot...")
-        bot.infinity_polling(timeout=60, long_polling_timeout=60)
-    except Exception as e:
-        print(f"Error starting bot: {e}")
-        sys.exit(1)
+    # Format hours_available dates
+    for day in event_data.get("hours_available", []):
+        if "date" in day and hasattr(day["date"], "strftime"):
+            day["date"] = day["date"].strftime("%Y-%m-%d")
+    
+    return {"status": "success", "data": event_data}
 
 if __name__ == "__main__":
     # Load environment variables
     load_dotenv()
     
-    # Start the bot
-    main() 
+    # Get port from environment or default to 8000
+    port = int(os.getenv("PORT", 8000))
+    
+    # Start the FastAPI server
+    uvicorn.run(app, host="0.0.0.0", port=port) 
