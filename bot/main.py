@@ -2,8 +2,6 @@ import os
 import sys
 import signal
 from dotenv import load_dotenv
-import telebot
-from telebot import types
 import logging
 
 # Import handlers
@@ -12,16 +10,8 @@ from handlers.user_handlers import register_user_handlers
 from handlers.availability_handlers import register_availability_handlers
 from handlers.inline_handlers import register_inline_handlers
 
-# Load environment variables
-load_dotenv()
-TOKEN = os.getenv('TOKEN')
-
-# Setup logging
-logger = telebot.logger
-telebot.logger.setLevel(logging.DEBUG)
-
-# Initialize bot
-bot = telebot.TeleBot(TOKEN, parse_mode='HTML', threaded=False)
+# Import bot instance from config
+from config.config import bot, logger
 
 def signal_handler(signum, frame):
     """Handle shutdown signals gracefully."""
@@ -69,10 +59,10 @@ def main():
         # Register handlers
         register_handlers()
         
-        print("Starting bot...")
+        logger.info("Starting bot...")
         bot.infinity_polling(timeout=60, long_polling_timeout=60)
     except Exception as e:
-        print(f"Error starting bot: {e}")
+        logger.error(f"Error starting bot: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

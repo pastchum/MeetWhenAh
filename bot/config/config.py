@@ -60,13 +60,4 @@ def test_command(message):
 class BotStates(StatesGroup):
     waiting_for_sleep_start = State()
     waiting_for_sleep_end = State()
-    waiting_for_event_id = State()
-
-# Error handler
-# @bot.middleware_handler(update_types=['message'])
-# def error_handler(bot_instance, message):
-#     try:
-#         raise ValueError("Force update")
-#     except Exception as e:
-#         logger.error(f"Error in middleware: {e}")
-#         return True  # Continue processing 
+    waiting_for_event_id = State() 
