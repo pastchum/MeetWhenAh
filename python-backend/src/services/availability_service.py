@@ -1,4 +1,4 @@
-from .user_service import getEntry, setEntry, updateEntry
+from .database_service import getEntry, setEntry, updateEntry
 from datetime import datetime, timedelta
 
 def getUserAvailability(username, event_id=None):
@@ -133,33 +133,3 @@ def getAvailabilityForEvent(event_id):
     except Exception as e:
         print(f"Error getting event availability: {e}")
         return None
-
-def setUserSleepPreferences(tele_user, sleep_start, sleep_end):
-    """
-    Set a user's sleep preferences.
-    
-    Args:
-        tele_user (int): The user's Telegram ID.
-        sleep_start (str): Sleep start time in HHMM format.
-        sleep_end (str): Sleep end time in HHMM format.
-        
-    Returns:
-        bool: True if successful, False otherwise.
-    """
-    try:
-        user_data = getEntry("users", "tele_user", str(tele_user))
-        if user_data:
-            updateEntry("users", "tele_user", tele_user, "sleep_start", sleep_start)
-            updateEntry("users", "tele_user", tele_user, "sleep_end", sleep_end)
-            updateEntry("users", "tele_user", tele_user, "temp_sleep_start", None)  # Clear temporary storage
-            return True
-            
-        setEntry("users", {
-            "tele_user": str(tele_user),
-            "sleep_start": sleep_start,
-            "sleep_end": sleep_end
-        })
-        return True
-    except Exception as e:
-        print(f"Error setting sleep preferences: {e}")
-        return False 

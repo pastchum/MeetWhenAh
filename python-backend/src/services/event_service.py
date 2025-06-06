@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from .user_service import getEntry, setEntry, updateEntry
+from .database_service import getEntry, setEntry, updateEntry
 from ..utils.date_utils import daterange
 
 def getEventSleepPreferences(event_id):

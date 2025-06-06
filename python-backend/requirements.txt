@@ -8,3 +8,4 @@ supabase>=1.0.0
 gotrue>=2.0.0
 httpx>=0.26.0
 fastapi
+tzlocal

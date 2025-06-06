@@ -1,6 +1,6 @@
 from telebot import types
 from ..config.config import bot
-from ..services.user_service import getEntry
+from ..services.database_service import getEntry
 from ..services.availability_service import getUserAvailability
 from ..services.scheduling_service import format_availability_summary
 from ..utils.web_app import create_web_app_url

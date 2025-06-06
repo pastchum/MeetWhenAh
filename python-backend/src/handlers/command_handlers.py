@@ -1,20 +1,25 @@
 from telebot import types
-from datetime import datetime
+from datetime import datetime, time, timezone
+from tzlocal import get_localzone
+
 from ..config.config import bot
-from ..services.user_service import setEntry, getEntry, updateEntry, updateUsername
-from ..services.availability_service import getUserAvailability, setUserSleepPreferences
+from ..services.database_service import getEntry, setEntry, updateEntry
+from ..services.user_service import updateUsername, setUserSleepPreferences
+from ..services.availability_service import getUserAvailability
 from ..utils.message_templates import WELCOME_MESSAGE, HELP_MESSAGE
 from ..utils.web_app import create_web_app_url
 from urllib.parse import urlencode
+import uuid
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     if message.chat.type == 'private':
-        db_result = getEntry("users", "tele_user", str(message.from_user.username))
-        print("DB result:", db_result)
+        db_result = getEntry("users", "tele_id", str(message.from_user.id))
         if db_result is None:
-            print("User not found in DB, creating new entry.", message.from_user.username)
+            print("User not found in DB, creating new entry.", message.from_user.id)
             setEntry("users", {
+                "uuid" : str(uuid.uuid4()),
+                "tele_id": str(message.from_user.id),
                 "tele_user": str(message.from_user.username),
                 "initialised": True,
                 "callout_cleared": True
@@ -23,6 +28,9 @@ def send_welcome(message):
             if not db_result["initialised"]:
                 updateEntry("users", "tele_user", db_result["tele_user"], "initialised", True)
                 updateEntry("users", "tele_user", db_result["tele_user"], "callout_cleared", True)
+            if db_result["tele_user"] != str(message.from_user.username):
+                print("Username changed, updating in DB.")
+                updateUsername(message.from_user.id, message.from_user.username)
 
         # Create web app URL for datepicker
         web_app_url = create_web_app_url(
@@ -59,31 +67,39 @@ def sleep_command(message):
 
 def process_sleep_start(message):
     try:
-        sleep_start = message.text.strip()
+        sleep_start_message = message.text.strip()
         
         # Validate format (HHMM)
-        if not (len(sleep_start) == 4 and sleep_start.isdigit()):
+        if not (len(sleep_start_message) == 4 and sleep_start_message.isdigit()):
             raise ValueError("Invalid format")
             
-        hours = int(sleep_start[:2])
-        minutes = int(sleep_start[2:])
+        hours = int(sleep_start_message[:2])
+        minutes = int(sleep_start_message[2:])
         
         if hours < 0 or hours > 23 or minutes < 0 or minutes > 59:
             raise ValueError("Invalid time")
-            
+        
+        # Get local timezone
+        system_timezone = get_localzone()
+
+        # Convert sleep_start into timetz format
+        #TODO: fix timezone issue where it is not set to local timezone
+        sleep_start_time = time(hour=hours, minute=minutes, tzinfo=system_timezone).isoformat()
+
         # Store temporarily
-        user_id = message.from_user.username
-        db_result = getEntry("users", "tele_user", str(user_id))
+        user_id = message.from_user.id
+        db_result = getEntry("users", "tele_id", str(user_id))
         if not db_result:
             setEntry("users", {
-                "tele_user": str(user_id),
+                "uuid" : str(uuid.uuid4()),
+                "tele_id": str(message.from_user.id),
                 "tele_user": str(message.from_user.username),
                 "initialised": True,
                 "callout_cleared": True,
-                "sleep_start": sleep_start
+                "sleep_start_time": sleep_start_time
             })
         else:
-            updateEntry("users", "tele_user", db_result["tele_user"], "sleep_start", sleep_start)
+            updateEntry("users", "tele_id", user_id, "sleep_start_time", sleep_start_time)
             
         # Ask for wake up time
         markup = types.ForceReply(selective=False)
@@ -115,24 +131,33 @@ def process_sleep_end(message):
             raise ValueError("Invalid time")
             
         # Get the temp sleep start time
-        user_id = message.from_user.username
-        db_result = getEntry("users", "tele_user", str(user_id))
+        user_id = message.from_user.id
+        db_result = getEntry("users", "tele_id", str(user_id))
         
-        if not db_result or "sleep_start" not in db_result:
+        if not db_result or "sleep_start_time" not in db_result:
             bot.send_message(
                 message.chat.id,
                 "Something went wrong. Please try /sleep again."
             )
             return
-            
-        sleep_start = db_result["sleep_start"]
+        
+
+                
+        # Get local timezone
+        system_timezone = get_localzone()
+
+        # Convert sleep_end into timetz format
+        #TODO: fix timezone issue where it is not set to local timezone
+        sleep_end_time = time(hour=hours, minute=minutes, tzinfo=system_timezone).isoformat()
+
+        sleep_start_time = db_result["sleep_start_time"]
         
         # Save to database
-        setUserSleepPreferences(user_id, sleep_start, sleep_end)
+        setUserSleepPreferences(user_id, sleep_start_time, sleep_end_time)
         
         # Provide formatted times for confirmation
-        start_formatted = f"{sleep_start[:2]}:{sleep_start[2:]}"
-        end_formatted = f"{sleep_end[:2]}:{sleep_end[2:]}"
+        start_formatted = f"{sleep_start_time[:5]}"
+        end_formatted = f"{sleep_end_time[:5]}"
         
         bot.send_message(
             message.chat.id,

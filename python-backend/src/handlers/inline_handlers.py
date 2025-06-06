@@ -1,6 +1,6 @@
 from telebot import types
 from ..config.config import bot
-from ..services.user_service import getEntry, setEntry, updateEntry
+from ..services.database_service import getEntry, setEntry, updateEntry
 from ..services.event_service import getEventSleepPreferences
 from ..utils.web_app import create_web_app_url
 

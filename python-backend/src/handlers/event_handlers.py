@@ -3,8 +3,12 @@ import json
 import random
 import string
 from datetime import datetime, timedelta
+
+import uuid
+
 from ..config.config import bot
-from ..services.user_service import getEntry, setEntry, updateEntry, updateUsername
+from ..services.database_service import getEntry, setEntry, updateEntry
+from ..services.user_service import updateUsername
 from ..services.event_service import getEventSleepPreferences, getUserAvailability, updateUserAvailability
 from ..services.scheduling_service import calculate_optimal_meeting_time
 from ..utils.web_app import create_web_app_url
@@ -81,7 +85,7 @@ def handle_event_creation(message, web_app_data):
             return
             
         event_name = web_app_data["event_name"]
-        event_details = web_app_data["event_details"]
+        event_description = web_app_data["event_details"]
         start_date = web_app_data["start"]
         end_date = web_app_data["end"]
         auto_join = web_app_data.get("auto_join", True)
@@ -90,31 +94,46 @@ def handle_event_creation(message, web_app_data):
         if start_date is None or end_date is None:
             bot.send_message(message.chat.id, "Enter in valid date pls")
             return
+        
+        # get user uuid
+        user_data = getEntry("users", "tele_id", str(message.from_user.id))
+        if not user_data:
+            bot.send_message(message.chat.id, "User not found in database.")
+            return
+        user_uuid = user_data.get("uuid")
+        print(f"User UUID: {user_uuid}")  # Debug log
 
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
         end_date = datetime.strptime(end_date, '%Y-%m-%d')
-        hours_available = create_hours_available(start_date, end_date)
 
         text = create_event_text(start_date, end_date)
-        event_id = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+        event_id = str(uuid.uuid4())
 
         data = {
             "event_name": str(event_name),
-            "event_details": str(event_details),
+            "event_description": str(event_description),
             "event_id": event_id,
-            "members": [str(message.from_user.id)] if auto_join else [],
-            "creator": str(message.from_user.id),
-            "start_date": str(start_date),
-            "end_date": str(end_date),
-            "hours_available": hours_available,
+            "creator": user_uuid,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
             "event_type": event_type,
-            "text": text + (f"\n <b>{message.from_user.username}</b>" if auto_join else ""),
         }
+
+        print(f"Creating event with data: {data}")  # Debug log
         
         setEntry("events", data)
         
         if auto_join:
             ask_availability(message.chat.id, event_id)
+
+            # add membership of user to event
+            membership_data = {
+                "event_id": event_id,
+                "user_uuid": user_uuid,
+                "emoji_icon": "👤",
+            }
+
+            setEntry("membership", membership_data)
         
         markup = types.InlineKeyboardMarkup()
         share_button = types.InlineKeyboardButton(
@@ -175,7 +194,7 @@ def create_hours_available(start_date, end_date):
                 time_values.append(f"{hour:02d}{minute:02d}")
 
         day = {str(time): [] for time in time_values}
-        day["date"] = single_date
+        day["date"] = single_date.isoformat()
         hours_available.append(day)
     return hours_available
 
