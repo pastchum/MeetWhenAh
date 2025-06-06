@@ -1,116 +1,58 @@
 from datetime import datetime, timedelta
-from .database_service import getEntry, setEntry, updateEntry
-from ..utils.date_utils import daterange
+from typing import Dict, List, Optional
+from utils.date_utils import daterange
+from services.database_service import getEntry, setEntry, updateEntry
 
-def getEventSleepPreferences(event_id):
-    """
-    Get sleep preferences for all members of an event.
-    
-    Args:
-        event_id (str): The event ID.
-        
-    Returns:
-        list: A list of tuples (username, sleep_start, sleep_end).
-    """
-    try:
-        event_data = getEntry("events", "event_id", event_id)
-        if not event_data:
-            return []
-            
-        members = event_data.get('members', [])
-        
-        sleep_prefs = []
-        for member_id in members:
-            user_data = getEntry("users", "tele_user", member_id)
-            if user_data:
-                sleep_prefs.append((
-                    user_data.get('tele_user'),
-                    user_data.get('sleep_start'),
-                    user_data.get('sleep_end')
-                ))
-                
-        return sleep_prefs
-    except Exception as e:
-        print(f"Error getting event sleep preferences: {e}")
-        return []
+def getEvent(event_id: str) -> Optional[Dict]:
+    """Get event details by ID"""
+    event = getEntry("Events", "event_id", event_id)
+    return event if event else None
 
-def getUserAvailability(username, event_id):
-    """
-    Get a user's availability for an event.
+def getEventSleepPreferences(event_id: str) -> Dict[str, Dict[str, int]]:
+    """Get sleep preferences for all participants in an event"""
+    event = getEntry("Events", "event_id", event_id)
+    if not event:
+        return {}
     
-    Args:
-        username (str): The username.
-        event_id (str): The event ID.
-        
-    Returns:
-        dict: The user's availability data.
-    """
-    try:
-        event_data = getEntry("events", "event_id", event_id)
-        if not event_data:
-            return None
-            
-        hours_available = event_data.get('hours_available', [])
-        
-        user_availability = []
-        for day in hours_available:
-            day_data = {
-                'date': day['date'],
-                'times': []
+    sleep_prefs = {}
+    for user_id in event.get("participants", []):
+        user = getEntry("Users", "user_id", user_id)
+        if user and "sleep_start" in user and "sleep_end" in user:
+            sleep_prefs[user_id] = {
+                "start": user["sleep_start"],
+                "end": user["sleep_end"]
             }
-            for time, users in day.items():
-                if time != 'date' and username in users:
-                    day_data['times'].append(time)
-            user_availability.append(day_data)
-            
-        return user_availability
-    except Exception as e:
-        print(f"Error getting user availability: {e}")
-        return None
-
-def updateUserAvailability(username, event_id, new_availability):
-    """
-    Update a user's availability for an event.
     
-    Args:
-        username (str): The username.
-        event_id (str): The event ID.
-        new_availability (list): List of dictionaries with date and times.
-        
-    Returns:
-        bool: True if successful, False otherwise.
-    """
-    try:
-        event_data = getEntry("events", "event_id", event_id)
-        if not event_data:
-            return False
-            
-        hours_available = event_data.get('hours_available', [])
-        
-        # Create a mapping of dates to times for quick lookup
-        availability_map = {}
-        for day in new_availability:
-            availability_map[day['date']] = set(day['times'])
-            
-        # Update the hours_available data
-        for day in hours_available:
-            date = day['date']
-            if date in availability_map:
-                new_times = availability_map[date]
-                # Remove user from times not in new_times
-                for time, users in day.items():
-                    if time != 'date':
-                        if time not in new_times and username in users:
-                            users.remove(username)
-                        elif time in new_times and username not in users:
-                            users.append(username)
-                            
-        # Update the event document
-        updateEntry("events", "event_id", event_data["event_id"], 'hours_available', hours_available)
-        return True
-    except Exception as e:
-        print(f"Error updating user availability: {e}")
-        return False
+    return sleep_prefs
+
+def getUserAvailability(username: str, event_id: str) -> List[Dict]:
+    """Get a user's availability for an event"""
+    availability = getEntry("Availability", "event_id", event_id)
+    if not availability:
+        return []
+    
+    user_availability = availability.get(username, [])
+    return user_availability
+
+def updateUserAvailability(username: str, event_id: str, availability_data: List[Dict]) -> bool:
+    """Update a user's availability for an event"""
+    availability = getEntry("Availability", "event_id", event_id)
+    
+    if availability:
+        # Update existing availability
+        availability_data = availability.copy()
+        availability_data[username] = availability_data
+        availability_data["updated_at"] = datetime.now()
+        return updateEntry("Availability", event_id, availability_data)
+    else:
+        # Create new availability
+        availability_data = {
+            "event_id": event_id,
+            username: availability_data,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+        return setEntry("Availability", event_id, availability_data)
 
 def calculateBestTimes(event_id):
     """
