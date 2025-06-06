@@ -1,0 +1,8 @@
+python-telegram-bot==20.7
+pyTelegramBotAPI==4.15.4
+python-dotenv==1.0.1
+uvicorn==0.22.0
+icecream
+gotrue>=2.0.0
+httpx>=0.26.0
+tzlocal
