@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def register_availability_handlers(bot):
     """Register all availability-related handlers"""
     
-    @bot.message_handler(commands=['myavailability'])
+    @bot.message_handler(commands=['/myavailability'])
     def my_availability(message):
         """Show user's availability for an event"""
         try:
@@ -36,7 +36,7 @@ def register_availability_handlers(bot):
             logger.error(f"Error in my_availability handler: {str(e)}")
             bot.reply_to(message, "Failed to get your availability. Please try again later.")
 
-    @bot.message_handler(commands=['updateavailability'])
+    @bot.message_handler(commands=['/updateavailability'])
     def update_availability(message):
         """Update user's availability for an event"""
         try:
