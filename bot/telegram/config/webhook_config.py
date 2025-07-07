@@ -20,8 +20,8 @@ def setup_webhook(url=None, certificate=None):
             return False
             
         # Validate URL format
-        if not webhook_url.startswith('https://') and not webhook_url.startswith('http://'):
-            logger.error("Webhook URL must start with https:// or http://")
+        if not webhook_url.startswith('https://'):
+            logger.error("Webhook URL must start with https://")
             return False
             
         # Remove existing webhook
