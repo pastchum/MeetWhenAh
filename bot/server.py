@@ -13,7 +13,7 @@ from telegram.services.event_service import getEvent
 # Import bot instance (we'll need to set up the import path correctly)
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from bot.telegram.config.config import bot
+from telegram.config.config import bot
 
 # Initialize FastAPI app
 app = FastAPI(title="MeetWhenAh API")
