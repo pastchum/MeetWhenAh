@@ -1,0 +1,10 @@
+python-telegram-bot
+pyTelegramBotAPI
+python-dotenv
+uvicorn
+icecream
+supabase
+gotrue
+httpx
+fastapi
+tzlocal

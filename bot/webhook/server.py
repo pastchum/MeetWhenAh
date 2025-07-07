@@ -6,9 +6,9 @@ import os
 import json
 
 # Import services
-from services.availability_service import getUserAvailability, updateUserAvailability
-from services.event_service import getEvent
-from services.user_service import getEntry
+from telegram.handlers.availability_handlers import getUserAvailability, updateUserAvailability
+from telegram.services.database_service import getEntry
+from telegram.services.event_service import getEvent
 
 # Import bot instance (we'll need to set up the import path correctly)
 import sys

@@ -1,4 +1,4 @@
-from telegram.bot import initialise_bot
+from telegram.telegram_bot import initialise_bot
 from webhook.server import app
 
 def main():

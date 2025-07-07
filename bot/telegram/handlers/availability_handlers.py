@@ -3,11 +3,12 @@ from telebot import types
 import logging
 
 # Import from config and services
-from config.config import bot
-from services.database_service import getEntry
-from services.scheduling_service import format_availability_summary
-from utils.web_app import create_web_app_url
-from services.event_service import getEvent, getUserAvailability, updateUserAvailability
+from ..config.config import bot
+from ..services.database_service import getEntry, setEntry, updateEntry
+from ..services.scheduling_service import format_availability_summary
+from ..utils.web_app import create_web_app_url
+from ..services.event_service import getEvent, getUserAvailability, updateUserAvailability
+from ..utils.message_templates import HELP_MESSAGE
 #from ..utils.native_interface import create_native_availability_selector, handle_native_availability_callback
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,6 @@
 import os
 import logging
-from config.config import bot, logger
+from ..config.config import bot, logger
 
 def setup_webhook(url=None, certificate=None):
     """
@@ -20,8 +20,8 @@ def setup_webhook(url=None, certificate=None):
             return False
             
         # Validate URL format
-        if not webhook_url.startswith('https://'):
-            logger.error("Webhook URL must start with https://")
+        if not webhook_url.startswith('https://') or not webhook_url.startswith('http://'):
+            logger.error("Webhook URL must start with https:// or http://")
             return False
             
         # Remove existing webhook

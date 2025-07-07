@@ -5,14 +5,14 @@ from dotenv import load_dotenv
 import logging
 
 # Import handlers
-from handlers.event_handlers import register_event_handlers
-from handlers.user_handlers import register_user_handlers
-from handlers.availability_handlers import register_availability_handlers
-from handlers.inline_handlers import register_inline_handlers
+from telegram.handlers.event_handlers import register_event_handlers
+from telegram.handlers.user_handlers import register_user_handlers
+from telegram.handlers.availability_handlers import register_availability_handlers
+from telegram.handlers.inline_handlers import register_inline_handlers
 
 # Import bot instance and configs
-from config.config import bot, logger
-from config.webhook_config import setup_webhook, remove_webhook, get_webhook_info
+from telegram.config.config import bot, logger
+from telegram.config.webhook_config import setup_webhook, remove_webhook, get_webhook_info
 
 def signal_handler(signum, frame):
     """Handle shutdown signals gracefully."""
