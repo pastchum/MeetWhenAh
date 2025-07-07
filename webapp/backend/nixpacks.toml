@@ -1,2 +1,2 @@
 [start]
-cmd = "python3 app/src/server.py"
+cmd = "python3 src/server.py"
