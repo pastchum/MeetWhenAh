@@ -81,9 +81,7 @@ def main():
         
         if use_webhook and setup_successful:
             logger.info("Starting bot with webhook...")
-            # Webhook setup successful, start Flask server or other web server here
-            # This part will be implemented in the next step
-            pass
+
         else:
             # Fall back to polling
             logger.info("Starting bot with polling...")
