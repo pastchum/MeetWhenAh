@@ -22,56 +22,6 @@ processed_messages = set()
 def register_event_handlers(bot):
     """Register all event-related handlers"""
     
-    @bot.message_handler(commands=['/start'])
-    def start_command(message):
-        """Handle the /start command"""
-        welcome_text = (
-            "👋 Welcome to MeetWhenAh!\n\n"
-            "I can help you schedule meetings by:\n"
-            "1️⃣ Creating events\n"
-            "2️⃣ Managing your availability\n"
-            "3️⃣ Finding the best meeting time for everyone\n\n"
-        )
-
-        if message.chat.type == 'private':
-
-            db_result = getEntry("users", "tele_id", str(message.from_user.id))
-            if db_result is None:
-                print("User not found in DB, creating new entry.", message.from_user.id)
-                setEntry("users", {
-                    "uuid" : str(uuid.uuid4()),
-                    "tele_id": str(message.from_user.id),
-                    "tele_user": str(message.from_user.username),
-                    "initialised": True,
-                    "callout_cleared": True
-                })
-            else:
-                if not db_result["initialised"]:
-                    updateEntry("users", "tele_user", db_result["tele_user"], "initialised", True)
-                    updateEntry("users", "tele_user", db_result["tele_user"], "callout_cleared", True)
-                if db_result["tele_user"] != str(message.from_user.username):
-                    print("Username changed, updating in DB.")
-                    updateUsername(message.from_user.id, message.from_user.username)
-
-            # In private chat, show the web app button
-            welcome_text += "To get started, use the button below to create a new event!"
-            markup = types.InlineKeyboardMarkup()
-            create_event_button = types.InlineKeyboardButton(
-                text="Create Event",
-                web_app=types.WebAppInfo(url=create_web_app_url(
-                    path='/create-event',
-                    web_app_number=1
-                ))
-            )
-            markup.add(create_event_button)
-        else:
-            # In group chat, provide instructions to message the bot privately
-            welcome_text += "To create an event, please message me privately!"
-            markup = None
-
-        # Send welcome message with appropriate markup
-        bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
-
     @bot.message_handler(content_types=['web_app_data'])
     def handle_webapp_data(message):
         """Handle data received from the web app"""
