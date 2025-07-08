@@ -7,13 +7,6 @@ from telegram_bot import initialise_bot
 from server import app
 
 def run_server():
-    uvicorn.run(app, host='0.0.0.0', port=8000)
-
-def main():
-    # Start the FastAPI server in a separate thread
-    # Load environment variables
-    load_dotenv()
-    
     # Get port from environment or default to 8000
     port = int(os.getenv("PORT", 8000))
     
@@ -31,7 +24,14 @@ def main():
             ssl_keyfile=ssl_keyfile
         )
     else:
-        uvicorn.run(app, host="0.0.0.0", port=port) 
+        uvicorn.run(app, host="0.0.0.0", port=port)
+
+def main():
+    # Start the FastAPI server in a separate thread
+    # Load environment variables
+    load_dotenv()
+    
+    run_server()
     # Start the Telegram bot in the main thread
     initialise_bot()
 

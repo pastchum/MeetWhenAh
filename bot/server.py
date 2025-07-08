@@ -10,6 +10,8 @@ from telegram.handlers.availability_handlers import getUserAvailability, updateU
 from telegram.services.database_service import getEntry
 from telegram.services.event_service import getEvent
 
+from telebot.types import Update
+
 # Import bot instance (we'll need to set up the import path correctly)
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -84,10 +86,10 @@ async def telegram_webhook(request: Request):
     """Handle Telegram webhook updates"""
     try:
         # Get the raw request body
-        body = await request.body()
+        update_dict = await request.json()
+        update = Update.de_json(update_dict)
         
-        # Parse the update
-        update = json.loads(body)
+        print("Update received: ", update)
         
         # Process the update
         bot.process_new_updates([update])
