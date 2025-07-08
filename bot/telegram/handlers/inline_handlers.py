@@ -16,7 +16,7 @@ from ..utils.message_templates import HELP_MESSAGE
 
 logger = logging.getLogger(__name__)
 
-def register_inline_handlers(bot):
+def register_inline_handlers():
     """Register all inline query handlers"""
     
     @bot.inline_handler(func=lambda query: True)

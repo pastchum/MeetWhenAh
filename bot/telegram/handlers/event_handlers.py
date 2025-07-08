@@ -19,9 +19,9 @@ from .availability_handlers import ask_availability
 # Keep track of processed message IDs to prevent duplicate processing
 processed_messages = set()
 
-def register_event_handlers(bot):
+def register_event_handlers():
     """Register all event-related handlers"""
-    
+
     @bot.message_handler(content_types=['web_app_data'])
     def handle_webapp_data(message):
         """Handle data received from the web app"""

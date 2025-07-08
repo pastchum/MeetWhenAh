@@ -8,7 +8,7 @@ from ..utils.message_templates import HELP_MESSAGE
 
 logger = logging.getLogger(__name__)
 
-def register_user_handlers(bot):
+def register_user_handlers():
     """Register all user-related handlers"""
     
     @bot.message_handler(commands=['sleep'])

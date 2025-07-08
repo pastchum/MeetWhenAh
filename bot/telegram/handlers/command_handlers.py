@@ -12,7 +12,7 @@ from ..utils.web_app import create_web_app_url
 from urllib.parse import urlencode
 import uuid
 
-def register_command_handlers(bot):
+def register_command_handlers():
     """Register all command-related handlers"""
 
     @bot.message_handler(commands=['start'])
