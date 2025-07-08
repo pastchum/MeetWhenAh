@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def register_user_handlers(bot):
     """Register all user-related handlers"""
     
-    @bot.message_handler(commands=['/sleep'])
+    @bot.message_handler(commands=['sleep'])
     def sleep_command(message):
         # This command only works in private chats
         if message.chat.type != 'private':

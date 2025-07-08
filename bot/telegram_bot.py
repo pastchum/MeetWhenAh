@@ -74,11 +74,11 @@ def initialise_bot():
         # Check if webhook is configured
         use_webhook = bool(os.getenv('USE_WEBHOOK', 'false').lower() == 'true')
         
-        # Setup the bot
-        setup_successful = setup_bot(use_webhook)
-        
         # Register handlers
         register_handlers()
+
+        # Setup the bot
+        setup_successful = setup_bot(use_webhook)
         
         if use_webhook and setup_successful:
             logger.info("Starting bot with webhook...")
