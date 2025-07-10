@@ -1,3 +1,5 @@
+#OUTDATED, DO NOT USE
+
 #!/bin/bash
 
 # Kill any existing Python processes
