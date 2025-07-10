@@ -9,8 +9,8 @@ export default function CustomDateRangePicker({
   nextComponent,
 }) {
   const [newData, setNewData] = useState({
-    start_date: today(getLocalTimeZone()),
-    end_date: today(getLocalTimeZone()),
+    start: today(getLocalTimeZone()),
+    end: today(getLocalTimeZone()),
   });
   console.log(newData);
   return (

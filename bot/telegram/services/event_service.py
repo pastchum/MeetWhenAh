@@ -7,6 +7,41 @@ def getEvent(event_id: str) -> Optional[Dict]:
     event = getEntry("Events", "event_id", event_id)
     return event if event else None
 
+
+def create_event(event_name: str, event_details: str, start_date: str, end_date: str, creator_id: str, auto_join: bool = True) -> str:
+    """Create a new event and return its ID"""
+    event_id = str(uuid.uuid4())
+    event_data = {
+        "event_id": event_id,
+        "event_name": event_name,
+        "event_details": event_details,
+        "start_date": datetime.strptime(start_date, "%Y-%m-%d"),
+        "end_date": datetime.strptime(end_date, "%Y-%m-%d"),
+        "creator": creator_id,
+        "participants": [creator_id] if auto_join else [],
+        "created_at": datetime.now()
+    }
+    
+    success = setEntry("Events", event_id, event_data)
+    return event_id if success else None
+
+def get_event_by_id(event_id: str) -> Dict:
+    """Get event details by ID"""
+    event = getEntry("Events", "event_id", event_id)
+    return event.to_dict() if event else None
+
+def join_event(event_id: str, user_id: str) -> bool:
+    """Add a user to an event's participants"""
+    event = getEntry("Events", "event_id", event_id)
+    if not event:
+        return False
+        
+    event_data = event.to_dict()
+    if user_id not in event_data.get("participants", []):
+        event_data["participants"] = event_data.get("participants", []) + [user_id]
+        return updateEntry("Events", event_id, event_data)
+    return True
+
 def getEventSleepPreferences(event_id: str) -> Dict[str, Dict[str, int]]:
     """Get sleep preferences for all participants in an event"""
     event = getEntry("Events", "event_id", event_id)

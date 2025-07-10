@@ -68,10 +68,10 @@ async def get_event(event_id: str):
     event_data = event_doc.to_dict()
     
     # Format dates for JSON serialization
-    if "start_date" in event_data:
-        event_data["start_date"] = event_data["start_date"].strftime("%Y-%m-%d")
-    if "end_date" in event_data:
-        event_data["end_date"] = event_data["end_date"].strftime("%Y-%m-%d")
+    if "start" in event_data:
+        event_data["start_date"] = event_data["start"].strftime("%Y-%m-%d")
+    if "end" in event_data:
+        event_data["end_date"] = event_data["end"].strftime("%Y-%m-%d")
         
     # Format hours_available dates
     for day in event_data.get("hours_available", []):
