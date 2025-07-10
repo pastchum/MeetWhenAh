@@ -10,8 +10,8 @@ export default function DatePicker() {
     web_app_number: 0,
     event_name: "",
     event_details: "",
-    start: "",
-    end: "",
+    start_date: "",
+    end_date: "",
   });
 
   const [currentComponent, setCurrentComponent] = useState(0);
