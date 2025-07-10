@@ -64,8 +64,8 @@ def handle_event_creation(message, data):
         # Extract event details
         event_name = data.get('event_name')
         event_details = data.get('event_details')
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
+        start_date = data.get('start')
+        end_date = data.get('end')
         
         print("Event details:", event_name, event_details, start_date, end_date)
         
