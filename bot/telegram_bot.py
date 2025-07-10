@@ -73,9 +73,6 @@ def initialise_bot():
         
         # Check if webhook is configured
         use_webhook = bool(os.getenv('USE_WEBHOOK', 'false').lower() == 'true')
-        
-        # Register handlers
-        register_handlers()
 
         # Setup the bot
         setup_successful = setup_bot(use_webhook)
@@ -88,6 +85,9 @@ def initialise_bot():
             logger.info("Starting bot with polling...")
             bot.infinity_polling(timeout=60, long_polling_timeout=60)
             
+        
+        # Register handlers
+        register_handlers()
     except Exception as e:
         logger.error(f"Error starting bot: {e}")
         sys.exit(1)
