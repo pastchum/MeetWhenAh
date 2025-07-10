@@ -99,7 +99,7 @@ def handle_event_creation(message, data):
         # Send confirmation message
         bot.reply_to(
             message,
-            f"Event created successfully!\n\nName: {name}\nDetails: {details}\nDates: {start_date} to {end_date}\n\nShare this event with others:",
+            f"Event created successfully!\n\nName: {event_name}\nDetails: {event_details}\nDates: {start_date} to {end_date}\n\nShare this event with others:",
             reply_markup=markup
         )
         

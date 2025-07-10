@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Dict, List, Optional
 from .database_service import getEntry, setEntry, updateEntry
+import uuid
 
 def getEvent(event_id: str) -> Optional[Dict]:
     """Get event details by ID"""
