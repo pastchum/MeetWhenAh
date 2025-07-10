@@ -58,11 +58,12 @@ def setup_bot(use_webhook=False):
 
 def register_handlers():
     """Register all bot handlers"""
-    register_event_handlers(bot)
-    register_user_handlers(bot)
-    register_command_handlers(bot)
-    register_availability_handlers(bot)
-    register_inline_handlers(bot)
+    logger.info("Registering handlers...")
+    register_event_handlers()
+    register_user_handlers()
+    register_command_handlers()
+    register_availability_handlers()
+    register_inline_handlers()
 
 def initialise_bot():
     """Main function to start the Telegram bot."""
