@@ -6,6 +6,7 @@ import telebot
 from telebot import types
 
 # Import from config
+from ..config.config import bot
 from ..utils.web_app import create_web_app_url
 from ..services.scheduling_service import create_event, get_event_by_id, join_event
 from ..services.database_service import getEntry, setEntry, updateEntry

@@ -3,6 +3,7 @@ from telebot import types
 import logging
 
 # Import from config
+from ..config.config import bot
 from ..utils.web_app import create_web_app_url
 from ..services.event_service import getEvent
 from ..services.database_service import getEntry, setEntry, updateEntry
