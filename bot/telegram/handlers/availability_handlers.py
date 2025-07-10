@@ -13,7 +13,7 @@ from ..utils.message_templates import HELP_MESSAGE
 
 logger = logging.getLogger(__name__)
 
-def register_availability_handlers():
+def register_availability_handlers(bot):
     """Register all availability-related handlers"""
     
     @bot.message_handler(commands=['/myavailability'])

@@ -4,7 +4,6 @@ from datetime import datetime, time, timezone
 from tzlocal import get_localzone
 
 # Import from config
-from ..config.config import bot
 from ..services.database_service import getEntry, setEntry, updateEntry
 from ..services.user_service import updateUsername, setUserSleepPreferences
 from ..utils.message_templates import WELCOME_MESSAGE, HELP_MESSAGE
@@ -12,7 +11,7 @@ from ..utils.web_app import create_web_app_url
 from urllib.parse import urlencode
 import uuid
 
-def register_command_handlers():
+def register_command_handlers(bot):
     """Register all command-related handlers"""
 
     @bot.message_handler(commands=['start'])

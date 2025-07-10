@@ -3,7 +3,6 @@ from telebot import types
 import logging
 
 # Import from config
-from ..config.config import bot
 from ..utils.web_app import create_web_app_url
 from ..services.event_service import getEvent
 from ..services.database_service import getEntry, setEntry, updateEntry
@@ -16,7 +15,7 @@ from ..utils.message_templates import HELP_MESSAGE
 
 logger = logging.getLogger(__name__)
 
-def register_inline_handlers():
+def register_inline_handlers(bot):
     """Register all inline query handlers"""
     
     @bot.inline_handler(func=lambda query: True)

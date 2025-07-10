@@ -6,7 +6,6 @@ import telebot
 from telebot import types
 
 # Import from config
-from ..config.config import bot
 from ..utils.web_app import create_web_app_url
 from ..services.scheduling_service import create_event, get_event_by_id, join_event
 from ..services.database_service import getEntry, setEntry, updateEntry
@@ -19,7 +18,7 @@ from .availability_handlers import ask_availability
 # Keep track of processed message IDs to prevent duplicate processing
 processed_messages = set()
 
-def register_event_handlers():
+def register_event_handlers(bot):
     """Register all event-related handlers"""
 
     @bot.message_handler(content_types=['web_app_data'])
