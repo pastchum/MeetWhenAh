@@ -5,7 +5,7 @@ from tzlocal import get_localzone
 
 # Import from config
 from ..services.database_service import getEntry, setEntry, updateEntry
-from ..services.user_service import updateUsername, setUserSleepPreferences
+from ..services.user_service import updateUsername, setUserSleepPreferences, getUser, setUser, updateUserInitialised
 from ..utils.message_templates import WELCOME_MESSAGE, HELP_MESSAGE
 from ..utils.web_app import create_web_app_url
 from urllib.parse import urlencode
@@ -17,20 +17,15 @@ def register_command_handlers(bot):
     @bot.message_handler(commands=['start'])
     def send_welcome(message):
         if message.chat.type == 'private':
-            db_result = getEntry("users", "tele_id", str(message.from_user.id))
+            tele_id = str(message.from_user.id)
+            db_result = getUser(tele_id)
             if db_result is None:
                 print("User not found in DB, creating new entry.", message.from_user.id)
-                setEntry("users", {
-                    "uuid" : str(uuid.uuid4()),
-                    "tele_id": str(message.from_user.id),
-                    "tele_user": str(message.from_user.username),
-                    "initialised": True,
-                    "callout_cleared": True
-                })
+                username = str(message.from_user.username)
+                setUser(tele_id, username)
             else:
                 if not db_result["initialised"]:
-                    updateEntry("users", "tele_user", db_result["tele_user"], "initialised", True)
-                    updateEntry("users", "tele_user", db_result["tele_user"], "callout_cleared", True)
+                    updateUserInitialised(tele_id)
                 if db_result["tele_user"] != str(message.from_user.username):
                     print("Username changed, updating in DB.")
                     updateUsername(message.from_user.id, message.from_user.username)

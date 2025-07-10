@@ -52,3 +52,23 @@ def updateUserAvailability(username: str, event_id: str, availability_data: List
             "updated_at": datetime.now()
         }
         return setEntry("Availability", event_id, availability_data) 
+
+def getUserEvents(user_id):
+    """Get all events that a user is a member of."""
+    try:
+        events = []
+        from ..services.user_service import supabase_client
+        
+        # Query events where user is a member
+        event_data = supabase_client.from_('events').select('*').filter('members', 'cs', str(user_id)).execute()
+        
+        for event_data in event_data['data']:
+            events.append({
+                'id': event_data.get('event_id'),
+                'name': event_data.get('event_name', 'Unnamed Event')
+            })
+            
+        return events
+    except Exception as e:
+        print(f"Error getting user events: {e}")
+        return [] 

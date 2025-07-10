@@ -1,6 +1,6 @@
 from telebot import types
 from datetime import datetime, timedelta
-from .services.availability_service import getUserAvailability, updateUserAvailability
+from ..services.event_service import getUserAvailability, updateUserAvailability
 
 def create_native_availability_selector(bot, message, event_id, event_data):
     """

@@ -106,23 +106,3 @@ def ask_availability(chat_id: int, event_id: str):
 def handle_availability_callback(call):
     """Handle callbacks from the native availability selector."""
     handle_native_availability_callback(bot, call)
-
-def get_user_events(user_id):
-    """Get all events that a user is a member of."""
-    try:
-        events = []
-        from ..services.user_service import supabase_client
-        
-        # Query events where user is a member
-        event_data = supabase_client.from_('events').select('*').filter('members', 'cs', str(user_id)).execute()
-        
-        for event_data in event_data['data']:
-            events.append({
-                'id': event_data.get('event_id'),
-                'name': event_data.get('event_name', 'Unnamed Event')
-            })
-            
-        return events
-    except Exception as e:
-        print(f"Error getting user events: {e}")
-        return [] 
