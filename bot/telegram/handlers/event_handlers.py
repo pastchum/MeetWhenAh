@@ -69,6 +69,8 @@ def handle_event_creation(message, data):
         start_date = data.get('start_date')
         end_date = data.get('end_date')
         
+        print("Event details:", event_name, event_details, start_date, end_date)
+        
         # Validate required fields
         if not all([event_name, event_details, start_date, end_date]):
             bot.reply_to(message, "Missing required event details")
