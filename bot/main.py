@@ -31,9 +31,14 @@ def main():
     # Load environment variables
     load_dotenv()
     
-    run_server()
+    server_thread = threading.Thread(target=run_server)
+    server_thread.daemon = True
+    server_thread.start()
+    
     # Start the Telegram bot in the main thread
     initialise_bot()
+
+    server_thread.join()
 
 if __name__ == "__main__":
     main()
