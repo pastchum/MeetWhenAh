@@ -4,7 +4,7 @@ import uuid
 
 def getUser(tele_id: str) -> dict:
     """Get a user by their Telegram ID"""
-    user = getEntry("Users", "tele_id", tele_id)
+    user = getEntry("users", "tele_id", tele_id)
     return user
 
 def setUser(tele_id: str, username: str) -> bool:
