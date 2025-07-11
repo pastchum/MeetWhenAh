@@ -17,12 +17,11 @@ def create_event(event_name: str, event_description: str, start_date: str, end_d
         "event_name": event_name,
         "event_description": event_description,
         "event_type": event_type,
-        "start_date": datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc),
-        "end_date": datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc),
+        "start_date": datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).isoformat(),
+        "end_date": datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).isoformat(),
         "start_hour": start_hour,
         "end_hour": end_hour,
         "creator": creator_id,
-        "created_at": datetime.now()
     }
     print(event_data)
     success = setEntry("events", event_id, event_data)
