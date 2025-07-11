@@ -8,10 +8,8 @@ from telebot import types
 # Import from config
 from ..config.config import bot
 from ..utils.web_app import create_web_app_url
-from ..services.scheduling_service import create_event, get_event_by_id, join_event
-from ..services.database_service import getEntry, setEntry, updateEntry
 from ..services.user_service import updateUsername
-from ..services.event_service import getEventSleepPreferences, getUserAvailability, updateUserAvailability
+from ..services.event_service import getEventSleepPreferences, getUserAvailability, updateUserAvailability, create_event, get_event_by_id, join_event
 from ..services.scheduling_service import calculate_optimal_meeting_time
 from ..utils.date_utils import daterange
 from .availability_handlers import ask_availability
@@ -65,21 +63,21 @@ def handle_event_creation(message, data):
     try:
         # Extract event details
         event_name = data.get('event_name')
-        event_details = data.get('event_details')
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
+        event_description = data.get('event_details')
+        start_date = data.get('start')
+        end_date = data.get('end')
         
-        print("Event details:", event_name, event_details, start_date, end_date)
+        print("Event details:", event_name, event_description, start_date, end_date)
         
         # Validate required fields
-        if not all([event_name, event_details, start_date, end_date]):
+        if not all([event_name, event_description, start_date, end_date]):
             bot.reply_to(message, "Missing required event details")
             return
         
         # Create the event
         event_id = create_event(
             event_name=event_name,
-            event_details=event_details,
+            event_description=event_description,
             start_date=start_date,
             end_date=end_date,
             creator_id=str(message.from_user.id),
@@ -101,7 +99,7 @@ def handle_event_creation(message, data):
         # Send confirmation message
         bot.reply_to(
             message,
-            f"Event created successfully!\n\nName: {name}\nDetails: {details}\nDates: {start_date} to {end_date}\n\nShare this event with others:",
+            f"Event created successfully!\n\nName: {event_name}\nDetails: {event_description}\nDates: {start_date} to {end_date}\n\nShare this event with others:",
             reply_markup=markup
         )
         

@@ -7,8 +7,7 @@ from ..config.config import bot
 from ..utils.web_app import create_web_app_url
 from ..services.event_service import getEvent
 from ..services.database_service import getEntry, setEntry, updateEntry
-from ..services.event_service import getEventSleepPreferences
-from ..services.scheduling_service import join_event
+from ..services.event_service import getEventSleepPreferences, join_event
 from ..services.user_service import updateUsername
 from ..services.event_service import getUserAvailability, updateUserAvailability
 from ..services.scheduling_service import calculate_optimal_meeting_time
