@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from .database_service import getEntry, setEntry, updateEntry
 import uuid
@@ -9,22 +9,24 @@ def getEvent(event_id: str) -> Optional[Dict]:
     return event if event else None
 
 
-def create_event(event_name: str, event_details: str, start_date: str, end_date: str, creator_id: str, auto_join: bool = True, event_type: str = "general") -> str:
+def create_event(event_name: str, event_description: str, start_date: str, end_date: str, creator_id: str, auto_join: bool = True, event_type: str = "general", start_hour: str = "00:00:00.000000+08:00", end_hour: str = "23:30:00.000000+08:00") -> str:
     """Create a new event and return its ID"""
     event_id = str(uuid.uuid4())
     event_data = {
         "event_id": event_id,
         "event_name": event_name,
-        "event_details": event_details,
+        "event_description": event_description,
         "event_type": event_type,
-        "start_date": datetime.strptime(start_date, "%Y-%m-%d"),
-        "end_date": datetime.strptime(end_date, "%Y-%m-%d"),
+        "start_date": datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc),
+        "end_date": datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc),
+        "start_hour": start_hour,
+        "end_hour": end_hour,
         "creator": creator_id,
-        "participants": [creator_id] if auto_join else [],
         "created_at": datetime.now()
     }
-    
+    print(event_data)
     success = setEntry("events", event_id, event_data)
+    print(success)
     return event_id if success else None
 
 def get_event_by_id(event_id: str) -> Dict:
