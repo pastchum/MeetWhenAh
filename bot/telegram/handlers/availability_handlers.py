@@ -101,8 +101,3 @@ def ask_availability(chat_id: int, event_id: str):
     except Exception as e:
         logger.error(f"Error in ask_availability: {str(e)}")
         bot.send_message(chat_id, "Failed to set up availability selection. Please try again later.")
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith(('slot_', 'save_', 'cancel_', 'date_')))
-def handle_availability_callback(call):
-    """Handle callbacks from the native availability selector."""
-    handle_native_availability_callback(bot, call)
