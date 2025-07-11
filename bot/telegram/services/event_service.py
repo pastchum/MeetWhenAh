@@ -12,6 +12,8 @@ def getEvent(event_id: str) -> Optional[Dict]:
 def create_event(event_name: str, event_description: str, start_date: str, end_date: str, creator_id: str, auto_join: bool = True, event_type: str = "general", start_hour: str = "00:00:00.000000+08:00", end_hour: str = "23:30:00.000000+08:00") -> str:
     """Create a new event and return its ID"""
     event_id = str(uuid.uuid4())
+    creator_details = getEntry("users", "tele_id", creator_id)
+    creator_uuid = creator_details["uuid"]
     event_data = {
         "event_id": event_id,
         "event_name": event_name,
@@ -21,7 +23,7 @@ def create_event(event_name: str, event_description: str, start_date: str, end_d
         "end_date": datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).isoformat(),
         "start_hour": start_hour,
         "end_hour": end_hour,
-        "creator": creator_id,
+        "creator": creator_uuid,
     }
     print(event_data)
     success = setEntry("events", event_id, event_data)
