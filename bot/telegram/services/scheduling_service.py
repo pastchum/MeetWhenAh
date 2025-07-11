@@ -296,7 +296,7 @@ def format_availability_summary(event_id: str, username: str) -> str:
     if not event:
         return "Event not found"
     
-    availability = getEntry("Availability", "event_id", event_id)
+    availability = getEntry("availability", "event_id", event_id)
     if not availability or username not in availability:
         return "No availability data found"
     
