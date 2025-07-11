@@ -63,21 +63,21 @@ def handle_event_creation(message, data):
     try:
         # Extract event details
         event_name = data.get('event_name')
-        event_details = data.get('event_details')
+        event_description = data.get('event_details')
         start_date = data.get('start')
         end_date = data.get('end')
         
-        print("Event details:", event_name, event_details, start_date, end_date)
+        print("Event details:", event_name, event_description, start_date, end_date)
         
         # Validate required fields
-        if not all([event_name, event_details, start_date, end_date]):
+        if not all([event_name, event_description, start_date, end_date]):
             bot.reply_to(message, "Missing required event details")
             return
         
         # Create the event
         event_id = create_event(
             event_name=event_name,
-            event_details=event_details,
+            event_description=event_description,
             start_date=start_date,
             end_date=end_date,
             creator_id=str(message.from_user.id),
