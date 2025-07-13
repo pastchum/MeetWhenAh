@@ -49,11 +49,12 @@ def register_inline_handlers(bot):
         except Exception as e:
             logger.error(f"Error in inline query handler: {str(e)}")
 
-    @bot.callback_query_handler(func=lambda call: call.data.startswith('join_'))
+    @bot.callback_query_handler(func=lambda call: call.data)
     def handle_join_callback(call):
         """Handle join event button clicks"""
         try:
-            event_id = call.data.split('_')[1]
+            logger.info(f"Join callback data: {call.data}")
+            event_id = call.data.split(':')[1]
             user_id = str(call.from_user.id)
             username = call.from_user.username or user_id
             

@@ -59,7 +59,7 @@ def register_availability_handlers(bot):
             markup = types.InlineKeyboardMarkup()
             webapp_btn = types.InlineKeyboardButton(
                 text="Select Availability",
-                web_app=types.WebAppInfo(url=create_web_app_url(2, {"event_id": event_id}))
+                web_app=types.WebAppInfo(url=create_web_app_url("/dragselector", 1, event_id=event_id))
             )
             markup.add(webapp_btn)
             
@@ -88,13 +88,13 @@ def ask_availability(chat_id: int, event_id: str):
         markup = types.InlineKeyboardMarkup()
         webapp_btn = types.InlineKeyboardButton(
             text="Select Availability",
-            web_app=types.WebAppInfo(url=create_web_app_url(2, {"event_id": event_id}))
+            web_app=types.WebAppInfo(url=create_web_app_url("/dragselector", 1, event_id=event_id))
         )
         markup.add(webapp_btn)
         
         bot.send_message(
             chat_id,
-            f"Please select your availability for {event['name']}:",
+            f"Please select your availability for {event['event_name']}:",
             reply_markup=markup
         )
         
