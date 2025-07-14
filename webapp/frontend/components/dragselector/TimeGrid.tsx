@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import React from 'react';
-import TimeSlot from './TimeSlot';
-import { format } from 'date-fns';
+import React from "react";
+import TimeSlot from "./TimeSlot";
+import { format } from "date-fns";
 
 interface TimeGridProps {
   days: Date[];
   timeSlots: number[];
-  selectedSlots: Map<string, Set<number>>;
+  selectedSlots: Set<string>;
   isDragging: boolean;
+  endDate?: Date;
   onDragStart: (day: string, time: number, isSelected: boolean) => void;
   onDragOver: (day: string, time: number) => void;
   onDragEnd: () => void;
@@ -19,38 +20,50 @@ const TimeGrid: React.FC<TimeGridProps> = ({
   timeSlots,
   selectedSlots,
   isDragging,
+  endDate,
   onDragStart,
   onDragOver,
-  onDragEnd
+  onDragEnd,
 }) => {
   // Format date to YYYY-MM-DD for using as a key
   const formatDayKey = (date: Date): string => {
-    return format(date, 'yyyy-MM-dd');
+    return format(date, "yyyy-MM-dd");
   };
-  
+
+  // Helper function to convert day and time to ISO datetime
+  const getIsoDatetime = (day: string, timeMinutes: number): string => {
+    const [year, month, date] = day.split("-").map(Number);
+    const hours = Math.floor(timeMinutes / 60);
+    const minutes = timeMinutes % 60;
+
+    const dateObj = new Date(year, month - 1, date, hours, minutes);
+    return dateObj.toISOString();
+  };
+
   // Check if a slot is selected
   const isSlotSelected = (dayKey: string, time: number): boolean => {
-    return !!selectedSlots.get(dayKey)?.has(time);
+    const isoDatetime = getIsoDatetime(dayKey, time);
+    return selectedSlots.has(isoDatetime);
   };
-  
+
   // Determine if time is at an hour mark
   const isEvenHour = (time: number): boolean => {
     return time % 60 === 0;
   };
-  
+
   // Determine if time is at a half hour mark
   const isHalfHour = (time: number): boolean => {
     return time % 60 === 30;
   };
-  
+
   return (
     <div className="flex-1 flex">
       {days.map((day, dayIdx) => {
         const dayKey = formatDayKey(day);
         const columnWidth = `${100 / days.length}%`;
-        
+
         return (
-          <div 
+          <div
             key={dayIdx}
             className="border-r border-gray-200"
             style={{ width: columnWidth }}
@@ -65,6 +78,7 @@ const TimeGrid: React.FC<TimeGridProps> = ({
                 isHalfHour={isHalfHour(time)}
                 isLastRow={timeIdx === timeSlots.length - 1}
                 isDragging={isDragging}
+                endDate={endDate}
                 onDragStart={onDragStart}
                 onDragOver={onDragOver}
                 onDragEnd={onDragEnd}
@@ -77,4 +91,4 @@ const TimeGrid: React.FC<TimeGridProps> = ({
   );
 };
 
-export default TimeGrid; 
+export default TimeGrid;

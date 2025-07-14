@@ -1,8 +1,10 @@
 import { ApiResponse } from "./events_utils";
 
 export interface AvailabilityData {
-    date: string;
-    time: string;
+    start_time: string;
+    end_time: string;
+    event_id: string;
+    user_uuid?: string; // Optional since backend can derive it from username
   }
   
   export interface AvailabilityRequest {
@@ -66,8 +68,8 @@ export async function getUserAvailability(username: string, eventId: string): Pr
         event_id: eventId,
         availability_data: availabilityData,
       };
-  
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/availability`, {
+      console.log(requestBody);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/save-availability`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,11 +97,45 @@ export async function getUserAvailability(username: string, eventId: string): Pr
   }
   
   /**
-   * Health check for the API
-   * Uses the existing /webhook/health endpoint
-   * @returns Promise<boolean> - True if API is healthy, false otherwise
-   */
-  export async function checkApiHealth(): Promise<boolean> {
+ * Get user UUID by username
+ * Uses the existing /api/user/{username}/uuid endpoint
+ * @param username - The username to get UUID for
+ * @returns Promise<string | null> - The user UUID or null if not found
+ */
+export async function getUserUuid(username: string): Promise<string | null> {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${username}/uuid`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (!response.ok) {
+        console.error(`Failed to fetch user UUID: ${response.status} ${response.statusText}`);
+        return null;
+      }
+  
+      const result: ApiResponse<{uuid: string}> = await response.json();
+  
+      if (result.status === 'success' && result.data) {
+        return result.data.uuid;
+      } else {
+        console.error('Failed to get user UUID:', result.message);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching user UUID:', error);
+      return null;
+    }
+  }
+
+/**
+ * Health check for the API
+ * Uses the existing /webhook/health endpoint
+ * @returns Promise<boolean> - True if API is healthy, false otherwise
+ */
+export async function checkApiHealth(): Promise<boolean> {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/webhook/health`, {
         method: 'GET',

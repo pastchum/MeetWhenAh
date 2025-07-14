@@ -52,7 +52,7 @@ async def get_availability(username: str, event_id: str):
 
     return {"status": "success", "data": availability}
 
-@app.post('/api/availability')
+@app.post('/api/save-availability')
 async def update_availability(request: AvailabilityRequest):
     success = updateUserAvailability(
         request.username,
@@ -73,6 +73,16 @@ async def get_event(event_id: str):
         return {"status": "error", "message": "Event not found"}
     
     return {"status": "success", "data": event_data}
+
+@app.get('/api/user/{username}/uuid')
+async def get_user_uuid(username: str):
+    """Get user UUID by username"""
+    user_data = getEntry("users", "tele_user", username)
+    
+    if not user_data:
+        return {"status": "error", "message": "User not found"}
+    
+    return {"status": "success", "data": {"uuid": user_data.get("uuid")}}
 
 # New webhook endpoint for Telegram
 @app.post("/webhook/bot")

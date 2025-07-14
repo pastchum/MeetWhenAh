@@ -83,8 +83,13 @@ def updateUserAvailability(username: str, event_id: str, availability_data: List
     if not user_uuid:
         return False
     
-    deleteEntries("availability_blocks", "event_id", event_id, "user_uuid", user_uuid)
-    return setEntries("availability_blocks", availability_data)
+    successful_delete = deleteEntries("availability_blocks", "event_id", event_id, "user_uuid", [user_uuid])
+    if not successful_delete:
+        return False
+    successful_set = setEntries("availability_blocks", availability_data)
+    if not successful_set:
+        return False
+    return True
     
     
 
