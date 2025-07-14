@@ -4,27 +4,34 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import DayHeader from "./DayHeader";
 import TimeColumn from "./TimeColumn";
 import TimeGrid from "./TimeGrid";
-import { format, addDays, startOfWeek, parse } from "date-fns";
+import { format, addDays, startOfWeek, parse, addMinutes } from "date-fns";
+import {
+  AvailabilityData,
+  getUserAvailability,
+  updateUserAvailability,
+} from "app/utils/availability_utils";
 
 interface WeekCalendarProps {
   startDate?: Date;
+  endDate?: Date;
   numDays?: number;
   username?: string;
   eventId?: string;
-  onSelectionChange?: (selectedSlots: Map<string, Set<number>>) => void;
+  userUuid?: string;
+  onSelectionChange?: (selectedSlots: Set<string>) => void;
 }
 
 const WeekCalendar: React.FC<WeekCalendarProps> = ({
   startDate = new Date(),
+  endDate = new Date(),
   numDays = 7,
   username = "",
   eventId = "",
+  userUuid = "",
   onSelectionChange,
 }) => {
-  // Selected slots: Map<dayKey, Set<timeInMinutes>>
-  const [selectedSlots, setSelectedSlots] = useState<Map<string, Set<number>>>(
-    new Map()
-  );
+  // Selected slots: Set<ISO datetime string>
+  const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set());
 
   // Drag state
   const [isDragging, setIsDragging] = useState(false);
@@ -41,8 +48,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   const [syncedWithBackend, setSyncedWithBackend] = useState(false);
 
   // Generate days array
-  const weekStart = startOfWeek(startDate, { weekStartsOn: 1 }); // Week starts Monday
-  const days = Array.from({ length: numDays }, (_, i) => addDays(weekStart, i));
+  const days = Array.from({ length: numDays }, (_, i) => addDays(startDate, i));
 
   // Time slots (every 30 minutes from 00:00 to 23:30)
   const timeSlots = Array.from({ length: 48 }, (_, i) => i * 30);
@@ -54,37 +60,85 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   const [pendingSync, setPendingSync] = useState(false);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Helper function to convert day and time to ISO datetime
+  const getIsoDatetime = useCallback(
+    (day: string, timeMinutes: number): string => {
+      const [year, month, date] = day.split("-").map(Number);
+      const hours = Math.floor(timeMinutes / 60);
+      const minutes = timeMinutes % 60;
+
+      // Create date in local timezone, then convert to ISO
+      const dateObj = new Date(year, month - 1, date, hours, minutes);
+      return dateObj.toISOString();
+    },
+    []
+  );
+
+  // Helper function to normalize ISO datetime to local timezone for comparison
+  const normalizeIsoDatetime = useCallback((isoString: string): string => {
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    // Recreate the date in local timezone to ensure consistent timezone handling
+    const localDate = new Date(year, month - 1, day, hours, minutes);
+    return localDate.toISOString();
+  }, []);
+
+  // Helper function to convert ISO datetime back to day and time
+  const getDayAndTimeFromIso = useCallback(
+    (isoString: string): { day: string; time: number } => {
+      const date = new Date(isoString);
+      const day = format(date, "yyyy-MM-dd");
+      const time = date.getHours() * 60 + date.getMinutes();
+      return { day, time };
+    },
+    []
+  );
+
   // Fetch user availability from backend
   const fetchUserAvailability = useCallback(async () => {
     if (!username || !eventId) return;
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `/api/availability/${encodeURIComponent(username)}/${encodeURIComponent(
-          eventId
-        )}`
-      );
-      const data = await response.json();
+      const data = await getUserAvailability(username, eventId);
+      if (!data) return;
 
-      if (data.status === "success" && Array.isArray(data.data)) {
-        // Convert backend data to our format
-        const newSelectedSlots = new Map<string, Set<number>>();
+      const newSelectedSlots = new Set<string>();
 
-        data.data.forEach((slot: { date: string; time: string }) => {
-          const dayKey = slot.date;
-          const timeMinutes =
-            parseInt(slot.time.slice(0, 2)) * 60 + parseInt(slot.time.slice(2));
+      data.forEach((slot: AvailabilityData) => {
+        try {
+          const startDate = new Date(slot.start_time);
+          const endDate = new Date(slot.end_time);
 
-          if (!newSelectedSlots.has(dayKey)) {
-            newSelectedSlots.set(dayKey, new Set<number>());
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.error("Invalid date in availability block:", slot);
+            return;
           }
 
-          newSelectedSlots.get(dayKey)?.add(timeMinutes);
-        });
+          // Add start time to selection data (normalized to local timezone)
+          const normalizedStartTime = normalizeIsoDatetime(slot.start_time);
+          newSelectedSlots.add(normalizedStartTime);
 
-        setSelectedSlots(newSelectedSlots);
-      }
+          // If there are multiple 30-minute slots, add them too
+          let currentTime = new Date(startDate);
+          currentTime.setMinutes(currentTime.getMinutes() + 30);
+
+          while (currentTime < endDate) {
+            const timeString = normalizeIsoDatetime(currentTime.toISOString());
+            newSelectedSlots.add(timeString);
+            currentTime.setMinutes(currentTime.getMinutes() + 30);
+          }
+        } catch (error) {
+          console.error("Error processing availability block:", slot, error);
+        }
+      });
+
+      setSelectedSlots(newSelectedSlots);
     } catch (error) {
       console.error("Error fetching user availability:", error);
     } finally {
@@ -99,35 +153,48 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
 
     try {
       // Convert our data format to backend format
-      const availabilityData: { date: string; time: string }[] = [];
+      const availabilityData: {
+        start_time: string;
+        end_time: string;
+        event_id: string;
+        user_uuid: string;
+      }[] = [];
 
-      selectedSlots.forEach((timeSet, dayKey) => {
-        timeSet.forEach((timeMinutes) => {
-          const hours = Math.floor(timeMinutes / 60);
-          const minutes = timeMinutes % 60;
-          const timeString = `${hours.toString().padStart(2, "0")}${minutes
-            .toString()
-            .padStart(2, "0")}`;
+      // Group consecutive time slots into blocks
+      const sortedSlots = Array.from(selectedSlots).sort();
 
-          availabilityData.push({
-            date: dayKey,
-            time: timeString,
-          });
-        });
-      });
+      for (let i = 0; i < sortedSlots.length; i++) {
+        const startTime = sortedSlots[i];
+        let endTime = startTime;
 
-      // Send to backend
-      await fetch("/api/availability", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
+        // Find consecutive slots (30-minute intervals)
+        while (i + 1 < sortedSlots.length) {
+          const currentDate = new Date(startTime);
+          const nextDate = new Date(sortedSlots[i + 1]);
+          const timeDiff = nextDate.getTime() - currentDate.getTime();
+
+          // If next slot is exactly 30 minutes after current, it's consecutive
+          if (timeDiff === 30 * 60 * 1000) {
+            endTime = sortedSlots[i + 1];
+            i++;
+          } else {
+            break;
+          }
+        }
+
+        // Add 30 minutes to end time to make it exclusive
+        const endDateTime = new Date(endTime);
+        endDateTime.setMinutes(endDateTime.getMinutes() + 30);
+
+        availabilityData.push({
+          start_time: startTime,
+          end_time: endDateTime.toISOString(),
           event_id: eventId,
-          availability_data: availabilityData,
-        }),
-      });
+          user_uuid: userUuid,
+        });
+      }
+
+      updateUserAvailability(username, eventId, availabilityData);
 
       console.log("Availability synced with backend");
     } catch (error) {
@@ -135,7 +202,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
     } finally {
       setPendingSync(false);
     }
-  }, [username, eventId, selectedSlots, syncedWithBackend]);
+  }, [username, eventId, selectedSlots, syncedWithBackend, userUuid]);
 
   // Load initial data
   useEffect(() => {
@@ -171,22 +238,18 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       try {
         const patternData = JSON.parse(savedPattern);
 
-        // Get current day of week
-        const newSelectedSlots = new Map<string, Set<number>>(selectedSlots);
+        const newSelectedSlots = new Set<string>();
 
         days.forEach((day) => {
           const dayOfWeek = format(day, "EEEE"); // Monday, Tuesday, etc.
           const dayKey = format(day, "yyyy-MM-dd");
 
           if (patternData[dayOfWeek] && Array.isArray(patternData[dayOfWeek])) {
-            if (!newSelectedSlots.has(dayKey)) {
-              newSelectedSlots.set(dayKey, new Set<number>());
-            }
-
             patternData[dayOfWeek].forEach((timeString: string) => {
               const hours = parseInt(timeString.slice(0, 2));
               const minutes = parseInt(timeString.slice(2));
-              newSelectedSlots.get(dayKey)?.add(hours * 60 + minutes);
+              const isoDatetime = getIsoDatetime(dayKey, hours * 60 + minutes);
+              newSelectedSlots.add(isoDatetime);
             });
           }
         });
@@ -204,19 +267,15 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
         const availabilityData = JSON.parse(currentAvailability);
 
         if (Array.isArray(availabilityData)) {
-          const newSelectedSlots = new Map<string, Set<number>>();
+          const newSelectedSlots = new Set<string>();
 
           availabilityData.forEach((slot: { date: string; time: string }) => {
             const dayKey = slot.date;
             const timeMinutes =
               parseInt(slot.time.slice(0, 2)) * 60 +
               parseInt(slot.time.slice(2));
-
-            if (!newSelectedSlots.has(dayKey)) {
-              newSelectedSlots.set(dayKey, new Set<number>());
-            }
-
-            newSelectedSlots.get(dayKey)?.add(timeMinutes);
+            const isoDatetime = getIsoDatetime(dayKey, timeMinutes);
+            newSelectedSlots.add(isoDatetime);
           });
 
           setSelectedSlots(newSelectedSlots);
@@ -225,37 +284,47 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
         console.error("Error parsing current availability:", error);
       }
     }
-  }, [days, selectedSlots]);
+  }, [days, getIsoDatetime]);
 
   // Handle day header click - select whole day
   const handleSelectWholeDay = useCallback(
     (date: Date) => {
+      // Don't allow selection if date is after end date
+      if (endDate && date > endDate) {
+        return;
+      }
+
       const dayKey = format(date, "yyyy-MM-dd");
 
       // Check if any slots for this day are already selected
-      const isAnySlotSelected =
-        selectedSlots.has(dayKey) && selectedSlots.get(dayKey)!.size > 0;
+      const daySlots = Array.from(selectedSlots).filter((slot) => {
+        const { day } = getDayAndTimeFromIso(slot);
+        return day === dayKey;
+      });
+
+      const isAnySlotSelected = daySlots.length > 0;
 
       setSelectedSlots((prev) => {
-        const newMap = new Map(prev);
+        const newSet = new Set(prev);
 
         if (isAnySlotSelected) {
           // If any slots are selected, deselect the whole day
-          newMap.delete(dayKey);
+          daySlots.forEach((slot) => newSet.delete(slot));
         } else {
           // Select all time slots for the day
-          const allTimes = new Set<number>();
-          timeSlots.forEach((time) => allTimes.add(time));
-          newMap.set(dayKey, allTimes);
+          timeSlots.forEach((time) => {
+            const isoDatetime = getIsoDatetime(dayKey, time);
+            newSet.add(isoDatetime);
+          });
         }
 
-        return newMap;
+        return newSet;
       });
 
       // Mark for syncing to backend
       setPendingSync(true);
     },
-    [selectedSlots, timeSlots]
+    [selectedSlots, timeSlots, endDate, getIsoDatetime, getDayAndTimeFromIso]
   );
 
   // Handle drag start
@@ -301,24 +370,16 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
     operation: "select" | "deselect"
   ) => {
     setSelectedSlots((prev) => {
-      const newMap = new Map(prev);
+      const newSet = new Set(prev);
+      const isoDatetime = getIsoDatetime(day, time);
 
       if (operation === "select") {
-        // If selecting, add the time to the day's set
-        if (!newMap.has(day)) {
-          newMap.set(day, new Set<number>());
-        }
-        newMap.get(day)?.add(time);
+        newSet.add(isoDatetime);
       } else {
-        // If deselecting, remove the time from the day's set
-        newMap.get(day)?.delete(time);
-        // Remove day entirely if no times are selected
-        if (newMap.get(day)?.size === 0) {
-          newMap.delete(day);
-        }
+        newSet.delete(isoDatetime);
       }
 
-      return newMap;
+      return newSet;
     });
   };
 
@@ -379,6 +440,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
               key={idx}
               date={day}
               width={`${100 / numDays}%`}
+              endDate={endDate}
               onSelectDay={handleSelectWholeDay}
             />
           ))}
@@ -396,6 +458,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
           timeSlots={timeSlots}
           selectedSlots={selectedSlots}
           isDragging={isDragging}
+          endDate={endDate}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}

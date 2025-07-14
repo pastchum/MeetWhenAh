@@ -4,11 +4,11 @@ import uvicorn
 from dotenv import load_dotenv
 import os
 import json
+from fastapi.middleware.cors import CORSMiddleware
 
 # Import services
-from telegram.handlers.availability_handlers import getUserAvailability, updateUserAvailability
 from telegram.services.database_service import getEntry
-from telegram.services.event_service import getEvent
+from telegram.services.event_service import getEvent, getUserAvailability, updateUserAvailability
 
 from telebot.types import Update
 
@@ -19,6 +19,15 @@ from telegram.config.config import bot
 
 # Initialize FastAPI app
 app = FastAPI(title="MeetWhenAh API")
+
+# cors
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # FastAPI models for API endpoints
 class AvailabilityRequest(BaseModel):
@@ -40,12 +49,10 @@ class WebhookUpdate(BaseModel):
 @app.get('/api/availability/{username}/{event_id}')
 async def get_availability(username: str, event_id: str):
     availability = getUserAvailability(username, event_id)
-    if availability:
-        return {"status": "success", "data": availability}
-    else:
-        return {"status": "error", "message": "Could not retrieve availability"}
 
-@app.post('/api/availability')
+    return {"status": "success", "data": availability}
+
+@app.post('/api/save-availability')
 async def update_availability(request: AvailabilityRequest):
     success = updateUserAvailability(
         request.username,
@@ -60,25 +67,22 @@ async def update_availability(request: AvailabilityRequest):
 
 @app.get('/api/event/{event_id}')
 async def get_event(event_id: str):
-    event_doc = getEntry("Events", "event_id", str(event_id))
+    event_data = getEntry("events", "event_id", str(event_id))
     
-    if not event_doc:
+    if not event_data:
         return {"status": "error", "message": "Event not found"}
-        
-    event_data = event_doc.to_dict()
-    
-    # Format dates for JSON serialization
-    if "start_date" in event_data:
-        event_data["start_date"] = event_data["start_date"].strftime("%Y-%m-%d")
-    if "end_date" in event_data:
-        event_data["end_date"] = event_data["end_date"].strftime("%Y-%m-%d")
-        
-    # Format hours_available dates
-    for day in event_data.get("hours_available", []):
-        if "date" in day and hasattr(day["date"], "strftime"):
-            day["date"] = day["date"].strftime("%Y-%m-%d")
     
     return {"status": "success", "data": event_data}
+
+@app.get('/api/user/{username}/uuid')
+async def get_user_uuid(username: str):
+    """Get user UUID by username"""
+    user_data = getEntry("users", "tele_user", username)
+    
+    if not user_data:
+        return {"status": "error", "message": "User not found"}
+    
+    return {"status": "success", "data": {"uuid": user_data.get("uuid")}}
 
 # New webhook endpoint for Telegram
 @app.post("/webhook/bot")

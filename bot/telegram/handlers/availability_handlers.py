@@ -56,10 +56,11 @@ def register_availability_handlers(bot):
                 return
             
             # Create web app button for availability selection
+            username = message.from_user.username or str(message.from_user.id)
             markup = types.InlineKeyboardMarkup()
             webapp_btn = types.InlineKeyboardButton(
                 text="Select Availability",
-                web_app=types.WebAppInfo(url=create_web_app_url(2, {"event_id": event_id}))
+                web_app=types.WebAppInfo(url=create_web_app_url("/dragselector", 1, event_id=event_id, username=username))
             )
             markup.add(webapp_btn)
             
@@ -75,7 +76,7 @@ def register_availability_handlers(bot):
 
     return bot
 
-def ask_availability(chat_id: int, event_id: str):
+def ask_availability(chat_id: int, event_id: str, username: str = None):
     """Ask user to provide availability for an event"""
     try:
         # Get event details
@@ -85,24 +86,25 @@ def ask_availability(chat_id: int, event_id: str):
             return
         
         # Create web app button for availability selection
+        if username:
+            web_app_url = create_web_app_url("/dragselector", 1, event_id=event_id, username=username)
+        else:
+            # Fallback for when username is not provided
+            web_app_url = create_web_app_url("/dragselector", 1, event_id=event_id)
+        
         markup = types.InlineKeyboardMarkup()
         webapp_btn = types.InlineKeyboardButton(
             text="Select Availability",
-            web_app=types.WebAppInfo(url=create_web_app_url(2, {"event_id": event_id}))
+            web_app=types.WebAppInfo(url=web_app_url)
         )
         markup.add(webapp_btn)
         
         bot.send_message(
             chat_id,
-            f"Please select your availability for {event['name']}:",
+            f"Please select your availability for {event['event_name']}:",
             reply_markup=markup
         )
         
     except Exception as e:
         logger.error(f"Error in ask_availability: {str(e)}")
         bot.send_message(chat_id, "Failed to set up availability selection. Please try again later.")
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith(('slot_', 'save_', 'cancel_', 'date_')))
-def handle_availability_callback(call):
-    """Handle callbacks from the native availability selector."""
-    handle_native_availability_callback(bot, call)

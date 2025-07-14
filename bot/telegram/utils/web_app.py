@@ -14,7 +14,7 @@ def create_web_app_url(path: str, web_app_number: int = 1, **params) -> str:
         str: The complete web app URL
     """
     # Get the base URL from environment variable or use default
-    base_url = os.getenv('WEBAPP_URL', 'https://meetwhenah.vercel.app')
+    base_url = os.getenv('WEBAPP_URL', 'https://meet-when-ah.vercel.app')
     
     # Remove leading slash if present to avoid double slashes
     if path.startswith('/'):

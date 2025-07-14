@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from .database_service import getEntry, setEntry, updateEntry
 import uuid
 
@@ -8,15 +8,16 @@ def getUser(tele_id: str) -> dict:
     return user
 
 def setUser(tele_id: str, username: str) -> bool:
+    user_uuid = str(uuid.uuid4())
     """Set a user by their Telegram ID"""
-    setEntry("users", {
-        "uuid" : str(uuid.uuid4()),
+    setEntry("users", user_uuid, {
+        "uuid" : user_uuid,
         "tele_id": tele_id,
         "tele_user": username,
         "initialised": True,
         "callout_cleared": True,
-        "created_at": datetime.now(),
-        "updated_at": datetime.now()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
     })
 
 def updateUserInitialised(tele_id: str) -> bool:
