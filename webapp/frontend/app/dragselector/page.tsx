@@ -115,15 +115,19 @@ export default function DragSelectorPage() {
               return;
             }
 
-            // Add start time to selection data
-            newSelectionData.add(block.start_time);
+            // Add start time to selection data (normalized to local timezone)
+            const normalizedStartTime = normalizeIsoDatetime(block.start_time);
+            newSelectionData.add(normalizedStartTime);
 
             // If there are multiple 30-minute slots, add them too
             let currentTime = new Date(startDate);
             currentTime.setMinutes(currentTime.getMinutes() + 30);
 
             while (currentTime < endDate) {
-              newSelectionData.add(currentTime.toISOString());
+              const timeString = normalizeIsoDatetime(
+                currentTime.toISOString()
+              );
+              newSelectionData.add(timeString);
               currentTime.setMinutes(currentTime.getMinutes() + 30);
             }
           } catch (error) {
@@ -191,6 +195,20 @@ export default function DragSelectorPage() {
     const day = format(date, "yyyy-MM-dd");
     const time = date.getHours() * 60 + date.getMinutes();
     return { day, time };
+  };
+
+  // Helper function to normalize ISO datetime to local timezone for comparison
+  const normalizeIsoDatetime = (isoString: string): string => {
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    // Recreate the date in local timezone to ensure consistent timezone handling
+    const localDate = new Date(year, month - 1, day, hours, minutes);
+    return localDate.toISOString();
   };
 
   // Aggregate consecutive time slots into periods

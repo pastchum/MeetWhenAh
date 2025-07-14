@@ -40,10 +40,34 @@ const TimeGrid: React.FC<TimeGridProps> = ({
     return dateObj.toISOString();
   };
 
+  // Helper function to normalize ISO datetime to local timezone for comparison
+  const normalizeIsoDatetime = (isoString: string): string => {
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    // Recreate the date in local timezone to ensure consistent timezone handling
+    const localDate = new Date(year, month - 1, day, hours, minutes);
+    return localDate.toISOString();
+  };
+
   // Check if a slot is selected
   const isSlotSelected = (dayKey: string, time: number): boolean => {
     const isoDatetime = getIsoDatetime(dayKey, time);
-    return selectedSlots.has(isoDatetime);
+    const normalizedIsoDatetime = normalizeIsoDatetime(isoDatetime);
+
+    // Check against both the original and normalized versions
+    const isSelected =
+      selectedSlots.has(isoDatetime) ||
+      selectedSlots.has(normalizedIsoDatetime);
+
+    if (isSelected) {
+      console.log(`Slot selected: ${dayKey} ${time} -> ${isoDatetime}`);
+    }
+    return isSelected;
   };
 
   // Determine if time is at an hour mark

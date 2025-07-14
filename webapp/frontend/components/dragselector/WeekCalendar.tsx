@@ -67,11 +67,26 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       const hours = Math.floor(timeMinutes / 60);
       const minutes = timeMinutes % 60;
 
+      // Create date in local timezone, then convert to ISO
       const dateObj = new Date(year, month - 1, date, hours, minutes);
       return dateObj.toISOString();
     },
     []
   );
+
+  // Helper function to normalize ISO datetime to local timezone for comparison
+  const normalizeIsoDatetime = useCallback((isoString: string): string => {
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    // Recreate the date in local timezone to ensure consistent timezone handling
+    const localDate = new Date(year, month - 1, day, hours, minutes);
+    return localDate.toISOString();
+  }, []);
 
   // Helper function to convert ISO datetime back to day and time
   const getDayAndTimeFromIso = useCallback(
@@ -96,8 +111,31 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       const newSelectedSlots = new Set<string>();
 
       data.forEach((slot: AvailabilityData) => {
-        // Add the start time to selected slots
-        newSelectedSlots.add(slot.start_time);
+        try {
+          const startDate = new Date(slot.start_time);
+          const endDate = new Date(slot.end_time);
+
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.error("Invalid date in availability block:", slot);
+            return;
+          }
+
+          // Add start time to selection data (normalized to local timezone)
+          const normalizedStartTime = normalizeIsoDatetime(slot.start_time);
+          newSelectedSlots.add(normalizedStartTime);
+
+          // If there are multiple 30-minute slots, add them too
+          let currentTime = new Date(startDate);
+          currentTime.setMinutes(currentTime.getMinutes() + 30);
+
+          while (currentTime < endDate) {
+            const timeString = normalizeIsoDatetime(currentTime.toISOString());
+            newSelectedSlots.add(timeString);
+            currentTime.setMinutes(currentTime.getMinutes() + 30);
+          }
+        } catch (error) {
+          console.error("Error processing availability block:", slot, error);
+        }
       });
 
       setSelectedSlots(newSelectedSlots);
@@ -200,7 +238,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       try {
         const patternData = JSON.parse(savedPattern);
 
-        const newSelectedSlots = new Set<string>(selectedSlots);
+        const newSelectedSlots = new Set<string>();
 
         days.forEach((day) => {
           const dayOfWeek = format(day, "EEEE"); // Monday, Tuesday, etc.
@@ -246,7 +284,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
         console.error("Error parsing current availability:", error);
       }
     }
-  }, [days, selectedSlots, getIsoDatetime]);
+  }, [days, getIsoDatetime]);
 
   // Handle day header click - select whole day
   const handleSelectWholeDay = useCallback(
