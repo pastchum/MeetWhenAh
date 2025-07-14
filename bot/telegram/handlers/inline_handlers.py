@@ -70,7 +70,7 @@ def register_inline_handlers(bot):
                 
                 # Ask for availability
                 from handlers.availability_handlers import ask_availability
-                ask_availability(call.message.chat.id, event_id)
+                ask_availability(call.message.chat.id, event_id, username)
             else:
                 bot.answer_callback_query(
                     call.id,
@@ -135,10 +135,11 @@ def handle_join_event(message, event_id, user):
     
     # Send private message to user to update availability
     try:
+        username = user.username or str(user.id)
         bot.send_message(
             user.id,
             "Please update your availability for this event:",
-            reply_markup=create_availability_markup(event_id)
+            reply_markup=create_availability_markup(event_id, username)
         )
     except Exception as e:
         print(f"Failed to send private message: {e}")
@@ -149,8 +150,11 @@ def handle_event_selection(message, event_id):
     if not event_data:
         bot.send_message(message.chat.id, "This event no longer exists.")
         return
+    
+    # Get username from the user who clicked the button
+    username = message.from_user.username or str(message.from_user.id)
         
-    web_app_url = create_web_app_url(event_id=event_id)
+    web_app_url = create_web_app_url("/dragselector", 1, event_id=event_id, username=username)
     markup = types.InlineKeyboardMarkup()
     webapp_button = types.InlineKeyboardButton(
         text="Update Availability",
@@ -174,8 +178,15 @@ def create_join_markup(event_id):
     markup.add(join_button)
     return markup
 
-def create_availability_markup(event_id):
-    web_app_url = create_web_app_url(event_id=event_id)
+def create_availability_markup(event_id, username=None):
+    # If username is not provided, we can't create a proper URL for group contexts
+    # This function should be called with a username parameter
+    if not username:
+        # Fallback - create a generic URL (this should be avoided in group contexts)
+        web_app_url = create_web_app_url("/dragselector", 1, event_id=event_id)
+    else:
+        web_app_url = create_web_app_url("/dragselector", 1, event_id=event_id, username=username)
+    
     markup = types.InlineKeyboardMarkup()
     webapp_button = types.InlineKeyboardButton(
         text="Update Availability",

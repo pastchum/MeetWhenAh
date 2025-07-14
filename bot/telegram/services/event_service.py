@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
-from .database_service import getEntry, setEntry, updateEntry
+from .database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries
 import uuid
 
 def getEvent(event_id: str) -> Optional[Dict]:
@@ -66,32 +66,27 @@ def getEventSleepPreferences(event_id: str) -> Dict[str, Dict[str, int]]:
 
 def getUserAvailability(username: str, event_id: str) -> List[Dict]:
     """Get a user's availability for an event"""
-    availability = getEntry("availability", "event_id", event_id)
+    availability = getEntries("availability_blocks", "event_id", event_id)
     if not availability:
         return []
     
-    user_availability = availability.get(username, [])
+    user_uuid = getEntry("users", "tele_user", username)["uuid"]
+    if not user_uuid:
+        return []
+        
+    user_availability = [x for x in availability if x["user_uuid"] == user_uuid]
     return user_availability
 
 def updateUserAvailability(username: str, event_id: str, availability_data: List[Dict]) -> bool:
     """Update a user's availability for an event"""
-    availability = getEntry("availability", "event_id", event_id)
+    user_uuid = getEntry("users", "tele_user", username)["uuid"]
+    if not user_uuid:
+        return False
     
-    if availability:
-        # Update existing availability
-        availability_data = availability.copy()
-        availability_data[username] = availability_data
-        availability_data["updated_at"] = datetime.now()
-        return updateEntry("availability", event_id, availability_data)
-    else:
-        # Create new availability
-        availability_data = {
-            "event_id": event_id,
-            username: availability_data,
-            "created_at": datetime.now(),
-            "updated_at": datetime.now()
-        }
-        return setEntry("availability", event_id, availability_data) 
+    deleteEntries("availability_blocks", "event_id", event_id, "user_uuid", user_uuid)
+    return setEntries("availability_blocks", availability_data)
+    
+    
 
 def getUserEvents(user_id):
     """Get all events that a user is a member of."""

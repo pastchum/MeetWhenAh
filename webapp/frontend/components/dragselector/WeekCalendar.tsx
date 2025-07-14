@@ -5,6 +5,10 @@ import DayHeader from "./DayHeader";
 import TimeColumn from "./TimeColumn";
 import TimeGrid from "./TimeGrid";
 import { format, addDays, startOfWeek, parse } from "date-fns";
+import {
+  AvailabilityData,
+  getUserAvailability,
+} from "app/utils/availability_utils";
 
 interface WeekCalendarProps {
   startDate?: Date;
@@ -60,31 +64,24 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `/api/availability/${encodeURIComponent(username)}/${encodeURIComponent(
-          eventId
-        )}`
-      );
-      const data = await response.json();
+      const data = await getUserAvailability(username, eventId);
+      if (!data) return;
 
-      if (data.status === "success" && Array.isArray(data.data)) {
-        // Convert backend data to our format
-        const newSelectedSlots = new Map<string, Set<number>>();
+      const newSelectedSlots = new Map<string, Set<number>>();
 
-        data.data.forEach((slot: { date: string; time: string }) => {
-          const dayKey = slot.date;
-          const timeMinutes =
-            parseInt(slot.time.slice(0, 2)) * 60 + parseInt(slot.time.slice(2));
+      data.forEach((slot: AvailabilityData) => {
+        const dayKey = slot.date;
+        const timeMinutes =
+          parseInt(slot.time.slice(0, 2)) * 60 + parseInt(slot.time.slice(2));
 
-          if (!newSelectedSlots.has(dayKey)) {
-            newSelectedSlots.set(dayKey, new Set<number>());
-          }
+        if (!newSelectedSlots.has(dayKey)) {
+          newSelectedSlots.set(dayKey, new Set<number>());
+        }
 
-          newSelectedSlots.get(dayKey)?.add(timeMinutes);
-        });
+        newSelectedSlots.get(dayKey)?.add(timeMinutes);
+      });
 
-        setSelectedSlots(newSelectedSlots);
-      }
+      setSelectedSlots(newSelectedSlots);
     } catch (error) {
       console.error("Error fetching user availability:", error);
     } finally {

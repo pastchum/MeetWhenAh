@@ -56,10 +56,11 @@ def register_availability_handlers(bot):
                 return
             
             # Create web app button for availability selection
+            username = message.from_user.username or str(message.from_user.id)
             markup = types.InlineKeyboardMarkup()
             webapp_btn = types.InlineKeyboardButton(
                 text="Select Availability",
-                web_app=types.WebAppInfo(url=create_web_app_url("/dragselector", 1, event_id=event_id))
+                web_app=types.WebAppInfo(url=create_web_app_url("/dragselector", 1, event_id=event_id, username=username))
             )
             markup.add(webapp_btn)
             
@@ -75,7 +76,7 @@ def register_availability_handlers(bot):
 
     return bot
 
-def ask_availability(chat_id: int, event_id: str):
+def ask_availability(chat_id: int, event_id: str, username: str = None):
     """Ask user to provide availability for an event"""
     try:
         # Get event details
@@ -85,10 +86,16 @@ def ask_availability(chat_id: int, event_id: str):
             return
         
         # Create web app button for availability selection
+        if username:
+            web_app_url = create_web_app_url("/dragselector", 1, event_id=event_id, username=username)
+        else:
+            # Fallback for when username is not provided
+            web_app_url = create_web_app_url("/dragselector", 1, event_id=event_id)
+        
         markup = types.InlineKeyboardMarkup()
         webapp_btn = types.InlineKeyboardButton(
             text="Select Availability",
-            web_app=types.WebAppInfo(url=create_web_app_url("/dragselector", 1, event_id=event_id))
+            web_app=types.WebAppInfo(url=web_app_url)
         )
         markup.add(webapp_btn)
         
