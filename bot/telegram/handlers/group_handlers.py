@@ -12,7 +12,7 @@ def register_group_handlers(bot):
 
     @bot.message_handler(func=lambda message: message.chat.type in ["group", "supergroup"])
     def handle_share_to_group(message):
-        mention_pattern = r'^\s+([\w\-]+)$'
+        mention_pattern = rf'^@MeetWhenAhBot\s+([\w\-]+)$'
         match = re.match(mention_pattern, message.text)
         if match:
             event_id = match.group(1)
