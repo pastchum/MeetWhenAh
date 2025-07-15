@@ -74,15 +74,15 @@ async def get_event(event_id: str):
     
     return {"status": "success", "data": event_data}
 
-@app.get('/api/user/{username}/uuid')
-async def get_user_uuid(username: str):
+@app.get('/api/user/{tele_id}')
+async def get_user_data(tele_id: str):
     """Get user UUID by username"""
-    user_data = getEntry("users", "tele_user", username)
+    user_data = getEntry("users", "tele_id", tele_id)
     
     if not user_data:
         return {"status": "error", "message": "User not found"}
     
-    return {"status": "success", "data": {"uuid": user_data.get("uuid")}}
+    return {"status": "success", "data": {"uuid": user_data.get("uuid"), "username": user_data.get("username")}}
 
 # New webhook endpoint for Telegram
 @app.post("/webhook/bot")

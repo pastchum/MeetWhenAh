@@ -71,7 +71,7 @@ def deleteEntries(table: str, id_field: str, id: str, key_field: str, key_values
     """Delete multiple entries from a table"""
     try:
         response = supabase.table(table).delete().eq(id_field, id).in_(key_field, key_values).execute()
-        return True if response.data else False
+        return True
     except Exception as e:
         print(f"Error deleting entries from {table}: {e}")
         return False

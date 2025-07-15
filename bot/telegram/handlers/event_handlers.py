@@ -104,8 +104,7 @@ def handle_event_creation(message, data):
         )
         
         # Ask creator for availability
-        username = message.from_user.username
-        ask_availability(message.chat.id, event_id, username)
+        ask_availability(message.chat.id, event_id)
         
     except Exception as e:
         bot.reply_to(message, f"Error creating event: {str(e)}")

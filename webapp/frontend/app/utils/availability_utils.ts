@@ -97,14 +97,14 @@ export async function getUserAvailability(username: string, eventId: string): Pr
   }
   
   /**
- * Get user UUID by username
- * Uses the existing /api/user/{username}/uuid endpoint
- * @param username - The username to get UUID for
+ * Get user UUID by telegram id
+ * Uses the existing /api/user/{tele_id} endpoint
+ * @param tele_id - The telegram id to get UUID for
  * @returns Promise<string | null> - The user UUID or null if not found
  */
-export async function getUserUuid(username: string): Promise<string | null> {
+export async function getUserData(tele_id: string): Promise<{uuid: string, username: string} | null> {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${username}/uuid`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${tele_id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -116,16 +116,16 @@ export async function getUserUuid(username: string): Promise<string | null> {
         return null;
       }
   
-      const result: ApiResponse<{uuid: string}> = await response.json();
+      const result: ApiResponse<{uuid: string, username: string}> = await response.json();
   
       if (result.status === 'success' && result.data) {
-        return result.data.uuid;
+        return result.data;
       } else {
-        console.error('Failed to get user UUID:', result.message);
+        console.error('Failed to get user data:', result.message);
         return null;
       }
     } catch (error) {
-      console.error('Error fetching user UUID:', error);
+      console.error('Error fetching user data:', error);
       return null;
     }
   }
