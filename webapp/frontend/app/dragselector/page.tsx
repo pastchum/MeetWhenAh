@@ -6,7 +6,7 @@ import { getEvent, EventDetails } from "app/utils/events_utils";
 import {
   updateUserAvailability,
   AvailabilityData,
-  getUserUuid,
+  getUserData,
   getUserAvailability,
 } from "app/utils/availability_utils";
 
@@ -35,9 +35,18 @@ export default function DragSelectorPage() {
   const [totalEventDays, setTotalEventDays] = useState<number>(7);
   const [currentRangeStart, setCurrentRangeStart] = useState<Date>(new Date());
   const [selectionData, setSelectionData] = useState<Set<string>>(new Set());
+  const [teleId, setTeleId] = useState<number>(0);
   const [username, setUsername] = useState<string>(""); // Default username
   const [userUuid, setUserUuid] = useState<string>("");
   const [eventId, setEventId] = useState<string>("");
+
+  // get telegram id from window.Telegram.WebApp.initDataUnsafe.user.id
+  useEffect(() => {
+    if (window.Telegram.WebApp.initDataUnsafe.user) {
+      const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
+      setTeleId(telegramId);
+    }
+  }, []);
 
   // Parse URL parameters
   useEffect(() => {
@@ -85,15 +94,16 @@ export default function DragSelectorPage() {
 
   // get user uuid
   useEffect(() => {
-    if (!username) return;
+    if (!teleId) return;
     const fetchUserUuid = async () => {
-      const uuid = await getUserUuid(username);
-      if (uuid) {
-        setUserUuid(uuid);
+      const userData = await getUserData(teleId.toString());
+      if (userData) {
+        setUserUuid(userData.uuid);
+        setUsername(userData.username);
       }
     };
     fetchUserUuid();
-  }, [username]);
+  }, [teleId]);
 
   // get user availability
   useEffect(() => {

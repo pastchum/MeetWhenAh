@@ -70,7 +70,10 @@ def getUserAvailability(username: str, event_id: str) -> List[Dict]:
     if not availability:
         return []
     
-    user_uuid = getEntry("users", "tele_user", username)["uuid"]
+    user_data = getEntry("users", "tele_user", username)
+    if not user_data:
+        return []
+    user_uuid = user_data["uuid"]
     if not user_uuid:
         return []
         
@@ -79,7 +82,10 @@ def getUserAvailability(username: str, event_id: str) -> List[Dict]:
 
 def updateUserAvailability(username: str, event_id: str, availability_data: List[Dict]) -> bool:
     """Update a user's availability for an event"""
-    user_uuid = getEntry("users", "tele_user", username)["uuid"]
+    user_data = getEntry("users", "tele_user", username)
+    if not user_data:
+        return False
+    user_uuid = user_data["uuid"]
     if not user_uuid:
         return False
     
