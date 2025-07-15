@@ -15,7 +15,7 @@ interface WeekCalendarProps {
   startDate?: Date;
   endDate?: Date;
   numDays?: number;
-  username?: string;
+  tele_id?: string;
   eventId?: string;
   userUuid?: string;
   onSelectionChange?: (selectedSlots: Set<string>) => void;
@@ -25,7 +25,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   startDate = new Date(),
   endDate = new Date(),
   numDays = 7,
-  username = "",
+  tele_id = "",
   eventId = "",
   userUuid = "",
   onSelectionChange,
@@ -101,11 +101,11 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
 
   // Fetch user availability from backend
   const fetchUserAvailability = useCallback(async () => {
-    if (!username || !eventId) return;
+    if (!tele_id || !eventId) return;
 
     setIsLoading(true);
     try {
-      const data = await getUserAvailability(username, eventId);
+      const data = await getUserAvailability(tele_id, eventId);
       if (!data) return;
 
       const newSelectedSlots = new Set<string>();
@@ -145,11 +145,11 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       setIsLoading(false);
       setSyncedWithBackend(true);
     }
-  }, [username, eventId]);
+  }, [tele_id, eventId]);
 
   // Sync to backend
   const syncToBackend = useCallback(async () => {
-    if (!username || !eventId || !syncedWithBackend) return;
+    if (!tele_id || !eventId || !syncedWithBackend) return;
 
     try {
       // Convert our data format to backend format
@@ -193,8 +193,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
           user_uuid: userUuid,
         });
       }
-
-      updateUserAvailability(username, eventId, availabilityData);
+      updateUserAvailability(tele_id, eventId, availabilityData);
 
       console.log("Availability synced with backend");
     } catch (error) {
@@ -202,7 +201,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
     } finally {
       setPendingSync(false);
     }
-  }, [username, eventId, selectedSlots, syncedWithBackend, userUuid]);
+  }, [tele_id, eventId, selectedSlots, syncedWithBackend, userUuid]);
 
   // Load initial data
   useEffect(() => {

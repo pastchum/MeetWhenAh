@@ -31,7 +31,7 @@ app.add_middleware(
 
 # FastAPI models for API endpoints
 class AvailabilityRequest(BaseModel):
-    username: str
+    tele_id: str
     event_id: str
     availability_data: list = None
 
@@ -46,16 +46,16 @@ class WebhookUpdate(BaseModel):
     callback_query: dict = None
 
 # API endpoints
-@app.get('/api/availability/{username}/{event_id}')
-async def get_availability(username: str, event_id: str):
-    availability = getUserAvailability(username, event_id)
+@app.get('/api/availability/{tele_id}/{event_id}')
+async def get_availability(tele_id: str, event_id: str):
+    availability = getUserAvailability(tele_id, event_id)
 
     return {"status": "success", "data": availability}
 
 @app.post('/api/save-availability')
 async def update_availability(request: AvailabilityRequest):
     success = updateUserAvailability(
-        request.username,
+        request.tele_id,
         request.event_id,
         request.availability_data
     )
@@ -74,15 +74,25 @@ async def get_event(event_id: str):
     
     return {"status": "success", "data": event_data}
 
-@app.get('/api/user/{tele_id}')
-async def get_user_data(tele_id: str):
-    """Get user UUID by username"""
+@app.get('/api/user/user-data-from-tele-id/{tele_id}')
+async def get_user_data_from_tele_id(tele_id: str):
+    """Get user UUID, username and telegram id from telegram id"""
     user_data = getEntry("users", "tele_id", tele_id)
     
     if not user_data:
         return {"status": "error", "message": "User not found"}
     
     return {"status": "success", "data": {"uuid": user_data.get("uuid"), "username": user_data.get("username")}}
+
+@app.get('/api/user/user-data-from-username/{username}')
+async def get_user_data_from_username(username: str):
+    """Get user UUID, username and telegram id from username"""
+    user_data = getEntry("users", "tele_user", username)
+    
+    if not user_data:
+        return {"status": "error", "message": "User not found"}
+    
+    return {"status": "success", "data": {"uuid": user_data.get("uuid"), "username": user_data.get("username"), "tele_id": user_data.get("tele_id")}}
 
 # New webhook endpoint for Telegram
 @app.post("/webhook/bot")

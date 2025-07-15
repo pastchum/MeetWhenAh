@@ -8,7 +8,7 @@ export interface AvailabilityData {
   }
   
   export interface AvailabilityRequest {
-    username: string;
+    tele_id: string;
     event_id: string;
     availability_data: AvailabilityData[];
   }
@@ -16,14 +16,14 @@ export interface AvailabilityData {
 
 /**
  * Get user availability for a specific event
- * Uses the existing /api/availability/{username}/{event_id} endpoint
- * @param username - The username to get availability for
+ * Uses the existing /api/availability/{tele_id}/{event_id} endpoint
+ * @param tele_id - The telegram id to get availability for
  * @param eventId - The event ID
  * @returns Promise<AvailabilityData[] | null> - The availability data or null if not found
  */
-export async function getUserAvailability(username: string, eventId: string): Promise<AvailabilityData[] | null> {
+export async function getUserAvailability(tele_id: string, eventId: string): Promise<AvailabilityData[] | null> {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/availability/${username}/${eventId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/availability/${tele_id}/${eventId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -58,13 +58,13 @@ export async function getUserAvailability(username: string, eventId: string): Pr
    * @returns Promise<boolean> - True if successful, false otherwise
    */
   export async function updateUserAvailability(
-    username: string, 
+    tele_id: string, 
     eventId: string, 
     availabilityData: AvailabilityData[]
   ): Promise<boolean> {
     try {
       const requestBody: AvailabilityRequest = {
-        username,
+        tele_id,
         event_id: eventId,
         availability_data: availabilityData,
       };
@@ -104,7 +104,7 @@ export async function getUserAvailability(username: string, eventId: string): Pr
  */
 export async function getUserData(tele_id: string): Promise<{uuid: string, username: string} | null> {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/${tele_id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/user-data-from-tele-id/${tele_id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -129,6 +129,42 @@ export async function getUserData(tele_id: string): Promise<{uuid: string, usern
       return null;
     }
   }
+
+
+  /**
+ * Get user UUID by username
+ * Uses the existing /api/user/{username} endpoint
+ * @param username - The username to get UUID for
+ * @returns Promise<string | null> - The user UUID or null if not found
+ */
+  export async function getUserDataFromUsername(username: string): Promise<{uuid: string, username: string, tele_id: number} | null> {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/user-data-from-username/${username}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (!response.ok) {
+        console.error(`Failed to fetch user data: ${response.status} ${response.statusText}`);
+        return null;
+      }
+  
+      const result: ApiResponse<{uuid: string, username: string, tele_id: number}> = await response.json();
+  
+      if (result.status === 'success' && result.data) {
+        return result.data;
+      } else {
+        console.error('Failed to get user data:', result.message);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      return null;
+    }
+  }
+
 
 /**
  * Health check for the API
