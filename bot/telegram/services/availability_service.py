@@ -45,7 +45,8 @@ def ask_availability(chat_id: int, event_id: str, username: str = None, group: b
             )
         # group chat logic
         else: 
-            miniapp_url = f"https://t.me/{bot.get_me().username}/MeetWhenAh?startapp=dragselector&event_id={event_id}"
+            params = f"dragselector&event_id={event_id}"
+            miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
 
             markup = types.InlineKeyboardMarkup()
             miniapp_btn = types.InlineKeyboardButton(
