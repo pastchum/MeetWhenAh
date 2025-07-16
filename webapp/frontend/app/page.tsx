@@ -7,7 +7,7 @@ export default function Home() {
     const tg = window.Telegram.WebApp;
     const startParam = tg.initDataUnsafe.start_param;
     if (startParam) {
-      const params = startParam.split("&");
+      const params = startParam.split(":");
       const eventId = params
         .find((param) => param.startsWith("event_id="))
         ?.split("=")[1];
