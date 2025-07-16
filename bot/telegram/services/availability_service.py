@@ -1,6 +1,7 @@
 import telebot
 from telebot import types
 import logging
+from urllib.parse import quote
 
 # Import from config and services
 from ..config.config import bot
@@ -45,7 +46,7 @@ def ask_availability(chat_id: int, event_id: str, username: str = None, group: b
             )
         # group chat logic
         else: 
-            params = f"dragselector&event_id={event_id}"
+            params = quote(f"dragselector:event_id={event_id}")
             miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
 
             markup = types.InlineKeyboardMarkup()
