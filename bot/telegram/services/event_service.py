@@ -64,13 +64,13 @@ def getEventSleepPreferences(event_id: str) -> Dict[str, Dict[str, int]]:
     
     return sleep_prefs
 
-def getUserAvailability(username: str, event_id: str) -> List[Dict]:
+def getUserAvailability(tele_id: str, event_id: str) -> List[Dict]:
     """Get a user's availability for an event"""
     availability = getEntries("availability_blocks", "event_id", event_id)
     if not availability:
         return []
     
-    user_data = getEntry("users", "tele_user", username)
+    user_data = getEntry("users", "tele_id", tele_id)
     if not user_data:
         return []
     user_uuid = user_data["uuid"]
@@ -80,18 +80,23 @@ def getUserAvailability(username: str, event_id: str) -> List[Dict]:
     user_availability = [x for x in availability if x["user_uuid"] == user_uuid]
     return user_availability
 
-def updateUserAvailability(username: str, event_id: str, availability_data: List[Dict]) -> bool:
+def updateUserAvailability(tele_id: str, event_id: str, availability_data: List[Dict]) -> bool:
     """Update a user's availability for an event"""
-    user_data = getEntry("users", "tele_user", username)
+    user_data = getEntry("users", "tele_id", tele_id)
     if not user_data:
         return False
+    
     user_uuid = user_data["uuid"]
     if not user_uuid:
         return False
-    
+
+    # delete all availability blocks for the user for the event previously, if any
     successful_delete = deleteEntries("availability_blocks", "event_id", event_id, "user_uuid", [user_uuid])
     if not successful_delete:
         return False
+
+    if not availability_data: # no need to set if no availability data
+        return True
     successful_set = setEntries("availability_blocks", availability_data)
     if not successful_set:
         return False

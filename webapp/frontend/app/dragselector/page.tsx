@@ -8,6 +8,7 @@ import {
   AvailabilityData,
   getUserData,
   getUserAvailability,
+  getUserDataFromUsername,
 } from "app/utils/availability_utils";
 
 // Interface for aggregated time periods
@@ -40,18 +41,14 @@ export default function DragSelectorPage() {
   const [userUuid, setUserUuid] = useState<string>("");
   const [eventId, setEventId] = useState<string>("");
 
-  // get telegram id from window.Telegram.WebApp.initDataUnsafe.user.id
+  // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+
     if (window.Telegram.WebApp.initDataUnsafe.user) {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
       setTeleId(telegramId);
     }
-  }, []);
-
-  // Parse URL parameters
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-
     // Set event_id from URL parameters
     const urlEventId = urlParams.get("event_id");
     if (urlEventId) {
@@ -62,6 +59,7 @@ export default function DragSelectorPage() {
     const urlUsername = urlParams.get("username");
     if (urlUsername) {
       setUsername(urlUsername);
+      fetchUserUuidFromUsername(urlUsername);
     }
   }, []);
 
@@ -92,24 +90,37 @@ export default function DragSelectorPage() {
     getEventDetails();
   }, [eventId]);
 
-  // get user uuid
+  // get user uuid from telegram id
   useEffect(() => {
     if (!teleId) return;
-    const fetchUserUuid = async () => {
+    const fetchUserUuidFromTeleId = async () => {
       const userData = await getUserData(teleId.toString());
       if (userData) {
         setUserUuid(userData.uuid);
         setUsername(userData.username);
       }
     };
-    fetchUserUuid();
+    fetchUserUuidFromTeleId();
   }, [teleId]);
+
+  // function to get user uuid from username
+  const fetchUserUuidFromUsername = async (username: string) => {
+    const userData = await getUserDataFromUsername(username);
+    if (userData) {
+      setUserUuid(userData.uuid);
+      setUsername(userData.username);
+      setTeleId(userData.tele_id);
+    }
+  };
 
   // get user availability
   useEffect(() => {
-    if (!userUuid) return;
+    if (!userUuid || !username || !teleId) return;
     const fetchUserAvailability = async () => {
-      const availability = await getUserAvailability(username, eventId);
+      const availability = await getUserAvailability(
+        teleId.toString(),
+        eventId
+      );
       console.log(availability);
       if (availability) {
         // Convert availability blocks to ISO datetime strings
@@ -367,7 +378,7 @@ export default function DragSelectorPage() {
           startDate={startDate}
           endDate={endDate}
           numDays={numDays}
-          username={username}
+          tele_id={teleId.toString()}
           eventId={eventId}
           userUuid={userUuid}
           onSelectionChange={setSelectionData}
