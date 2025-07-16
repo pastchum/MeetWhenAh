@@ -7,14 +7,10 @@ export default function Home() {
     const tg = window.Telegram.WebApp;
     const startParam = tg.initDataUnsafe.start_param;
     if (startParam) {
-      const params = startParam.split(":");
-      const eventId = params
-        .find((param) => param.startsWith("event_id="))
-        ?.split("=")[1];
-      if (startParam.startsWith("dragselector") && eventId) {
+      const params = startParam.split("=");
+      const eventId = params[1];
+      if (params[0] === "dragselector" && eventId) {
         window.location.href = `/dragselector?event_id=${eventId}`;
-      } else {
-        window.location.href = "/";
       }
     }
   }, []);
