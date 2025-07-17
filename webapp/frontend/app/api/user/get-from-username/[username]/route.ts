@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getEntry } from '@/app/utils/db_utils';
+import { getEntry } from '@/utils/db_utils';
 
 export async function GET(request: Request, { params }: { params: { username: string } }) {
   const user = await getEntry('users', 'tele_user', params.username);

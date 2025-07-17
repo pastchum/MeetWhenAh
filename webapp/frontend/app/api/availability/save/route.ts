@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateUserAvailability } from '@/app/utils/availability_utils';
+import { updateUserAvailability } from '@/utils/availability_utils';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();

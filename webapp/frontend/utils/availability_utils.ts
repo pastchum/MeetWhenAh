@@ -1,4 +1,4 @@
-import { supabase, TableRow } from '@/lib/db';
+import { supabase, TableRow } from '@/lib/db' ;
 
 export async function getUserAvailability(tele_id: string, event_id: string) {
   const { data, error } = await supabase
@@ -37,4 +37,4 @@ export async function updateUserAvailability(tele_id: string, event_id: string, 
     }
 
     return true;
-} 
+}

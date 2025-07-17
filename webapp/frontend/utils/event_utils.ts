@@ -12,4 +12,5 @@ export async function getEvent(event_id: string) {
     }
 
     return data;
-} 
+}
+

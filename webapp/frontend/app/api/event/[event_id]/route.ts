@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getEntry } from '@/app/utils/db_utils';
+import { getEntry } from '@/utils/db_utils';
 
 export async function GET(request: Request, { params }: { params: { event_id: string } }) {
   const eventData = await getEntry('events', 'event_id', params.event_id);

@@ -1,4 +1,4 @@
-import { supabase, TableRow } from '@/lib/db';
+import { supabase, TableRow } from '@/lib/db' ;
 
 /**
  * Get a single entry from a table by a key field
