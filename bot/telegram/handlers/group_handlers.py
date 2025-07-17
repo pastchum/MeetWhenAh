@@ -3,9 +3,11 @@ from telebot import types
 import logging
 import re
 
-# Import from config and services
+# Import from config 
 from ..config.config import bot
-from ..services.availability_service import ask_availability
+
+# Import from services
+from services.availability_service import ask_availability
 
 def register_group_handlers(bot):
     """Register all group-related handlers"""

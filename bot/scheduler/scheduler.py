@@ -4,8 +4,7 @@ from collections import defaultdict
 import math
 import logging
 import uuid
-from .database_service import getEntry, setEntry, updateEntry
-from .event_service import getEvent
+from database_service import getEntry, setEntry, updateEntry
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -18,7 +17,7 @@ DEFAULT_SLEEP_HOURS = {
 DEFAULT_MIN_BLOCK_SIZE = 60  # minutes
 TIME_SLOT_SIZE = 30  # minutes
 
-class AvailabilityProcessor:
+class Scheduler:
     """
     Class to process availability data and find optimal meeting times.
     This service handles the core scheduling logic for finding the best meeting times

@@ -7,13 +7,15 @@ from telebot import types
 
 # Import from config
 from ..config.config import bot
-from ..utils.web_app import create_web_app_url
-from ..services.user_service import updateUsername
-from ..services.event_service import getEventSleepPreferences, getUserAvailability, updateUserAvailability, create_event, get_event_by_id, join_event
-from ..services.scheduling_service import calculate_optimal_meeting_time
-from ..utils.date_utils import daterange
 
-from ..services.availability_service import ask_availability
+# Import from services
+from services.user_service import updateUsername
+from services.event_service import getEventSleepPreferences, getUserAvailability, updateUserAvailability, create_event, get_event_by_id, join_event
+from services.scheduling_service import calculate_optimal_meeting_time
+from services.availability_service import ask_availability
+
+# Import from utils
+from ..utils.date_utils import daterange
 
 # Keep track of processed message IDs to prevent duplicate processing
 processed_messages = set()

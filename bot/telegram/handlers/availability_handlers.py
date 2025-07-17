@@ -2,15 +2,17 @@ import telebot
 from telebot import types
 import logging
 
-# Import from config and services
+# Import from config and utils
 from ..config.config import bot
-from ..services.database_service import getEntry, setEntry, updateEntry
-from ..services.scheduling_service import format_availability_summary
 from ..utils.web_app import create_web_app_url
-from ..services.event_service import getEvent, getUserAvailability, updateUserAvailability
 
 # Import from services
-from ..services.availability_service import ask_availability
+from services.availability_service import ask_availability
+from services.event_service import getEvent, getUserAvailability, updateUserAvailability
+from services.database_service import getEntry, setEntry, updateEntry
+
+# Import from scheduler
+from scheduler.scheduler import format_availability_summary
 
 # Import from utils
 from ..utils.message_templates import HELP_MESSAGE
