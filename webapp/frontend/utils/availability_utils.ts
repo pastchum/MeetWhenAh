@@ -1,10 +1,24 @@
 import { supabase, TableRow } from '@/lib/db' ;
+import { getUserDataFromId } from './user_utils';
+
+export interface AvailabilityData {
+    user_uuid: string;
+    event_id: string;
+    start_time: string;
+    end_time: string;
+}
 
 export async function getUserAvailability(tele_id: string, event_id: string) {
+  const user = await getUserDataFromId(tele_id);
+  if (!user) {
+    console.error('User not found');
+    return null;
+  }
+  const user_uuid = user.uuid;
   const { data, error } = await supabase
-    .from('availability')
+    .from('availability_blocks')
     .select('*')
-    .eq('tele_id', tele_id)
+    .eq('user_uuid', user_uuid)
     .eq('event_id', event_id);
 
   if (error) {
@@ -16,10 +30,16 @@ export async function getUserAvailability(tele_id: string, event_id: string) {
 }
 
 export async function updateUserAvailability(tele_id: string, event_id: string, availability_data: any) {
+    const user = await getUserDataFromId(tele_id);
+    if (!user) {
+        console.error('User not found');
+        return false;
+    }
+    const user_uuid = user.uuid;
     const { error: deleteError } = await supabase
-        .from('availability')
+        .from('availability_blocks')
         .delete()
-        .eq('tele_id', tele_id)
+        .eq('user_uuid', user_uuid)
         .eq('event_id', event_id);
 
     if (deleteError) {
@@ -28,7 +48,7 @@ export async function updateUserAvailability(tele_id: string, event_id: string, 
     }
 
     const { data: data, error: insertError } = await supabase
-        .from('availability')
+        .from('availability_blocks')
         .insert(availability_data);
 
     if (insertError) {

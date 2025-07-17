@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getEntry } from '@/utils/db_utils';
+import { getEvent } from '@/utils/event_utils';
 
-export async function GET(request: Request, { params }: { params: { event_id: string } }) {
-  const eventData = await getEntry('events', 'event_id', params.event_id);
+export async function GET(request: Request, { params }: { params: Promise<{ event_id: string }> }) {
+  const { event_id } = await params;
+  const eventData = await getEvent(event_id);
 
   if (!eventData) {
     return NextResponse.json({ status: 'error', message: 'Event not found' });

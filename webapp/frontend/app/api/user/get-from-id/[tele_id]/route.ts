@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getEntry } from '@/utils/db_utils';
+import { getUserDataFromId } from '@/utils/user_utils';
 
-export async function GET(request: Request, { params }: { params: { tele_id: string } }) {
-  const user = await getEntry('users', 'tele_id', params.tele_id);
+export async function GET(request: Request, { params }: { params: Promise<{ tele_id: string }> }): Promise<NextResponse> {
+  const { tele_id } = await params;
+  const user = await getUserDataFromId(tele_id);
 
   if (!user) {
     return NextResponse.json({ status: 'error', message: 'User not found' });
@@ -12,7 +13,8 @@ export async function GET(request: Request, { params }: { params: { tele_id: str
     status: 'success',
     data: {
       uuid: user.uuid,
-      username: user.username
+      tele_user: user.tele_user,
+      tele_id: user.tele_id
     }
   });
 }

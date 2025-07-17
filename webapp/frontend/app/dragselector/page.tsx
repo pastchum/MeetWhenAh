@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from "react";
 import WeekCalendar from "../../components/dragselector/WeekCalendar";
 import { addDays, format, parse, startOfWeek } from "date-fns";
-import { getEvent, EventDetails } from ".next/routes/events_routes";
+import { EventData } from "@/utils/event_utils";
+import { AvailabilityData } from "@/utils/availability_utils";
+import { fetchEventFromAPI } from "@/routes/events_routes";
+import { fetchUserAvailabilityFromAPI } from "@/routes/availability_routes";
 import {
-  updateUserAvailability,
-  AvailabilityData,
-  getUserData,
-  getUserAvailability,
-  getUserDataFromUsername,
-} from ".next/routes/availability_routes";
+  fetchUserDataFromUsername,
+  fetchUserDataFromId,
+} from "@/routes/user_routes";
 
 // Interface for aggregated time periods
 interface TimePeriod {
@@ -18,7 +18,7 @@ interface TimePeriod {
 }
 
 export default function DragSelectorPage() {
-  const [eventDetails, setEventDetails] = useState<EventDetails>({
+  const [eventDetails, setEventDetails] = useState<EventData>({
     event_id: "",
     event_name: "",
     event_description: "",
@@ -36,7 +36,7 @@ export default function DragSelectorPage() {
   const [totalEventDays, setTotalEventDays] = useState<number>(7);
   const [currentRangeStart, setCurrentRangeStart] = useState<Date>(new Date());
   const [selectionData, setSelectionData] = useState<Set<string>>(new Set());
-  const [teleId, setTeleId] = useState<number>(0);
+  const [teleId, setTeleId] = useState<string>("");
   const [username, setUsername] = useState<string>(""); // Default username
   const [userUuid, setUserUuid] = useState<string>("");
   const [eventId, setEventId] = useState<string>("");
@@ -47,7 +47,7 @@ export default function DragSelectorPage() {
 
     if (window.Telegram.WebApp.initDataUnsafe.user) {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
-      setTeleId(telegramId);
+      setTeleId(telegramId.toString());
     }
     // Set event_id from URL parameters
     const urlEventId = urlParams.get("event_id");
@@ -67,14 +67,16 @@ export default function DragSelectorPage() {
   useEffect(() => {
     const getEventDetails = async () => {
       if (!eventId) return;
-      const eventDetails = await getEvent(eventId);
+      const eventDetails = await fetchEventFromAPI(eventId);
       if (eventDetails) {
+        console.log(eventDetails);
         setEventDetails(eventDetails);
         setStartDate(new Date(eventDetails.start_date));
         setEndDate(new Date(eventDetails.end_date));
         // Calculate event duration in days
         const eventStart = new Date(eventDetails.start_date);
-        console.log(eventStart);
+        console.log("eventStart", eventDetails.start_date);
+        console.log("eventStart", eventStart);
         const eventEnd = new Date(eventDetails.end_date);
         const totalDays = Math.ceil(
           (eventEnd.getTime() - eventStart.getTime()) / (1000 * 3600 * 24) + 1
@@ -94,10 +96,10 @@ export default function DragSelectorPage() {
   useEffect(() => {
     if (!teleId) return;
     const fetchUserUuidFromTeleId = async () => {
-      const userData = await getUserData(teleId.toString());
+      const userData = await fetchUserDataFromId(teleId.toString());
       if (userData) {
         setUserUuid(userData.uuid);
-        setUsername(userData.username);
+        setUsername(userData.tele_user);
       }
     };
     fetchUserUuidFromTeleId();
@@ -105,10 +107,10 @@ export default function DragSelectorPage() {
 
   // function to get user uuid from username
   const fetchUserUuidFromUsername = async (username: string) => {
-    const userData = await getUserDataFromUsername(username);
+    const userData = await fetchUserDataFromUsername(username);
     if (userData) {
       setUserUuid(userData.uuid);
-      setUsername(userData.username);
+      setUsername(userData.tele_user);
       setTeleId(userData.tele_id);
     }
   };
@@ -117,7 +119,7 @@ export default function DragSelectorPage() {
   useEffect(() => {
     if (!userUuid || !username || !teleId) return;
     const fetchUserAvailability = async () => {
-      const availability = await getUserAvailability(
+      const availability = await fetchUserAvailabilityFromAPI(
         teleId.toString(),
         eventId
       );
@@ -126,7 +128,7 @@ export default function DragSelectorPage() {
         // Convert availability blocks to ISO datetime strings
         const newSelectionData = new Set<string>();
 
-        availability.forEach((block) => {
+        availability.forEach((block: AvailabilityData) => {
           try {
             const startDate = new Date(block.start_time);
             const endDate = new Date(block.end_time);
@@ -160,7 +162,7 @@ export default function DragSelectorPage() {
       }
     };
     fetchUserAvailability();
-  }, [userUuid, eventId]);
+  }, [userUuid, eventId, teleId, username]);
 
   // Navigate to the event's start date
   const navigateToEventStart = () => {
@@ -378,7 +380,7 @@ export default function DragSelectorPage() {
           startDate={startDate}
           endDate={endDate}
           numDays={numDays}
-          tele_id={teleId.toString()}
+          tele_id={teleId}
           eventId={eventId}
           userUuid={userUuid}
           onSelectionChange={setSelectionData}
