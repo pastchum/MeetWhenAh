@@ -1,5 +1,9 @@
 from datetime import datetime, timezone
+
+# Import from services
 from .database_service import getEntry, setEntry, updateEntry
+
+# Import from other
 import uuid
 
 def getUser(tele_id: str) -> dict:

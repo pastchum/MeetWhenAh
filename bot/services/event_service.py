@@ -1,6 +1,10 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
+
+# Import from services
 from .database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries
+
+# Import from other
 import uuid
 
 def getEvent(event_id: str) -> Optional[Dict]:

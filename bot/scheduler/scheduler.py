@@ -4,7 +4,11 @@ from collections import defaultdict
 import math
 import logging
 import uuid
-from database_service import getEntry, setEntry, updateEntry
+
+# Import from services
+from services.database_service import getEntry, setEntry, updateEntry
+
+# Import from other
 
 # Set up logging
 logger = logging.getLogger(__name__)

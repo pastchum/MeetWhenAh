@@ -3,14 +3,19 @@ from telebot import types
 import logging
 from urllib.parse import quote
 
-# Import from config and services
-from ..config.config import bot
-from ..services.database_service import getEntry, setEntry, updateEntry
-from ..services.scheduling_service import format_availability_summary
-from ..utils.web_app import create_web_app_url
-from ..services.event_service import getEvent, getUserAvailability, updateUserAvailability
-from ..utils.message_templates import HELP_MESSAGE
-#from ..utils.native_interface import create_native_availability_selector, handle_native_availability_callback
+# Import bot config
+from telegram.config.config import bot
+
+# Import from scheduler
+from scheduler.scheduler import format_availability_summary
+
+# Import from services
+from .database_service import getEntry, setEntry, updateEntry
+from .event_service import getEvent, getUserAvailability, updateUserAvailability
+
+# Import from utils
+from utils.message_templates import HELP_MESSAGE
+from utils.web_app import create_web_app_url
 
 logger = logging.getLogger(__name__)
 
