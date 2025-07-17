@@ -4,18 +4,15 @@ import logging
 
 # Import from config and utils
 from ..config.config import bot
-from ..utils.web_app import create_web_app_url
+from utils.web_app import create_web_app_url
 
 # Import from services
-from services.availability_service import ask_availability
+from services.availability_service import ask_availability, format_availability_summary
 from services.event_service import getEvent, getUserAvailability, updateUserAvailability
 from services.database_service import getEntry, setEntry, updateEntry
 
-# Import from scheduler
-from scheduler.scheduler import format_availability_summary
-
 # Import from utils
-from ..utils.message_templates import HELP_MESSAGE
+from utils.message_templates import HELP_MESSAGE
 
 logger = logging.getLogger(__name__)
 

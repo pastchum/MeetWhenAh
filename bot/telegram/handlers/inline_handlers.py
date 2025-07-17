@@ -11,11 +11,10 @@ from services.database_service import getEntry, setEntry, updateEntry
 from services.event_service import getEventSleepPreferences, join_event
 from services.user_service import updateUsername
 from services.event_service import getUserAvailability, updateUserAvailability
-from services.scheduling_service import calculate_optimal_meeting_time
 
 # Import from utils
-from ..utils.web_app import create_web_app_url
-from ..utils.message_templates import HELP_MESSAGE
+from utils.web_app import create_web_app_url
+from utils.message_templates import HELP_MESSAGE
 
 logger = logging.getLogger(__name__)
 

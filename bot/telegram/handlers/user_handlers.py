@@ -5,12 +5,14 @@ import logging
 # Import from config
 from ..config.config import bot
 
+# Import from scheduler
+from scheduler.scheduler import DEFAULT_SLEEP_HOURS
+
 # Import from services
-from services.scheduling_service import DEFAULT_SLEEP_HOURS
 from services.user_service import setUserSleepPreferences
 
 # Import from utils
-from ..utils.message_templates import HELP_MESSAGE
+from utils.message_templates import HELP_MESSAGE
 
 logger = logging.getLogger(__name__)
 
