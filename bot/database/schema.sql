@@ -74,8 +74,9 @@ CREATE TABLE blocked_timings (
     uuid          UUID            NOT NULL
                     REFERENCES users(uuid)
                         ON DELETE CASCADE,
-    start_timing          DATE            NOT NULL,
-    PRIMARY KEY (uuid, start_timing)
+    start_time          TIMESTAMPTZ            NOT NULL,
+    end_time            TIMESTAMPTZ            NOT NULL,
+    PRIMARY KEY (uuid, start_time, end_time)
 );
 
 -- indexes

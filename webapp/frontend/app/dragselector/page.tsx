@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from "react";
 import WeekCalendar from "../../components/dragselector/WeekCalendar";
 import { addDays, format, parse, startOfWeek } from "date-fns";
-import { getEvent, EventDetails } from "app/utils/events_utils";
+import { getEvent, EventDetails } from "app/routes/events_routes";
 import {
   updateUserAvailability,
   AvailabilityData,
   getUserData,
   getUserAvailability,
   getUserDataFromUsername,
-} from "app/utils/availability_utils";
+} from "app/routes/availability_routes";
 
 // Interface for aggregated time periods
 interface TimePeriod {

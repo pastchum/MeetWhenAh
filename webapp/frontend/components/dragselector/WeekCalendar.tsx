@@ -9,7 +9,7 @@ import {
   AvailabilityData,
   getUserAvailability,
   updateUserAvailability,
-} from "app/utils/availability_utils";
+} from "app/routes/availability_routes";
 
 interface WeekCalendarProps {
   startDate?: Date;
