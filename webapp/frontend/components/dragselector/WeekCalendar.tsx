@@ -6,10 +6,10 @@ import TimeColumn from "./TimeColumn";
 import TimeGrid from "./TimeGrid";
 import { format, addDays, startOfWeek, parse, addMinutes } from "date-fns";
 import {
-  AvailabilityData,
-  getUserAvailability,
-  updateUserAvailability,
-} from "app/utils/availability_utils";
+  fetchUserAvailabilityFromAPI,
+  updateUserAvailabilityToAPI,
+} from "@/routes/availability_routes";
+import { AvailabilityData } from "@/utils/availability_utils";
 
 interface WeekCalendarProps {
   startDate?: Date;
@@ -74,6 +74,25 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
     []
   );
 
+  // Update selection based on drag operation
+  const updateSelection = useCallback(
+    (day: string, time: number, operation: "select" | "deselect") => {
+      setSelectedSlots((prev) => {
+        const newSet = new Set(prev);
+        const isoDatetime = getIsoDatetime(day, time);
+
+        if (operation === "select") {
+          newSet.add(isoDatetime);
+        } else {
+          newSet.delete(isoDatetime);
+        }
+
+        return newSet;
+      });
+    },
+    [getIsoDatetime]
+  );
+
   // Helper function to normalize ISO datetime to local timezone for comparison
   const normalizeIsoDatetime = useCallback((isoString: string): string => {
     const date = new Date(isoString);
@@ -105,11 +124,11 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
 
     setIsLoading(true);
     try {
-      const data = await getUserAvailability(tele_id, eventId);
+      const data = await fetchUserAvailabilityFromAPI(tele_id, eventId);
       if (!data) return;
 
       const newSelectedSlots = new Set<string>();
-
+      console.log(data);
       data.forEach((slot: AvailabilityData) => {
         try {
           const startDate = new Date(slot.start_time);
@@ -145,7 +164,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       setIsLoading(false);
       setSyncedWithBackend(true);
     }
-  }, [tele_id, eventId]);
+  }, [tele_id, eventId, normalizeIsoDatetime]);
 
   // Sync to backend
   const syncToBackend = useCallback(async () => {
@@ -153,12 +172,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
 
     try {
       // Convert our data format to backend format
-      const availabilityData: {
-        start_time: string;
-        end_time: string;
-        event_id: string;
-        user_uuid: string;
-      }[] = [];
+      const availabilityData: AvailabilityData[] = [];
 
       // Group consecutive time slots into blocks
       const sortedSlots = Array.from(selectedSlots).sort();
@@ -186,14 +200,15 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
         const endDateTime = new Date(endTime);
         endDateTime.setMinutes(endDateTime.getMinutes() + 30);
 
-        availabilityData.push({
-          start_time: startTime,
-          end_time: endDateTime.toISOString(),
-          event_id: eventId,
+        const data: AvailabilityData = {
           user_uuid: userUuid,
-        });
+          event_id: eventId,
+          start_time: startTime,
+          end_time: endTime,
+        };
+        availabilityData.push(data);
       }
-      updateUserAvailability(tele_id, eventId, availabilityData);
+      updateUserAvailabilityToAPI(tele_id, eventId, availabilityData);
 
       console.log("Availability synced with backend");
     } catch (error) {
@@ -201,7 +216,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
     } finally {
       setPendingSync(false);
     }
-  }, [tele_id, eventId, selectedSlots, syncedWithBackend, userUuid]);
+  }, [tele_id, eventId, selectedSlots, syncedWithBackend]);
 
   // Load initial data
   useEffect(() => {
@@ -336,7 +351,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       // Update initial selection
       updateSelection(day, time, isSelected ? "deselect" : "select");
     },
-    []
+    [updateSelection]
   );
 
   // Handle drag over time slot
@@ -350,7 +365,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
         setLastSlot({ day, time });
       }
     },
-    [isDragging, lastSlot, dragOperation]
+    [isDragging, lastSlot, dragOperation, updateSelection]
   );
 
   // Handle drag end
@@ -361,26 +376,6 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
     // Mark for syncing to backend
     setPendingSync(true);
   }, []);
-
-  // Update selection based on drag operation
-  const updateSelection = (
-    day: string,
-    time: number,
-    operation: "select" | "deselect"
-  ) => {
-    setSelectedSlots((prev) => {
-      const newSet = new Set(prev);
-      const isoDatetime = getIsoDatetime(day, time);
-
-      if (operation === "select") {
-        newSet.add(isoDatetime);
-      } else {
-        newSet.delete(isoDatetime);
-      }
-
-      return newSet;
-    });
-  };
 
   // Notify parent about selection changes
   useEffect(() => {
