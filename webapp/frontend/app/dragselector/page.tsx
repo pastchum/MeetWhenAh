@@ -9,6 +9,7 @@ import { fetchUserAvailabilityFromAPI } from "@/routes/availability_routes";
 import {
   fetchUserDataFromUsername,
   fetchUserDataFromId,
+  addUserToDatabase,
 } from "@/routes/user_routes";
 
 // Interface for aggregated time periods
@@ -100,6 +101,29 @@ export default function DragSelectorPage() {
       if (userData) {
         setUserUuid(userData.uuid);
         setUsername(userData.tele_user);
+      } else {
+        // add user to database
+        const telegramUser = window.Telegram.WebApp.initDataUnsafe.user;
+        if (telegramUser) {
+          const newUserData = {
+            uuid: crypto.randomUUID(),
+            tele_id: telegramUser.id.toString(),
+            tele_user: telegramUser.username || "",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            initialised: true,
+            callout_cleared: true,
+            sleep_start_time: "00:00:00",
+            sleep_end_time: "00:00:00",
+            tmp_sleep_start: "00:00:00",
+          };
+          const newUser = await addUserToDatabase(newUserData);
+          if (newUser) {
+            setUserUuid(newUser.uuid);
+            setUsername(newUser.tele_user);
+            setTeleId(newUser.tele_id);
+          }
+        }
       }
     };
     fetchUserUuidFromTeleId();

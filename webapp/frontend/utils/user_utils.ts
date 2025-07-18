@@ -4,6 +4,13 @@ export interface UserData {
     uuid: string;
     tele_id: string;
     tele_user: string;
+    created_at: string;
+    updated_at: string;
+    initialised: boolean;
+    callout_cleared: boolean;
+    sleep_start_time: string;
+    sleep_end_time: string;
+    tmp_sleep_start: string;
 }
 
 export async function getUserDataFromId(tele_id: string) {
@@ -17,11 +24,7 @@ export async function getUserDataFromId(tele_id: string) {
         return null;
     }
 
-    return {
-        uuid: data[0].uuid,
-        tele_id: data[0].tele_id,
-        tele_user: data[0].tele_user
-    };
+    return data[0];
 }
 
 export async function getUserDataFromUsername(username: string) {
@@ -35,9 +38,18 @@ export async function getUserDataFromUsername(username: string) {
         return null;
     }
 
-    return {
-        uuid: data[0].uuid,
-        tele_id: data[0].tele_id,
-        tele_user: data[0].tele_user
-    };
+    return data[0];
+}
+
+export async function addUser(user: UserData) {
+    const { error } = await supabase
+        .from('users')
+        .insert(user);
+
+    if (error) {
+        console.error('Error adding user:', error);
+        return null;
+    }
+
+    return user;
 }

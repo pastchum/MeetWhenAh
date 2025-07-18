@@ -19,6 +19,7 @@ DEFAULT_MIN_BLOCK_SIZE = 2  # No of blocks (2 * 30 min blocks)
 TIME_SLOT_SIZE = 30  # minutes
 SENSITIVITY_THRESHOLD = 2  # Threshold for considering a block to be valid (e.g. if the number of participants changes by more than this threshold, the block is not valid)
 MIN_PARTICIPANTS = 2  # Minimum number of participants in an event block
+MAX_MULTIPLIER = 2  # Maximum multiplier for the minimum block size
 
 """
 Algorithm for calculating optimal meeting times:
@@ -62,11 +63,12 @@ class Scheduler:
     This service handles the core scheduling logic for finding the best meeting times
     based on participants' availability and preferences.
     """
-    def __init__(self, sleep_hours: dict = DEFAULT_SLEEP_HOURS, min_block_size: int = DEFAULT_MIN_BLOCK_SIZE, min_participants: int = MIN_PARTICIPANTS, sensitivity_threshold: int = SENSITIVITY_THRESHOLD):
+    def __init__(self, sleep_hours: dict = DEFAULT_SLEEP_HOURS, min_block_size: int = DEFAULT_MIN_BLOCK_SIZE, min_participants: int = MIN_PARTICIPANTS, sensitivity_threshold: int = SENSITIVITY_THRESHOLD, max_multiplier: int = MAX_MULTIPLIER):
         self.sleep_hours = sleep_hours
         self.min_block_size = min_block_size
         self.min_participants = min_participants
         self.sensitivity_threshold = sensitivity_threshold
+        self.max_multiplier = max_multiplier
 
     def _create_availability_map(self, availability_blocks: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -98,7 +100,7 @@ class Scheduler:
         Create event blocks from the availability map
         """
         event_blocks = []
-        max_block_size = self.min_block_size * 2
+        max_block_size = self.min_block_size * self.max_multiplier
         sorted_slots = sorted(availability_map.keys())
         print("Sorted slots: ", sorted_slots)
         for time_slot in sorted_slots:
