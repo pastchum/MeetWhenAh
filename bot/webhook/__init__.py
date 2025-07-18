@@ -1,3 +1,0 @@
-"""
-MeetWhenAh Backend Package
-""" 

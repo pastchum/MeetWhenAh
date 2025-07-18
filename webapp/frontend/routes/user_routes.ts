@@ -27,3 +27,20 @@ export async function fetchUserDataFromUsername(username: string) : Promise<User
         return null;
     }
 }
+
+export async function addUserToDatabase(user: UserData) {
+    try {
+        const response = await fetch(`/api/user/add`, {
+            method: 'POST',
+            body: JSON.stringify(user),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to add user');
+        }
+        const result = await response.json();
+        return result.data || null;
+    } catch (error) {
+        console.error('Error adding user:', error);
+        return null;
+    } 
+}

@@ -3,11 +3,15 @@ from telebot import types
 from datetime import datetime, time, timezone
 from tzlocal import get_localzone
 
-# Import from config
-from ..services.database_service import getEntry, setEntry, updateEntry
-from ..services.user_service import updateUsername, setUserSleepPreferences, getUser, setUser, updateUserInitialised
-from ..utils.message_templates import WELCOME_MESSAGE, HELP_MESSAGE
-from ..utils.web_app import create_web_app_url
+# Import from services
+from services.database_service import getEntry, setEntry, updateEntry
+from services.user_service import updateUsername, setUserSleepPreferences, getUser, setUser, updateUserInitialised
+
+# Import from utils
+from utils.message_templates import WELCOME_MESSAGE, HELP_MESSAGE
+from utils.web_app import create_web_app_url
+
+# Import from other
 from urllib.parse import urlencode
 import uuid
 
