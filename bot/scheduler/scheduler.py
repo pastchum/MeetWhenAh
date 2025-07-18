@@ -200,15 +200,27 @@ class Scheduler:
         - Duration
         - Break ties by earliest start time
         """
-        duration = timedelta(event_block["end_time"] - event_block["start_time"]).total_seconds() / 30
+        start = event_block["start_time"]
+        end = event_block["end_time"]
+        if isinstance(start, str):
+            start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        if isinstance(end, str):
+            end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+        duration = (end - start).total_seconds() / 30
         participant_count = len(event_block["participants"])
         return participant_count * duration
     
-    def _get_best_event_block(self, event_blocks: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _get_best_event_block(self, event_blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Get the best event block
         """
-        return max(event_blocks, key=self._score_event_block)
+        if not event_blocks:
+            return []
+        best_event_block = max(event_blocks, key=self._score_event_block)
+        score = self._score_event_block(best_event_block)
+        best_event_blocks = [event_block for event_block in event_blocks if self._score_event_block(event_block) == score]
+        return best_event_blocks
+
     
     # Main function to process the availability blocks and return the best event block
     def _process_availability_blocks(self, availability_blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -217,7 +229,8 @@ class Scheduler:
         """
         availability_map = self._create_availability_map(availability_blocks)
         event_blocks = self._create_event_blocks(availability_map)
-        return self._get_best_event_block(event_blocks)
+        valid_blocks = [event_block for event_block in event_blocks if self._is_valid_event_block(event_block)]
+        return self._get_best_event_block(valid_blocks)
 
 if __name__ == "__main__":
     scheduler = Scheduler()
