@@ -5,9 +5,6 @@ import math
 import logging
 import uuid
 
-# Import from services
-from services.database_service import getEntry, setEntry, updateEntry
-
 # Import from other
 
 # Set up logging
@@ -86,12 +83,14 @@ class Scheduler:
         The availability map is a map of time slots to participants.
         The time slot is a tuple of the date and the time, and the participants is the list of the user UUIDs.
         """
-        availability_map = defaultdict(set)
+        availability_map = {}
         for block in availability_blocks:
             start_time = datetime.strptime(block["start_time"], "%Y-%m-%d %H:%M:%S")
-            end_time = datetime.strptime(block["end_time"], "%Y-%m-%d %H:%M:%S")
-            for time_slot in range(start_time, end_time, timedelta(minutes=TIME_SLOT_SIZE)):
-                availability_map[time_slot].add(block["user_uuid"])
+            if start_time not in availability_map:
+                availability_map[start_time] = [block["user_uuid"]]
+            else:
+                new_participants = availability_map[start_time] + [block["user_uuid"]]
+                availability_map[start_time] = sorted(new_participants)
         return availability_map
 
     def _create_event_blocks(self, availability_map: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -99,40 +98,38 @@ class Scheduler:
         Create event blocks from the availability map
         """
         event_blocks = []
-        for time_slot, participants in availability_map.items():
+        max_block_size = self.min_block_size * 2
+        sorted_slots = sorted(availability_map.keys())
+        print("Sorted slots: ", sorted_slots)
+        for time_slot in sorted_slots:
             # initialise the event block if minimum number of participants are available for any given availability block
-            # Scan through all subsequent blocks and merge consecutive ones as long as they have more than the minimum participants
-            sorted_slots = sorted(availability_map.keys())
-            i = 0
-            while i < len(sorted_slots):
-                slot = sorted_slots[i]
-                participants = availability_map[slot]
-                if len(participants) >= self.min_participants:
-                    start_time = slot
-                    end_time = slot + timedelta(minutes=TIME_SLOT_SIZE)
-                    merged_participants = set(participants)
-                    j = i + 1
-                    while j < len(sorted_slots):
-                        next_slot = sorted_slots[j]
-                        # Check if next_slot is consecutive
-                        if (next_slot - end_time) == timedelta(0):
-                            next_participants = availability_map[next_slot]
-                            if len(next_participants) >= self.min_participants:
-                                end_time = next_slot + timedelta(minutes=TIME_SLOT_SIZE)
-                                merged_participants = merged_participants & set(next_participants)
-                                j += 1
-                                continue
+            start_time = time_slot
+            participants = availability_map[time_slot]
+            intersection = set(participants)
+            if len(participants) >= self.min_participants:
+                # Scan through all subsequent blocks and merge consecutive ones as long as they have more than the minimum participants
+                i = 1
+                while i < max_block_size:
+                    next_block = time_slot + timedelta(minutes=i * 30)
+                    if next_block in availability_map:
+                        new_intersection = intersection.intersection(set(availability_map[next_block]))
+                        if len(new_intersection) >= self.min_participants:
+                            intersection = new_intersection
+                            i += 1
+                        else:
+                            break
+                    else:
                         break
-                    block = {
-                        "start_time": start_time,
-                        "end_time": end_time,
-                        "participants": list(merged_participants)
-                    }
-                    if self._is_valid_event_block(block):
-                        event_blocks.append(block)
-                    i = j
-                else:
-                    i += 1
+                if i >= self.min_block_size:
+                    end_time = time_slot + timedelta(minutes=i * 30)
+                    event_block_participants = sorted(list(intersection))
+                    event_blocks.append({
+                        "start_time": start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                        "end_time": end_time.strftime("%Y-%m-%d %H:%M:%S"),
+                        "participants": event_block_participants,
+                        "participant_count": len(event_block_participants),
+                        "duration": i * 30
+                    })
 
         return event_blocks
 
@@ -159,36 +156,53 @@ class Scheduler:
         """
         Check if the event block is within sleep hours
         """
-        #TODO: Implement this
+        #TODO when sleep hours are implemented
         return True
     
     def _is_within_sensitivity_threshold(self, event_block: Dict[str, Any]) -> bool:
         """
         Check if the event block is within the sensitivity threshold
         """
-        #TODO: Implement this
+        #TODO: Implement this when sensitivity threshold is implemented
         return True
     
     def _is_within_minimum_block_size(self, event_block: Dict[str, Any]) -> bool:
         """
         Check if the event block is within the minimum block size
         """
-        #TODO: Implement this
+        # Calculate the duration in minutes between start_time and end_time
+        # Accepts both string and datetime for compatibility
+        start = event_block["start_time"]
+        end = event_block["end_time"]
+        if isinstance(start, str):
+            start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        if isinstance(end, str):
+            end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+        duration_minutes = (end - start).total_seconds() / 60
+        min_duration = self.min_block_size * TIME_SLOT_SIZE
+        if duration_minutes < min_duration:
+            return False
         return True
     
     def _is_within_minimum_participants(self, event_block: Dict[str, Any]) -> bool:
         """
         Check if the event block is within the minimum number of participants
         """
-        #TODO: Implement this
+        if len(event_block["participants"]) < self.min_participants:
+            return False
         return True
 
     def _score_event_block(self, event_block: Dict[str, Any]) -> float:
         """
         Score the event block
+        Metrics to score: 
+        - Number of participants
+        - Duration
+        - Break ties by earliest start time
         """
-        #TODO: Implement this
-        return 0
+        duration = timedelta(event_block["end_time"] - event_block["start_time"]).total_seconds() / 30
+        participant_count = len(event_block["participants"])
+        return participant_count * duration
     
     def _get_best_event_block(self, event_blocks: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -204,3 +218,20 @@ class Scheduler:
         availability_map = self._create_availability_map(availability_blocks)
         event_blocks = self._create_event_blocks(availability_map)
         return self._get_best_event_block(event_blocks)
+
+if __name__ == "__main__":
+    scheduler = Scheduler()
+    availability_blocks = [
+            {"start_time": "2025-01-01 10:00:00", "end_time": "2025-01-01 10:30:00", "event_id": "1", "user_uuid": "1"},
+            {"start_time": "2025-01-01 11:00:00", "end_time": "2025-01-01 11:30:00", "event_id": "1", "user_uuid": "2"},
+            {"start_time": "2025-01-01 11:00:00", "end_time": "2025-01-01 11:30:00", "event_id": "1", "user_uuid": "1"},
+            {"start_time": "2025-01-01 10:30:00", "end_time": "2025-01-01 11:00:00", "event_id": "1", "user_uuid": "1"},
+                        {"start_time": "2025-01-01 10:30:00", "end_time": "2025-01-01 11:00:00", "event_id": "1", "user_uuid": "2"},
+            {"start_time": "2025-01-01 10:30:00", "end_time": "2025-01-01 11:00:00", "event_id": "1", "user_uuid": "3"},
+            {"start_time": "2025-01-01 11:30:00", "end_time": "2025-01-01 12:00:00", "event_id": "1", "user_uuid": "2"},
+            {"start_time": "2025-01-01 12:00:00", "end_time": "2025-01-01 12:30:00", "event_id": "1", "user_uuid": "1"},
+            {"start_time": "2025-01-01 12:30:00", "end_time": "2025-01-01 13:00:00", "event_id": "1", "user_uuid": "3"},
+            {"start_time": "2025-01-01 13:00:00", "end_time": "2025-01-01 13:30:00", "event_id": "1", "user_uuid": "1"},
+            {"start_time": "2025-01-01 12:30:00", "end_time": "2025-01-01 13:00:00", "event_id": "1", "user_uuid": "2"},
+        ]
+    print(scheduler._create_event_blocks(scheduler._create_availability_map(availability_blocks)))
