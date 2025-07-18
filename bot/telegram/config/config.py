@@ -39,8 +39,8 @@ BOT_COMMANDS = [
     telebot.types.BotCommand("/start", "Start the bot and create events"),
     telebot.types.BotCommand("/help", "Show help message"),
     telebot.types.BotCommand("/sleep", "Set your sleep hours"),
-    telebot.types.BotCommand("/myavailability", "Check your availability for an event"),
-    telebot.types.BotCommand("/updateavailability", "Update your availability for an event")
+    #telebot.types.BotCommand("/myavailability", "Check your availability for an event"),
+    #telebot.types.BotCommand("/updateavailability", "Update your availability for an event")
 ]
 
 # Set commands

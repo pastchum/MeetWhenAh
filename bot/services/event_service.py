@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
+# Import from scheduler
+from scheduler.scheduler import Scheduler
+
 # Import from services
 from .database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries
 
@@ -106,8 +109,6 @@ def updateUserAvailability(tele_id: str, event_id: str, availability_data: List[
         return False
     return True
     
-    
-
 def getUserEvents(user_id):
     """Get all events that a user is a member of."""
     try:
@@ -127,3 +128,24 @@ def getUserEvents(user_id):
     except Exception as e:
         print(f"Error getting user events: {e}")
         return [] 
+    
+def get_event_best_time(event_id: str) -> List[Dict]:
+    """Get the best time for an event"""
+    scheduler = Scheduler()
+
+    availability_blocks = getEntries("availability_blocks", "event_id", event_id)
+    if not availability_blocks:
+        return []
+    
+    best_event_blocks = scheduler._process_availability_blocks(availability_blocks)
+
+    return best_event_blocks
+
+
+if __name__ == "__main__":
+    event_id = "44e211d3-a094-4133-9ea0-4539c091c07c"
+    event = getEntry("events", "event_id", event_id)
+    print(event)
+
+    best_time = get_event_best_time(event_id)
+    print(best_time)
