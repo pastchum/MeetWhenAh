@@ -46,8 +46,6 @@ def register_event_handlers(bot):
                 
                 if web_app_number == 0:  # Event creation
                     handle_event_creation(message, data)
-                elif web_app_number == 1:  # Availability update
-                    handle_availability_update(message, data)
                 else:
                     bot.reply_to(message, "Invalid web app data received")
             
