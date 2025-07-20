@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { PythonBridge } from '@/lib/python-bridge';
+import { EventService } from '@/utils/event_service';
 
-const pythonBridge = new PythonBridge();
+const eventService = new EventService();
 
 export async function GET(request: Request, { params }: { params: Promise<{ event_id: string }> }) {
   try {
     const { event_id } = await params;
-    const bestTime = await pythonBridge.getEventBestTime(event_id);
+    const bestTime = await eventService.getEventBestTime(event_id);
 
     if (!bestTime || bestTime.length === 0) {
       return NextResponse.json({ status: 'error', message: 'No best time found for event' });

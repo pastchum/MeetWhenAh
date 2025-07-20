@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { PythonBridge } from '@/lib/python-bridge';
+import { UserService } from '@/utils/user_service';
 
-const pythonBridge = new PythonBridge();
+const userService = new UserService();
 
 export async function GET(request: Request, { params }: { params: Promise<{ tele_id: string }> }): Promise<NextResponse> {
   try {
     const { tele_id } = await params;
-    const user = await pythonBridge.getUser(tele_id);
+    const user = await userService.getUser(tele_id);
 
     if (!user) {
       return NextResponse.json({ status: 'error', message: 'User not found' });

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { PythonBridge } from '@/lib/python-bridge';
+import { EventService } from '@/utils/event_service';
 
-const pythonBridge = new PythonBridge();
+const eventService = new EventService();
 
 export async function GET(request: Request, { params }: { params: Promise<{ event_id: string }> }) {
   try {
     const { event_id } = await params;
-    const eventData = await pythonBridge.getEvent(event_id);
+    const eventData = await eventService.getEvent(event_id);
 
     if (!eventData) {
       return NextResponse.json({ status: 'error', message: 'Event not found' });

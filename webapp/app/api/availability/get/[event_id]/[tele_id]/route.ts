@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PythonBridge } from '@/lib/python-bridge';
+import { AvailabilityService } from '@/utils/availability_service';
 
-const pythonBridge = new PythonBridge();
+const availabilityService = new AvailabilityService();
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { event_id, tele_id } = await context.params;
-    const availability = await pythonBridge.getUserAvailability(tele_id, event_id);
+    const availability = await availabilityService.getUserAvailability(tele_id, event_id);
     console.log("availability", availability);
     return NextResponse.json({ status: 'success', data: availability });
   } catch (error) {

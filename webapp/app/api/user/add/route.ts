@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PythonBridge } from '@/lib/python-bridge';
+import { UserService } from '@/utils/user_service';
 
-const pythonBridge = new PythonBridge();
+const userService = new UserService();
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { username, tele_id } = body;
     
-    const success = await pythonBridge.setUser(tele_id, username);
+    const success = await userService.setUser(tele_id, username);
     
     if (success) {
       return NextResponse.json({

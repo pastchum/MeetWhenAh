@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PythonBridge } from '@/lib/python-bridge';
+import { UserService } from '@/utils/user_service';
 
-const pythonBridge = new PythonBridge();
+const userService = new UserService();
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { tele_id, sleep_start, sleep_end } = body;
     
-    const success = await pythonBridge.setUserSleepPreferences(tele_id, sleep_start, sleep_end);
+    const success = await userService.setUserSleepPreferences(tele_id, sleep_start, sleep_end);
     
     if (success) {
       return NextResponse.json({

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PythonBridge } from '@/lib/python-bridge';
+import { AvailabilityService } from '@/utils/availability_service';
 
-const pythonBridge = new PythonBridge();
+const availabilityService = new AvailabilityService();
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { tele_id, event_id, availability_data } = body;
 
-    const success = await pythonBridge.updateUserAvailability(tele_id, event_id, availability_data);
+    const success = await availabilityService.updateUserAvailability(tele_id, event_id, availability_data);
 
     return NextResponse.json(
       success

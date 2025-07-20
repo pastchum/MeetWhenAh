@@ -10,7 +10,7 @@ from telegram.handlers.user_handlers import register_user_handlers
 from telegram.handlers.availability_handlers import register_availability_handlers
 from telegram.handlers.inline_handlers import register_inline_handlers
 from telegram.handlers.command_handlers import register_command_handlers
-from telegram.handlers.group_handlers import register_group_handlers
+# from telegram.handlers.group_handlers import register_group_handlers
 # Import bot instance and configs
 from telegram.config.config import bot, logger
 from telegram.config.webhook_config import setup_webhook, remove_webhook, get_webhook_info
@@ -64,7 +64,7 @@ def register_handlers():
     register_command_handlers(bot)
     #register_availability_handlers(bot)
     register_inline_handlers(bot)
-    register_group_handlers(bot)
+    # register_group_handlers(bot)
 
 def initialise_bot():
     """Main function to start the Telegram bot."""

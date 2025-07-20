@@ -1,4 +1,4 @@
-import { AvailabilityData } from "@/utils/availability_utils";
+import { AvailabilityData } from "@/utils/availability_service";
 
 export async function fetchUserAvailabilityFromAPI(tele_id: string, event_id: string) : Promise<AvailabilityData[] | null> {
     try {

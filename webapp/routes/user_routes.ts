@@ -1,4 +1,4 @@
-import { UserData } from "@/utils/user_utils";
+import { UserData } from "@/utils/user_service";
 
 export async function fetchUserDataFromId(tele_id: string) : Promise<UserData | null> {
     try {

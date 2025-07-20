@@ -1,4 +1,4 @@
-import { EventData } from "@/utils/event_utils";
+import { EventData } from "@/utils/event_service";
 
 export async function fetchEventFromAPI(event_id: string) : Promise<EventData | null> {
     try {
