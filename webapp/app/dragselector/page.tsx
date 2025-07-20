@@ -11,6 +11,7 @@ import {
   fetchUserDataFromId,
   addUserToDatabase,
 } from "@/routes/user_routes";
+import { useTelegramViewport } from "@/hooks/useTelegramViewport";
 
 // Interface for aggregated time periods
 interface TimePeriod {
@@ -19,6 +20,9 @@ interface TimePeriod {
 }
 
 export default function DragSelectorPage() {
+  // Get viewport dimensions from Telegram Web App
+  const viewport = useTelegramViewport();
+  
   const [eventDetails, setEventDetails] = useState<EventData>({
     event_id: "",
     event_name: "",
@@ -30,6 +34,7 @@ export default function DragSelectorPage() {
     end_hour: "",
     creator: "",
     created_at: "",
+    updated_at: "",
     min_participants: 0,
     min_duration_blocks: 0,
     max_duration_blocks: 0,
@@ -47,12 +52,22 @@ export default function DragSelectorPage() {
 
   // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
+    console.log('[DragSelector] Initial setup useEffect triggered');
+    
     const urlParams = new URLSearchParams(window.location.search);
+    console.log('[DragSelector] URL params:', Object.fromEntries(urlParams.entries()));
 
     if (window.Telegram.WebApp.initDataUnsafe.user) {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
+      console.log('[DragSelector] Telegram user found:', {
+        id: telegramId,
+        username: window.Telegram.WebApp.initDataUnsafe.user.username
+      });
       setTeleId(telegramId.toString());
+    } else {
+      console.log('[DragSelector] No Telegram user data found');
     }
+    
     // disable vertical swipes
     if (window.Telegram.WebApp) {
       window.Telegram.WebApp.disableVerticalSwipes();
@@ -61,14 +76,20 @@ export default function DragSelectorPage() {
     // Set event_id from URL parameters
     const urlEventId = urlParams.get("event_id");
     if (urlEventId) {
+      console.log('[DragSelector] Setting eventId from URL:', urlEventId);
       setEventId(urlEventId);
+    } else {
+      console.log('[DragSelector] No eventId in URL');
     }
 
     // Try to get username from URL or use a default
     const urlUsername = urlParams.get("username");
     if (urlUsername) {
+      console.log('[DragSelector] Setting username from URL:', urlUsername);
       setUsername(urlUsername);
       fetchUserUuidFromUsername(urlUsername);
+    } else {
+      console.log('[DragSelector] No username in URL');
     }
   }, []);
 
@@ -103,10 +124,24 @@ export default function DragSelectorPage() {
 
   // get user uuid from telegram id
   useEffect(() => {
-    if (!teleId) return;
+    console.log('[DragSelector] User UUID useEffect triggered:', { teleId });
+    
+    if (!teleId) {
+      console.log('[DragSelector] No teleId available');
+      return;
+    }
+    
     const fetchUserUuidFromTeleId = async () => {
+      console.log('[DragSelector] Fetching user data for teleId:', teleId.toString());
+      
       const userData = await fetchUserDataFromId(teleId.toString());
+      console.log('[DragSelector] User data response:', userData);
+      
       if (userData) {
+        console.log('[DragSelector] Setting user data:', {
+          uuid: userData.uuid,
+          username: userData.tele_user
+        });
         setUserUuid(userData.uuid);
         setUsername(userData.tele_user);
       } else {
@@ -149,13 +184,24 @@ export default function DragSelectorPage() {
 
   // get user availability
   useEffect(() => {
-    if (!userUuid || !username || !teleId) return;
+    console.log('[DragSelector] Availability useEffect triggered:', {
+      userUuid,
+      username,
+      teleId,
+      eventId
+    });
+    
+    if (!userUuid || !username || !teleId || !eventId) {
+      console.log('[DragSelector] Missing required data for availability fetch');
+      return;
+    }
+    
     const fetchUserAvailability = async () => {
       const availability = await fetchUserAvailabilityFromAPI(
         teleId.toString(),
         eventId
       );
-      console.log(availability);
+      console.log('[DragSelector] Availability response:', availability);
       if (availability) {
         // Convert availability blocks to ISO datetime strings
         const newSelectionData = new Set<string>();
@@ -362,66 +408,85 @@ export default function DragSelectorPage() {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex items-center mb-4">
-        <h1 className="text-2xl font-bold">Weekly Availability Selector</h1>
-        <span className="ml-4 text-sm px-3 py-1 bg-white rounded shadow-sm text-gray-600">
-          Click on a day header to select the entire day, or drag across time
-          slots to select specific periods.
-        </span>
-      </div>
-      {eventDetails.event_name && (
-        <div className="text-2xl font-bold text-center text-slate-50">
-          {eventDetails.event_name}
+    <div 
+      className="flex flex-col w-full"
+      style={{ 
+        height: `${viewport.totalHeight}px`,
+        transform: 'translateZ(0)' // Create new stacking context
+      }}
+    >
+      {/* Fixed Header Section */}
+      <div className="flex-shrink-0 p-4 bg-gray-900">
+        {eventDetails.event_name && (
+          <div className="text-2xl font-bold text-center text-slate-50">
+            {eventDetails.event_name}
+          </div>
+        )}
+
+        {username && (
+          <div className="mb-2 text-sm text-gray-500">
+            Setting availability for: {username}
+          </div>
+        )}
+
+        <div className="mb-4 flex justify-between items-center">
+          <button
+            onClick={navigatePreviousPeriod}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+            disabled={startDate <= new Date(eventDetails.start_date)}
+          >
+            Previous 7 Days
+          </button>
+
+          <button
+            onClick={navigateToEventStart}
+            className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded"
+          >
+            Event Start
+          </button>
+
+          <button
+            onClick={navigateNextPeriod}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+            disabled={addDays(startDate, 7) >= new Date(eventDetails.end_date)}
+          >
+            Next 7 Days
+          </button>
         </div>
-      )}
+      </div>
 
-      {username && (
-        <div className="mb-2 text-sm text-gray-500">
-          Setting availability for: {username}
+      {/* Fixed Instructions */}
+      <div className="flex-shrink-0 px-4 pb-4">
+        <div className="flex items-center">
+          <span className="text-sm px-3 py-1 bg-white rounded shadow-sm text-gray-600">
+            Click on a day header to select the entire day, or drag across time
+            slots to select specific periods.
+          </span>
         </div>
-      )}
-
-      <div className="mb-4 flex justify-between items-center">
-        <button
-          onClick={navigatePreviousPeriod}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          disabled={startDate <= new Date(eventDetails.start_date)}
-        >
-          Previous 7 Days
-        </button>
-
-        <button
-          onClick={navigateToEventStart}
-          className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded"
-        >
-          Event Start
-        </button>
-
-        <button
-          onClick={navigateNextPeriod}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          disabled={addDays(startDate, 7) >= new Date(eventDetails.end_date)}
-        >
-          Next 7 Days
-        </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md">
-        <WeekCalendar
-          startDate={startDate}
-          endDate={endDate}
-          numDays={numDays}
-          tele_id={teleId}
-          eventId={eventId}
-          userUuid={userUuid}
-          onSelectionChange={setSelectionData}
-        />
+      {/* Scrollable WeekCalendar */}
+      <div className="flex-1 px-4 overflow-hidden">
+        <div 
+          className="bg-white rounded-lg shadow-md h-full overflow-y-auto"
+          style={{ transform: 'translateZ(0)' }}
+        >
+          <WeekCalendar
+            startDate={startDate}
+            endDate={endDate}
+            numDays={numDays}
+            tele_id={teleId}
+            eventId={eventId}
+            userUuid={userUuid}
+            onSelectionChange={setSelectionData}
+          />
+        </div>
       </div>
 
-      <div className="mt-4">
-        <h2 className="text-xl font-semibold mb-2">Selected Times</h2>
-        <div className="bg-gray-100 p-4 rounded text-gray-800 h-48 overflow-y-auto">
+      {/* Fixed Selected Times Section */}
+      <div className="flex-shrink-0 p-4 bg-gray-900">
+        <h2 className="text-xl font-semibold mb-2 text-white">Selected Times</h2>
+        <div className="bg-gray-100 p-4 rounded text-gray-800 h-32 overflow-y-auto">
           {selectionData.size > 0 ? (
             formatSelectionSummary()
           ) : (
@@ -432,6 +497,16 @@ export default function DragSelectorPage() {
           )}
         </div>
       </div>
+
+      {/* Debug Info (only in development) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-2 right-2 bg-black bg-opacity-75 text-white text-xs p-2 rounded z-50">
+          <div>Platform: {viewport.platform}</div>
+          <div>Total: {viewport.totalHeight}px</div>
+          <div>Window: {typeof window !== 'undefined' ? window.innerHeight : 'N/A'}px</div>
+          <div>Flex Layout: Active</div>
+        </div>
+      )}
     </div>
   );
 }
