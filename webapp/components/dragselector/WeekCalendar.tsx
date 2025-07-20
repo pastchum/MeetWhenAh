@@ -216,7 +216,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
     } finally {
       setPendingSync(false);
     }
-  }, [tele_id, eventId, selectedSlots, syncedWithBackend]);
+  }, [tele_id, eventId, selectedSlots, syncedWithBackend, userUuid]);
 
   // Load initial data
   useEffect(() => {

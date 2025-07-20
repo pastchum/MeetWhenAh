@@ -30,7 +30,9 @@ export default function DragSelectorPage() {
     end_hour: "",
     creator: "",
     created_at: "",
-    updated_at: "",
+    min_participants: 0,
+    min_duration_blocks: 0,
+    max_duration_blocks: 0,
   });
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -51,6 +53,11 @@ export default function DragSelectorPage() {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
       setTeleId(telegramId.toString());
     }
+    // disable vertical swipes
+    if (window.Telegram.WebApp) {
+      window.Telegram.WebApp.disableVerticalSwipes();
+    }
+
     // Set event_id from URL parameters
     const urlEventId = urlParams.get("event_id");
     if (urlEventId) {
