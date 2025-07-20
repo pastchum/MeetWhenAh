@@ -36,10 +36,24 @@ CREATE TABLE events (
   end_date        TIMESTAMPTZ       NOT NULL,      
   start_hour     TIMETZ         NOT NULL DEFAULT '00:00:00.000000+08:00',
   end_hour       TIMETZ         NOT NULL DEFAULT '23:30:00.000000+08:00',
+  min_participants INT NOT NULL DEFAULT 2,
+  min_duration_blocks INT NOT NULL DEFAULT 2, -- in terms of blocks
+  max_duration_blocks INT NOT NULL DEFAULT 4, -- in terms of blocks
   creator         UUID            NOT NULL
                     REFERENCES users(uuid)
                     ON DELETE RESTRICT,
   created_at      TIMESTAMPTZ       NOT NULL DEFAULT NOW()
+);
+
+-- 2.1) Event Confirmations
+CREATE TABLE event_confirmations (
+  event_id        UUID            NOT NULL
+                    REFERENCES events(event_id)
+                    ON DELETE CASCADE,
+  confirmed_at      TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
+  confirmed_start_time TIMESTAMPTZ,
+  confirmed_end_time TIMESTAMPTZ,
+  PRIMARY KEY (event_id)
 );
 
 -- 3) Membership
@@ -52,7 +66,6 @@ CREATE TABLE membership (
                     ON DELETE CASCADE,
   joined_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   emoji_icon      TEXT   NOT NULL,
-  available_time  timing[]  NOT NULL DEFAULT ARRAY['MORNING','AFTERNOON','NIGHT']::timing[],
   PRIMARY KEY (user_uuid, event_id)
 );
 

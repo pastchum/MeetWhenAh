@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Set, Tuple, Any
 from collections import defaultdict
 import math
@@ -6,6 +6,7 @@ import logging
 import uuid
 
 # Import from other
+
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ class Scheduler:
         """
         availability_map = {}
         for block in availability_blocks:
-            start_time = datetime.strptime(block["start_time"], "%Y-%m-%d %H:%M:%S")
+            start_time = self._parse_datetime(block["start_time"])
             if start_time not in availability_map:
                 availability_map[start_time] = [block["user_uuid"]]
             else:
@@ -126,8 +127,8 @@ class Scheduler:
                     end_time = time_slot + timedelta(minutes=i * 30)
                     event_block_participants = sorted(list(intersection))
                     event_blocks.append({
-                        "start_time": start_time.strftime("%Y-%m-%d %H:%M:%S"),
-                        "end_time": end_time.strftime("%Y-%m-%d %H:%M:%S"),
+                        "start_time": self._format_datetime(start_time),
+                        "end_time": self._format_datetime(end_time),
                         "participants": event_block_participants,
                         "participant_count": len(event_block_participants),
                         "duration": i * 30
@@ -177,9 +178,9 @@ class Scheduler:
         start = event_block["start_time"]
         end = event_block["end_time"]
         if isinstance(start, str):
-            start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+            start = self._parse_datetime(start)
         if isinstance(end, str):
-            end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+            end = self._parse_datetime(end)
         duration_minutes = (end - start).total_seconds() / 60
         min_duration = self.min_block_size * TIME_SLOT_SIZE
         if duration_minutes < min_duration:
@@ -205,9 +206,9 @@ class Scheduler:
         start = event_block["start_time"]
         end = event_block["end_time"]
         if isinstance(start, str):
-            start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+            start = self._parse_datetime(start)
         if isinstance(end, str):
-            end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+            end = self._parse_datetime(end)
         duration = (end - start).total_seconds() / 30
         participant_count = len(event_block["participants"])
         return participant_count * duration
@@ -233,6 +234,40 @@ class Scheduler:
         event_blocks = self._create_event_blocks(availability_map)
         valid_blocks = [event_block for event_block in event_blocks if self._is_valid_event_block(event_block)]
         return self._get_best_event_block(valid_blocks)
+    
+    def _parse_datetime(self, datetime_str: str) -> datetime:
+        """
+        Parse datetime string in various formats including ISO format with timezone
+        """
+        # Try ISO format first (most common for database TIMESTAMPTZ)
+        try:
+            return datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+        except ValueError:
+            pass
+        
+        # Try the old format as fallback
+        try:
+            return datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            pass
+        
+        # Try ISO format without timezone
+        try:
+            return datetime.fromisoformat(datetime_str)
+        except ValueError:
+            pass
+        
+        # If all else fails, raise an error
+        raise ValueError(f"Unable to parse datetime string: {datetime_str}")
+
+    def _format_datetime(self, dt: datetime) -> str:
+        """
+        Format datetime to ISO format with timezone
+        """
+        if dt.tzinfo is None:
+            # If no timezone info, assume UTC
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
 
 if __name__ == "__main__":
     scheduler = Scheduler()

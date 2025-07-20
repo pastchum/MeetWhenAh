@@ -46,8 +46,6 @@ def register_event_handlers(bot):
                 
                 if web_app_number == 0:  # Event creation
                     handle_event_creation(message, data)
-                elif web_app_number == 1:  # Availability update
-                    handle_availability_update(message, data)
                 else:
                     bot.reply_to(message, "Invalid web app data received")
             
@@ -110,45 +108,6 @@ def handle_event_creation(message, data):
         
     except Exception as e:
         bot.reply_to(message, f"Error creating event: {str(e)}")
-
-def handle_availability_update(message, data):
-    """Handle availability update from web app data"""
-    try:
-        # Extract availability details
-        event_id = data.get('event_id')
-        availability_data = data.get('availability')
-        username = message.from_user.username or str(message.from_user.id)
-        
-        # Update username in database
-        updateUsername(str(message.from_user.id), username)
-        
-        # Update availability
-        success = updateUserAvailability(username, event_id, availability_data)
-        
-        if success:
-            bot.reply_to(message, "Your availability has been updated successfully!")
-            
-            # Get event details
-            event = get_event_by_id(event_id)
-            if event and len(event.get('participants', [])) > 1:
-                # Calculate optimal meeting time
-                hours_available = getUserAvailability(username, event_id)
-                sleep_prefs = getEventSleepPreferences(event_id)
-                optimal_time = calculate_optimal_meeting_time(hours_available, sleep_prefs)
-                
-                if optimal_time.get('max_participants', 0) > 0:
-                    bot.reply_to(
-                        message,
-                        f"Based on everyone's availability, the best meeting time would be:\n"
-                        f"Date: {optimal_time['final_date']}\n"
-                        f"Time: {optimal_time['final_start_timing']}-{optimal_time['final_end_timing']}\n"
-                        f"Participants available: {optimal_time['max_participants']}"
-                    )
-        else:
-            bot.reply_to(message, "Failed to update your availability")
-            
-    except Exception as e:
-        bot.reply_to(message, f"Error updating availability: {str(e)}")
 
 def create_hours_available(start_date, end_date):
     """Create hours available structure"""

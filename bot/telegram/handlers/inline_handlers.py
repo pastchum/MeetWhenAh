@@ -24,6 +24,7 @@ def register_inline_handlers(bot):
     @bot.inline_handler(func=lambda query: True)
     def handle_inline_query(query):
         """Handle inline queries for event sharing"""
+        print(query.query)
         try:
             event_id = query.query.strip()
             if not event_id:
@@ -37,16 +38,16 @@ def register_inline_handlers(bot):
             # Create inline result
             result = types.InlineQueryResultArticle(
                 id=event_id,
-                title=f"Share: {event['name']}",
-                description=event['details'],
+                title=f"Share: {event['event_name']}",
+                description=event['event_description'],
                 input_message_content=types.InputTextMessageContent(
-                    message_text=f"Join event: {event['name']}\n\n{event['details']}\n\nEvent ID: {event_id}"
+                    message_text=f"Join event: {event['event_name']}\n\n{event['event_description']}\n\nEvent ID: {event_id}"
                 ),
                 reply_markup=types.InlineKeyboardMarkup().add(
                     types.InlineKeyboardButton("Join Event", callback_data=f"join_{event_id}")
                 )
             )
-            
+            print(result)
             bot.answer_inline_query(query.id, [result])
             
         except Exception as e:

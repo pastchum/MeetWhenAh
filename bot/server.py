@@ -7,8 +7,8 @@ import json
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import services
-from telegram.services.database_service import getEntry
-from telegram.services.event_service import getEvent, getUserAvailability, updateUserAvailability
+from services.database_service import getEntry
+from services.event_service import getEvent, getUserAvailability, updateUserAvailability
 
 from telebot.types import Update
 

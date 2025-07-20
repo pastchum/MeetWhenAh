@@ -62,7 +62,7 @@ def register_handlers():
     register_event_handlers(bot)
     register_user_handlers(bot)
     register_command_handlers(bot)
-    register_availability_handlers(bot)
+    #register_availability_handlers(bot)
     register_inline_handlers(bot)
     register_group_handlers(bot)
 
