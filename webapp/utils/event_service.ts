@@ -12,8 +12,9 @@ export interface EventData {
   end_hour: string;
   creator: string;
   created_at: string;
-  updated_at: string;
-  participants?: string[];
+  min_participants: number;
+  min_duration_blocks: number;
+  max_duration_blocks: number;
 }
 
 export interface EventBlock {
@@ -108,9 +109,11 @@ export class EventService {
     }
   }
 
+  
   /**
    * Add a user to an event's participants
    */
+  /*
   async joinEvent(eventId: string, userTeleId: string): Promise<boolean> {
     try {
       // Get user details
@@ -158,10 +161,12 @@ export class EventService {
       return false;
     }
   }
+    */
 
   /**
    * Get sleep preferences for all participants in an event
    */
+  /*
   async getEventSleepPreferences(eventId: string): Promise<Record<string, { start: string; end: string }>> {
     try {
       const event = await this.getEvent(eventId);
@@ -193,6 +198,7 @@ export class EventService {
       return {};
     }
   }
+    */
 
   /**
    * Get all events that a user is a member of

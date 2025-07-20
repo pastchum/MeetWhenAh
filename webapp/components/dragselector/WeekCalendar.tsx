@@ -9,7 +9,7 @@ import {
   fetchUserAvailabilityFromAPI,
   updateUserAvailabilityToAPI,
 } from "@/routes/availability_routes";
-import { AvailabilityData } from "@/utils/availability_utils";
+import { AvailabilityData } from "@/utils/availability_service";
 
 interface WeekCalendarProps {
   startDate?: Date;
@@ -216,7 +216,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
     } finally {
       setPendingSync(false);
     }
-  }, [tele_id, eventId, selectedSlots, syncedWithBackend]);
+  }, [tele_id, eventId, selectedSlots, syncedWithBackend, userUuid]);
 
   // Load initial data
   useEffect(() => {
