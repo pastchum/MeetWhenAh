@@ -45,55 +45,6 @@ class WebhookUpdate(BaseModel):
     inline_query: dict = None
     callback_query: dict = None
 
-# API endpoints
-@app.get('/api/availability/{tele_id}/{event_id}')
-async def get_availability(tele_id: str, event_id: str):
-    availability = getUserAvailability(tele_id, event_id)
-
-    return {"status": "success", "data": availability}
-
-@app.post('/api/save-availability')
-async def update_availability(request: AvailabilityRequest):
-    success = updateUserAvailability(
-        request.tele_id,
-        request.event_id,
-        request.availability_data
-    )
-    
-    if success:
-        return {"status": "success", "message": "Availability updated successfully"}
-    else:
-        return {"status": "error", "message": "Failed to update availability"}
-
-@app.get('/api/event/{event_id}')
-async def get_event(event_id: str):
-    event_data = getEntry("events", "event_id", str(event_id))
-    
-    if not event_data:
-        return {"status": "error", "message": "Event not found"}
-    
-    return {"status": "success", "data": event_data}
-
-@app.get('/api/user/user-data-from-tele-id/{tele_id}')
-async def get_user_data_from_tele_id(tele_id: str):
-    """Get user UUID, username and telegram id from telegram id"""
-    user_data = getEntry("users", "tele_id", tele_id)
-    
-    if not user_data:
-        return {"status": "error", "message": "User not found"}
-    
-    return {"status": "success", "data": {"uuid": user_data.get("uuid"), "username": user_data.get("username")}}
-
-@app.get('/api/user/user-data-from-username/{username}')
-async def get_user_data_from_username(username: str):
-    """Get user UUID, username and telegram id from username"""
-    user_data = getEntry("users", "tele_user", username)
-    
-    if not user_data:
-        return {"status": "error", "message": "User not found"}
-    
-    return {"status": "success", "data": {"uuid": user_data.get("uuid"), "username": user_data.get("username"), "tele_id": user_data.get("tele_id")}}
-
 # New webhook endpoint for Telegram
 @app.post("/webhook/bot")
 async def telegram_webhook(request: Request):
