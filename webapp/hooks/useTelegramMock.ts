@@ -5,8 +5,7 @@ import { useEffect } from 'react';
 export function useTelegramMock() {
   useEffect(() => {
     // Only mock in development and when explicitly enabled
-    const shouldMock = process.env.NODE_ENV === 'development' && 
-                      process.env.NEXT_PUBLIC_ENABLE_TELEGRAM_MOCK !== 'false';
+    const shouldMock = process.env.NODE_ENV === 'development'
     
     if (shouldMock && typeof window !== 'undefined' && !window.Telegram?.WebApp) {
       // Create mock Telegram Web App object
