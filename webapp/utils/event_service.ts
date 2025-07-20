@@ -12,6 +12,7 @@ export interface EventData {
   end_hour: string;
   creator: string;
   created_at: string;
+  updated_at: string;
   min_participants: number;
   min_duration_blocks: number;
   max_duration_blocks: number;

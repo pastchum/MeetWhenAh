@@ -34,6 +34,7 @@ export default function DragSelectorPage() {
     end_hour: "",
     creator: "",
     created_at: "",
+    updated_at: "",
     min_participants: 0,
     min_duration_blocks: 0,
     max_duration_blocks: 0,
@@ -51,12 +52,22 @@ export default function DragSelectorPage() {
 
   // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
+    console.log('[DragSelector] Initial setup useEffect triggered');
+    
     const urlParams = new URLSearchParams(window.location.search);
+    console.log('[DragSelector] URL params:', Object.fromEntries(urlParams.entries()));
 
     if (window.Telegram.WebApp.initDataUnsafe.user) {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
+      console.log('[DragSelector] Telegram user found:', {
+        id: telegramId,
+        username: window.Telegram.WebApp.initDataUnsafe.user.username
+      });
       setTeleId(telegramId.toString());
+    } else {
+      console.log('[DragSelector] No Telegram user data found');
     }
+    
     // disable vertical swipes
     if (window.Telegram.WebApp) {
       window.Telegram.WebApp.disableVerticalSwipes();
@@ -65,14 +76,20 @@ export default function DragSelectorPage() {
     // Set event_id from URL parameters
     const urlEventId = urlParams.get("event_id");
     if (urlEventId) {
+      console.log('[DragSelector] Setting eventId from URL:', urlEventId);
       setEventId(urlEventId);
+    } else {
+      console.log('[DragSelector] No eventId in URL');
     }
 
     // Try to get username from URL or use a default
     const urlUsername = urlParams.get("username");
     if (urlUsername) {
+      console.log('[DragSelector] Setting username from URL:', urlUsername);
       setUsername(urlUsername);
       fetchUserUuidFromUsername(urlUsername);
+    } else {
+      console.log('[DragSelector] No username in URL');
     }
   }, []);
 
@@ -107,10 +124,24 @@ export default function DragSelectorPage() {
 
   // get user uuid from telegram id
   useEffect(() => {
-    if (!teleId) return;
+    console.log('[DragSelector] User UUID useEffect triggered:', { teleId });
+    
+    if (!teleId) {
+      console.log('[DragSelector] No teleId available');
+      return;
+    }
+    
     const fetchUserUuidFromTeleId = async () => {
+      console.log('[DragSelector] Fetching user data for teleId:', teleId.toString());
+      
       const userData = await fetchUserDataFromId(teleId.toString());
+      console.log('[DragSelector] User data response:', userData);
+      
       if (userData) {
+        console.log('[DragSelector] Setting user data:', {
+          uuid: userData.uuid,
+          username: userData.tele_user
+        });
         setUserUuid(userData.uuid);
         setUsername(userData.tele_user);
       } else {
@@ -153,13 +184,24 @@ export default function DragSelectorPage() {
 
   // get user availability
   useEffect(() => {
-    if (!userUuid || !username || !teleId) return;
+    console.log('[DragSelector] Availability useEffect triggered:', {
+      userUuid,
+      username,
+      teleId,
+      eventId
+    });
+    
+    if (!userUuid || !username || !teleId || !eventId) {
+      console.log('[DragSelector] Missing required data for availability fetch');
+      return;
+    }
+    
     const fetchUserAvailability = async () => {
       const availability = await fetchUserAvailabilityFromAPI(
         teleId.toString(),
         eventId
       );
-      console.log(availability);
+      console.log('[DragSelector] Availability response:', availability);
       if (availability) {
         // Convert availability blocks to ISO datetime strings
         const newSelectionData = new Set<string>();
