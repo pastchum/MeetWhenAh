@@ -367,17 +367,14 @@ export default function DragSelectorPage() {
 
   return (
     <div 
-      className="relative w-full"
+      className="flex flex-col w-full"
       style={{ 
         height: `${viewport.totalHeight}px`,
         transform: 'translateZ(0)' // Create new stacking context
       }}
     >
       {/* Fixed Header Section */}
-      <div 
-        className="absolute top-0 left-0 right-0 p-4 bg-gray-900"
-        style={{ height: `${viewport.headerHeight}px` }}
-      >
+      <div className="flex-shrink-0 p-4 bg-gray-900">
         {eventDetails.event_name && (
           <div className="text-2xl font-bold text-center text-slate-50">
             {eventDetails.event_name}
@@ -417,13 +414,7 @@ export default function DragSelectorPage() {
       </div>
 
       {/* Fixed Instructions */}
-      <div 
-        className="absolute left-0 right-0 px-4 pb-4"
-        style={{ 
-          top: `${viewport.headerHeight}px`,
-          height: `${viewport.instructionsHeight}px`
-        }}
-      >
+      <div className="flex-shrink-0 px-4 pb-4">
         <div className="flex items-center">
           <span className="text-sm px-3 py-1 bg-white rounded shadow-sm text-gray-600">
             Click on a day header to select the entire day, or drag across time
@@ -433,13 +424,7 @@ export default function DragSelectorPage() {
       </div>
 
       {/* Scrollable WeekCalendar */}
-      <div 
-        className="absolute left-0 right-0 px-4 overflow-hidden"
-        style={{ 
-          top: `${viewport.headerHeight + viewport.instructionsHeight}px`,
-          height: `${viewport.calendarHeight}px`
-        }}
-      >
+      <div className="flex-1 px-4 overflow-hidden">
         <div 
           className="bg-white rounded-lg shadow-md h-full overflow-y-auto"
           style={{ transform: 'translateZ(0)' }}
@@ -457,10 +442,7 @@ export default function DragSelectorPage() {
       </div>
 
       {/* Fixed Selected Times Section */}
-      <div 
-        className="absolute bottom-0 left-0 right-0 p-4 bg-gray-900"
-        style={{ height: `${viewport.selectedTimesHeight}px` }}
-      >
+      <div className="flex-shrink-0 p-4 bg-gray-900">
         <h2 className="text-xl font-semibold mb-2 text-white">Selected Times</h2>
         <div className="bg-gray-100 p-4 rounded text-gray-800 h-32 overflow-y-auto">
           {selectionData.size > 0 ? (
@@ -479,9 +461,8 @@ export default function DragSelectorPage() {
         <div className="fixed top-2 right-2 bg-black bg-opacity-75 text-white text-xs p-2 rounded z-50">
           <div>Platform: {viewport.platform}</div>
           <div>Total: {viewport.totalHeight}px</div>
-          <div>Header: {viewport.headerHeight}px</div>
-          <div>Calendar: {viewport.calendarHeight}px</div>
-          <div>Selected: {viewport.selectedTimesHeight}px</div>
+          <div>Window: {typeof window !== 'undefined' ? window.innerHeight : 'N/A'}px</div>
+          <div>Flex Layout: Active</div>
         </div>
       )}
     </div>

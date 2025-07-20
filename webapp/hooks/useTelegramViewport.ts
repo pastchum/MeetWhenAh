@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 interface ViewportDimensions {
   totalHeight: number;
@@ -22,96 +22,99 @@ export function useTelegramViewport(): ViewportDimensions {
     platform: 'unknown'
   });
 
-  const calculateDimensions = useCallback((viewportHeight: number) => {
-    console.log('[TelegramViewport] Calculating dimensions for height:', viewportHeight);
+  useLayoutEffect(() => {
+    const tg = window.Telegram?.WebApp;
     
-    const headerHeight = Math.round(viewportHeight * 0.15);
-    const instructionsHeight = Math.round(viewportHeight * 0.05);
-    const selectedTimesHeight = Math.round(viewportHeight * 0.10);
-    const calendarHeight = viewportHeight - headerHeight - instructionsHeight - selectedTimesHeight;
-
-    const newDimensions = {
-      totalHeight: viewportHeight,
-      headerHeight,
-      instructionsHeight,
-      calendarHeight,
-      selectedTimesHeight,
-      isTelegramWebApp: true,
-      platform: window.Telegram?.WebApp?.platform || 'unknown'
-    };
-
-    console.log('[TelegramViewport] Calculated dimensions:', newDimensions);
-    return newDimensions;
-  }, []);
-
-  useEffect(() => {
-    const initializeViewport = () => {
-      console.log('[TelegramViewport] Initializing viewport...');
+    function calculateDimensions() {
+      console.log('[TelegramViewport] Calculating dimensions...');
       
-      // Check if we're in Telegram Web App
-      if (window.Telegram?.WebApp) {
-        const webApp = window.Telegram.WebApp;
-        console.log('[TelegramViewport] Telegram Web App detected:', {
-          platform: webApp.platform,
-          viewportHeight: webApp.viewportHeight,
-          viewportStableHeight: webApp.viewportStableHeight,
-          isExpanded: webApp.isExpanded
-        });
-
-        // Use viewportStableHeight for iOS (more reliable)
-        const viewportHeight = webApp.platform === 'ios' 
-          ? webApp.viewportStableHeight 
-          : webApp.viewportHeight;
-
-        const newDimensions = calculateDimensions(viewportHeight);
-        setDimensions(newDimensions);
-
-        // Listen for viewport changes (keyboard, orientation, etc.)
-        const handleViewportChange = () => {
-          console.log('[TelegramViewport] Viewport change detected');
-          const updatedHeight = webApp.platform === 'ios' 
-            ? webApp.viewportStableHeight 
-            : webApp.viewportHeight;
-          
-          const updatedDimensions = calculateDimensions(updatedHeight);
-          setDimensions(updatedDimensions);
-        };
-
-        // Set up viewport change listener
-        webApp.onEvent('viewportChanged', handleViewportChange);
-        
-        // Also listen for window resize as fallback
-        window.addEventListener('resize', handleViewportChange);
-
-        return () => {
-          webApp.offEvent('viewportChanged', handleViewportChange);
-          window.removeEventListener('resize', handleViewportChange);
-        };
-      } else {
-        console.log('[TelegramViewport] Not in Telegram Web App, using fallback dimensions');
-        // CSS fallback - use viewport height
+      if (!tg) {
+        // Fallback for non-Telegram environment
         const fallbackHeight = window.innerHeight;
-        const fallbackDimensions = calculateDimensions(fallbackHeight);
-        fallbackDimensions.isTelegramWebApp = false;
-        setDimensions(fallbackDimensions);
+        const headerHeight = Math.round(fallbackHeight * 0.15);
+        const instructionsHeight = Math.round(fallbackHeight * 0.05);
+        const selectedTimesHeight = Math.round(fallbackHeight * 0.10);
+        const calendarHeight = fallbackHeight - headerHeight - instructionsHeight - selectedTimesHeight;
 
-        // Listen for window resize
-        const handleResize = () => {
-          console.log('[TelegramViewport] Window resize detected');
-          const newHeight = window.innerHeight;
-          const newDimensions = calculateDimensions(newHeight);
-          newDimensions.isTelegramWebApp = false;
-          setDimensions(newDimensions);
+        const fallbackDimensions = {
+          totalHeight: fallbackHeight,
+          headerHeight,
+          instructionsHeight,
+          calendarHeight,
+          selectedTimesHeight,
+          isTelegramWebApp: false,
+          platform: 'unknown'
         };
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        console.log('[TelegramViewport] Fallback dimensions:', fallbackDimensions);
+        setDimensions(fallbackDimensions);
+        return;
       }
-    };
 
-    // Initialize on mount
-    initializeViewport();
-  }, [calculateDimensions]);
+      // Use viewportStableHeight for iOS (more reliable)
+      const view = tg.viewportStableHeight ?? tg.viewportHeight;
+      const insets = (tg as any).contentSafeArea || { top: 0, bottom: 0 };
+      const usable = view - insets.top - insets.bottom;
+
+      // "Mind the gap" – difference between what Telegram reports and the real DOM viewport
+      const gap = Math.max(0, window.innerHeight - usable);
+      const finalHeight = usable - gap;
+
+      console.log('[TelegramViewport] Telegram calculations:', {
+        platform: tg.platform,
+        viewportHeight: tg.viewportHeight,
+        viewportStableHeight: tg.viewportStableHeight,
+        view,
+        insets,
+        usable,
+        gap,
+        finalHeight,
+        windowInnerHeight: window.innerHeight
+      });
+
+      // Calculate section heights based on final height
+      const headerHeight = Math.round(finalHeight * 0.15);
+      const instructionsHeight = Math.round(finalHeight * 0.05);
+      const selectedTimesHeight = Math.round(finalHeight * 0.10);
+      const calendarHeight = finalHeight - headerHeight - instructionsHeight - selectedTimesHeight;
+
+      const newDimensions = {
+        totalHeight: finalHeight,
+        headerHeight,
+        instructionsHeight,
+        calendarHeight,
+        selectedTimesHeight,
+        isTelegramWebApp: true,
+        platform: tg.platform || 'unknown'
+      };
+
+      console.log('[TelegramViewport] Final dimensions:', newDimensions);
+      setDimensions(newDimensions);
+    }
+
+    // Initial calculation
+    calculateDimensions();
+
+    // Set up event listeners
+    if (tg) {
+      tg.onEvent('viewportChanged', calculateDimensions);
+      // Note: contentSafeAreaChanged event may not be available in all Telegram Web App versions
+      // We'll rely on viewportChanged for now
+      
+      return () => {
+        tg.offEvent('viewportChanged', calculateDimensions);
+      };
+    } else {
+      // Fallback for non-Telegram environment
+      const handleResize = () => {
+        console.log('[TelegramViewport] Window resize detected');
+        calculateDimensions();
+      };
+
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   return dimensions;
 } 
