@@ -99,11 +99,12 @@ export default function TelegramWebAppWrapper({ children }: TelegramWebAppWrappe
 
         .telegram-content {
           flex: 1;
-          overflow-y: auto;
+          overflow: hidden; /* Prevent Telegram's default scrolling */
           background: #1a1a1a;
           height: calc(100vh - 44px - 60px); /* Subtract header and footer */
           display: flex;
           flex-direction: column;
+          position: relative;
         }
 
         .telegram-footer {
