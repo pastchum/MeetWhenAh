@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import WeekCalendar from "../../components/dragselector/WeekCalendar";
 import { addDays, format, parse, startOfWeek } from "date-fns";
-import { EventData } from "@/utils/event_utils";
-import { AvailabilityData } from "@/utils/availability_utils";
+import { EventData } from "@/utils/event_service";
+import { AvailabilityData } from "@/utils/availability_service";
 import { fetchEventFromAPI } from "@/routes/events_routes";
 import { fetchUserAvailabilityFromAPI } from "@/routes/availability_routes";
 import {
@@ -30,6 +30,7 @@ export default function DragSelectorPage() {
     end_hour: "",
     creator: "",
     created_at: "",
+    updated_at: "",
   });
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());

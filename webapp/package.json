@@ -19,6 +19,7 @@
     "@nextui-org/system": "^2.2.2",
     "@nextui-org/theme": "^2.2.6",
     "@supabase/supabase-js": "^2.51.0",
+    "date-fns": "^3.6.0",
     "@types/date-fns": "^2.6.0",
     "@types/react-date-range": "^1.4.9",
     "@types/react-datepicker": "^6.2.0",

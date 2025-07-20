@@ -9,7 +9,7 @@ import {
   fetchUserAvailabilityFromAPI,
   updateUserAvailabilityToAPI,
 } from "@/routes/availability_routes";
-import { AvailabilityData } from "@/utils/availability_utils";
+import { AvailabilityData } from "@/utils/availability_service";
 
 interface WeekCalendarProps {
   startDate?: Date;
