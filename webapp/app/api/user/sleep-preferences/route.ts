@@ -6,23 +6,23 @@ const pythonBridge = new PythonBridge();
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, tele_id } = body;
+    const { tele_id, sleep_start, sleep_end } = body;
     
-    const success = await pythonBridge.setUser(tele_id, username);
+    const success = await pythonBridge.setUserSleepPreferences(tele_id, sleep_start, sleep_end);
     
     if (success) {
       return NextResponse.json({
         status: 'success',
-        message: 'User added successfully'
+        message: 'Sleep preferences updated successfully'
       });
     } else {
       return NextResponse.json({
         status: 'error',
-        message: 'Failed to add user'
+        message: 'Failed to update sleep preferences'
       }, { status: 400 });
     }
   } catch (error) {
-    console.error('Error adding user:', error);
-    return NextResponse.json({ status: 'error', message: 'Failed to add user' }, { status: 500 });
+    console.error('Error updating sleep preferences:', error);
+    return NextResponse.json({ status: 'error', message: 'Failed to update sleep preferences' }, { status: 500 });
   }
-}
+} 
