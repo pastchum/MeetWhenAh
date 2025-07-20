@@ -141,6 +141,27 @@ def get_event_best_time(event_id: str) -> List[Dict]:
 
     return best_event_blocks
 
+def generate_event_description(event: dict) -> str:
+    """Generate a description for an event"""
+    description = ""
+    if not event:
+        return description
+    if "event_name" in event:
+        description += f"Event Name: {event['event_name']}\n"
+    if "event_description" in event:
+        description += f"Event Description: {event['event_description']}\n"
+    if "start_date" in event:
+        start_date = datetime.strptime(event['start_date'][:10], "%Y-%m-%d").strftime("%d %B %Y")
+        description += f"Start Date: {start_date}\n"
+    if "end_date" in event: 
+        end_date = datetime.strptime(event['end_date'][:10], "%Y-%m-%d").strftime("%d %B %Y")
+        description += f"End Date: {end_date}\n"
+    if "start_hour" in event and "end_hour" in event:
+        start_hour = datetime.strptime(event['start_hour'][:8], "%H:%M:%S").strftime("%H:%M")
+        end_hour = datetime.strptime(event['end_hour'][:8], "%H:%M:%S").strftime("%H:%M")
+        description += f"Start Time: {start_hour} to End Time: {end_hour}\n"
+    return description
+
 
 if __name__ == "__main__":
     event_id = "44e211d3-a094-4133-9ea0-4539c091c07c"
