@@ -92,7 +92,7 @@ def handle_event_creation(message, data):
         markup = types.InlineKeyboardMarkup()
         share_button = types.InlineKeyboardButton(
             text="Share Event",
-            switch_inline_query=event_id
+            switch_inline_query=f"availability_{event_id}"
         )
         markup.add(share_button)
         

@@ -6,7 +6,7 @@ import logging
 from ..config.config import bot
 
 # Import from services
-from services.event_service import getEvent
+from services.event_service import getEvent, generate_event_description
 from services.database_service import getEntry, setEntry, updateEntry
 from services.event_service import getEventSleepPreferences, join_event
 from services.user_service import updateUsername
@@ -21,38 +21,59 @@ logger = logging.getLogger(__name__)
 def register_inline_handlers(bot):
     """Register all inline query handlers"""
     
-    @bot.inline_handler(func=lambda query: True)
+    @bot.inline_handler(func=lambda query: query.query.startswith("availability_"))
     def handle_inline_query(query):
         """Handle inline queries for event sharing"""
         print(query.query)
         try:
-            event_id = query.query.strip()
+            event_id = query.query.strip().split("_")[1]
+            print(event_id)
             if not event_id:
                 return
             
             # Get event details
             event = getEvent(event_id)
             if not event:
+                bot.answer_inline_query(query.id, [types.InlineQueryResultArticle(
+                    id=event_id,
+                    title="Event not found",
+                    description="Event not found",
+                    input_message_content=types.InputTextMessageContent(
+                        message_text="Event not found"
+                    )
+                )])
                 return
             
+            description = generate_event_description(event)
+
+            params = f"dragselector={event_id}"
+            miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
+
+
+            markup = types.InlineKeyboardMarkup()
+            miniapp_btn = types.InlineKeyboardButton(
+                text="Select Availability",
+                url=miniapp_url
+            )
+            markup.add(miniapp_btn)
+
             # Create inline result
             result = types.InlineQueryResultArticle(
                 id=event_id,
                 title=f"Share: {event['event_name']}",
-                description=event['event_description'],
+                description=description,
                 input_message_content=types.InputTextMessageContent(
-                    message_text=f"Join event: {event['event_name']}\n\n{event['event_description']}\n\nEvent ID: {event_id}"
+                    message_text=description
                 ),
-                reply_markup=types.InlineKeyboardMarkup().add(
-                    types.InlineKeyboardButton("Join Event", callback_data=f"join_{event_id}")
-                )
+                reply_markup=markup
             )
-            print(result)
+            
             bot.answer_inline_query(query.id, [result])
             
         except Exception as e:
             logger.error(f"Error in inline query handler: {str(e)}")
 
+    '''
     @bot.callback_query_handler(func=lambda call: call.data)
     def handle_join_callback(call):
         """Handle join event button clicks"""
@@ -198,3 +219,4 @@ def create_availability_markup(event_id, username=None):
     )
     markup.add(webapp_button)
     return markup 
+'''
