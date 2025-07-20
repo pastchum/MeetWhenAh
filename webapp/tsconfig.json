@@ -28,7 +28,8 @@
       "@/app/*": ["app/*"],
       "@/utils/*": ["utils/*"],
       "@/types/*": ["types/*"],
-      "@/routes/*": ["routes/*"]
+      "@/routes/*": ["routes/*"],
+      "@/hooks/*": ["hooks/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
