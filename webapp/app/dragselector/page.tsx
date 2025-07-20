@@ -362,64 +362,74 @@ export default function DragSelectorPage() {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex items-center mb-4">
-        <h1 className="text-2xl font-bold">Weekly Availability Selector</h1>
-        <span className="ml-4 text-sm px-3 py-1 bg-white rounded shadow-sm text-gray-600">
-          Click on a day header to select the entire day, or drag across time
-          slots to select specific periods.
-        </span>
-      </div>
-      {eventDetails.event_name && (
-        <div className="text-2xl font-bold text-center text-slate-50">
-          {eventDetails.event_name}
+    <div className="h-full flex flex-col">
+      {/* Fixed Header Section */}
+      <div className="flex-shrink-0 p-4">
+        {eventDetails.event_name && (
+          <div className="text-2xl font-bold text-center text-slate-50">
+            {eventDetails.event_name}
+          </div>
+        )}
+
+        {username && (
+          <div className="mb-2 text-sm text-gray-500">
+            Setting availability for: {username}
+          </div>
+        )}
+
+        <div className="mb-4 flex justify-between items-center">
+          <button
+            onClick={navigatePreviousPeriod}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+            disabled={startDate <= new Date(eventDetails.start_date)}
+          >
+            Previous 7 Days
+          </button>
+
+          <button
+            onClick={navigateToEventStart}
+            className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded"
+          >
+            Event Start
+          </button>
+
+          <button
+            onClick={navigateNextPeriod}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+            disabled={addDays(startDate, 7) >= new Date(eventDetails.end_date)}
+          >
+            Next 7 Days
+          </button>
         </div>
-      )}
+      </div>
 
-      {username && (
-        <div className="mb-2 text-sm text-gray-500">
-          Setting availability for: {username}
+      {/* Fixed Instructions */}
+      <div className="flex-shrink-0 px-4 pb-4">
+        <div className="flex items-center">
+          <span className="text-sm px-3 py-1 bg-white rounded shadow-sm text-gray-600">
+            Click on a day header to select the entire day, or drag across time
+            slots to select specific periods.
+          </span>
         </div>
-      )}
-
-      <div className="mb-4 flex justify-between items-center">
-        <button
-          onClick={navigatePreviousPeriod}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          disabled={startDate <= new Date(eventDetails.start_date)}
-        >
-          Previous 7 Days
-        </button>
-
-        <button
-          onClick={navigateToEventStart}
-          className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded"
-        >
-          Event Start
-        </button>
-
-        <button
-          onClick={navigateNextPeriod}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          disabled={addDays(startDate, 7) >= new Date(eventDetails.end_date)}
-        >
-          Next 7 Days
-        </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md">
-        <WeekCalendar
-          startDate={startDate}
-          endDate={endDate}
-          numDays={numDays}
-          tele_id={teleId}
-          eventId={eventId}
-          userUuid={userUuid}
-          onSelectionChange={setSelectionData}
-        />
+      {/* Scrollable WeekCalendar */}
+      <div className="flex-1 overflow-y-auto px-4">
+        <div className="bg-white rounded-lg shadow-md">
+          <WeekCalendar
+            startDate={startDate}
+            endDate={endDate}
+            numDays={numDays}
+            tele_id={teleId}
+            eventId={eventId}
+            userUuid={userUuid}
+            onSelectionChange={setSelectionData}
+          />
+        </div>
       </div>
 
-      <div className="mt-4">
+      {/* Fixed Selected Times Section */}
+      <div className="flex-shrink-0 p-4">
         <h2 className="text-xl font-semibold mb-2">Selected Times</h2>
         <div className="bg-gray-100 p-4 rounded text-gray-800 h-48 overflow-y-auto">
           {selectionData.size > 0 ? (
