@@ -4,11 +4,9 @@ import { useSearchParams } from "next/navigation";
 import ConfirmCalendar from "@/components/confirm/ConfirmCalendar";
 import { fetchEventFromAPI } from "@/routes/events_routes";
 import { EventData } from "@/utils/event_service";
+import { fetchUserDataFromId } from "@/routes/user_routes";
 
 export default function ConfirmPage() {
-  const searchParams = useSearchParams();
-  const eventId = searchParams.get("event_id");
-
   const [eventDetails, setEventDetails] = useState<EventData | null>(null);
   const [bestStart, setBestStart] = useState("");
   const [bestEnd, setBestEnd] = useState("");
@@ -16,6 +14,22 @@ export default function ConfirmPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [participantCount, setParticipantCount] = useState(0);
+  const [eventId, setEventId] = useState<string>("");
+  const [userUuid, setUserUuid] = useState<string>("");
+  const [teleId, setTeleId] = useState<string>("");
+  const [isEventCreator, setIsEventCreator] = useState(false);
+
+  // Parse URL parameters and get user data from username or telegram id
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventId = urlParams.get("event_id");
+    setEventId(eventId || "");
+
+    if (window.Telegram.WebApp.initDataUnsafe.user) {
+      const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
+      setTeleId(telegramId.toString());
+    }
+  }, []);
 
   // Fetch event details and best time
   useEffect(() => {
@@ -55,6 +69,26 @@ export default function ConfirmPage() {
     }
     fetchEventDetails();
   }, [eventId]);
+
+  // get user uuid from tele id
+  useEffect(() => {
+    async function fetchUserUuidFromTeleIdAsync() {
+      const userData = await fetchUserDataFromId(teleId);
+      if (userData) {
+        setUserUuid(userData.uuid);
+      }
+    }
+    fetchUserUuidFromTeleIdAsync();
+  }, [teleId]);
+
+  // check if user uuid is the same as the event creator
+  useEffect(() => {
+    if (userUuid && eventDetails?.creator === userUuid) {
+      setIsEventCreator(true);
+    } else {
+      setIsEventCreator(false);
+    }
+  }, [userUuid, eventDetails]);
 
   // Handle participant count change from calendar
   const handleParticipantCountChange = (count: number) => {
@@ -295,7 +329,7 @@ export default function ConfirmPage() {
         <button
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleConfirm}
-          disabled={loading || submitting}
+          disabled={loading || submitting || !isEventCreator}
         >
           {submitting ? "Confirming..." : "Confirm Event"}
         </button>
