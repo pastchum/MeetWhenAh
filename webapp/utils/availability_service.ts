@@ -90,7 +90,7 @@ export class AvailabilityService {
       if (!availabilityData || availabilityData.length === 0) {
         return true;
       }
-
+      console.log("availabilityData", availabilityData);
       const { error: insertError } = await supabase
         .from('availability_blocks')
         .insert(availabilityData);
