@@ -19,6 +19,25 @@ export async function fetchUserAvailabilityFromAPI(tele_id: string, event_id: st
     }
 }
 
+export async function fetchEventAvailabilityFromAPI(event_id: string): Promise<Record<string, AvailabilityData[]> | null> {
+    try {
+        const response = await fetch(`/api/availability/event/${event_id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        if (!response.ok) {
+            throw new Error('Failed to fetch event availability');
+        }
+        const result = await response.json();
+        return result.data || {}; // Return empty object if no availability found
+    } catch (error) {
+        console.error('Error fetching event availability:', error);
+        return null;
+    }
+}
+
 export async function updateUserAvailabilityToAPI(tele_id: string, event_id: string, availability_data: AvailabilityData[]) {
     try {
         const response = await fetch(`/api/availability/save`, {

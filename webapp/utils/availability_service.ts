@@ -80,7 +80,7 @@ export class AvailabilityService {
         .delete()
         .eq('user_uuid', userData.uuid)
         .eq('event_id', eventId);
-
+      
       if (deleteError) {
         console.error('Error deleting availability:', deleteError);
         return false;
@@ -91,47 +91,13 @@ export class AvailabilityService {
         return true;
       }
 
-      // Transform availability data to include user_uuid and convert to scheduler format
-      const newAvailabilityData: AvailabilityData[] = [];
-      
-      for (const item of availabilityData) {
-        const { date, time } = item;
-        
-        if (date && time) {
-          // Convert time from "1430" format to "14:30:00" format
-          const hours = Math.floor(parseInt(time) / 100);
-          const minutes = parseInt(time) % 100;
-          const timeFormatted = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
-          
-          // Create start_time and end_time for 30-minute blocks
-          const startTime = `${date} ${timeFormatted}`;
-          
-          // Calculate end_time (30 minutes later)
-          const startDate = new Date(startTime);
-          const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // Add 30 minutes
-          const endTime = endDate.toISOString().slice(0, 19).replace('T', ' '); // Format as "YYYY-MM-DD HH:MM:SS"
-          
-          const blockData: AvailabilityData = {
-            start_time: startTime,
-            end_time: endTime,
-            event_id: eventId,
-            user_uuid: userData.uuid
-          };
-          
-          newAvailabilityData.push(blockData);
-        }
-      }
+      const { error: insertError } = await supabase
+        .from('availability_blocks')
+        .insert(availabilityData);
 
-      // Insert new availability data
-      if (newAvailabilityData.length > 0) {
-        const { error: insertError } = await supabase
-          .from('availability_blocks')
-          .insert(newAvailabilityData);
-
-        if (insertError) {
-          console.error('Error inserting availability:', insertError);
-          return false;
-        }
+      if (insertError) {
+        console.error('Error inserting availability:', insertError);
+        return false;
       }
 
       return true;

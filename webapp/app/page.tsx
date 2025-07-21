@@ -12,6 +12,9 @@ export default function Home() {
       if (params[0] === "dragselector" && eventId) {
         window.location.href = `/dragselector?event_id=${eventId}`;
       }
+      if (params[0] === "confirm") {
+        window.location.href = `/confirm?event_id=${eventId}`;
+      }
     }
   }, []);
   return (
