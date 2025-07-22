@@ -4,7 +4,10 @@ import { useSearchParams } from "next/navigation";
 import ConfirmCalendar from "@/components/confirm/ConfirmCalendar";
 import { fetchEventFromAPI } from "@/routes/events_routes";
 import { EventData } from "@/utils/event_service";
-import { fetchUserDataFromId } from "@/routes/user_routes";
+import {
+  fetchUserDataFromId,
+  fetchUserDataFromUsername,
+} from "@/routes/user_routes";
 
 export default function ConfirmPage() {
   const [eventDetails, setEventDetails] = useState<EventData | null>(null);
@@ -16,18 +19,24 @@ export default function ConfirmPage() {
   const [participantCount, setParticipantCount] = useState(0);
   const [eventId, setEventId] = useState<string>("");
   const [userUuid, setUserUuid] = useState<string>("");
+  const [teleUser, setTeleUser] = useState<string>("");
   const [teleId, setTeleId] = useState<string>("");
   const [isEventCreator, setIsEventCreator] = useState(false);
 
   // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const eventId = urlParams.get("event_id");
-    setEventId(eventId || "");
+    const event_id = urlParams.get("event_id");
+    setEventId(event_id || "");
+
+    const username = urlParams.get("username");
+    setTeleUser(username || "");
 
     if (window.Telegram.WebApp.initDataUnsafe.user) {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
       setTeleId(telegramId.toString());
+      const telegramUser = window.Telegram.WebApp.initDataUnsafe.user.username;
+      if (telegramUser) setTeleUser(telegramUser);
     }
   }, []);
 
@@ -45,8 +54,10 @@ export default function ConfirmPage() {
         // Fetch event details
         const eventData = await fetchEventFromAPI(eventId);
         if (eventData) {
+          setError("");
           setEventDetails(eventData);
         } else {
+          console.log("Error setting event");
           setError("Event not found");
         }
 
@@ -73,12 +84,28 @@ export default function ConfirmPage() {
   // get user uuid from tele id
   useEffect(() => {
     async function fetchUserUuidFromTeleIdAsync() {
-      const userData = await fetchUserDataFromId(teleId);
-      if (userData) {
-        setUserUuid(userData.uuid);
+      if (teleId) {
+        const userData = await fetchUserDataFromId(teleId);
+        if (userData) {
+          setUserUuid(userData.uuid);
+        }
       }
     }
     fetchUserUuidFromTeleIdAsync();
+  }, [teleId]);
+
+  // get user uuid from tele user if id not available
+  useEffect(() => {
+    async function fetchUserUuidFromTeleUserAsync() {
+      if (teleUser) {
+        const userData = await fetchUserDataFromUsername(teleUser);
+        if (userData) {
+          setUserUuid(userData.uuid);
+          setTeleId(userData.tele_id);
+        }
+      }
+    }
+    fetchUserUuidFromTeleUserAsync();
   }, [teleId]);
 
   // check if user uuid is the same as the event creator
