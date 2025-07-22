@@ -173,6 +173,9 @@ export default function ConfirmPage() {
 
   // Handle confirm
   async function handleConfirm() {
+    if (!isEventCreator) {
+      return;
+    }
     setSubmitting(true);
     try {
       await fetch("/api/event/confirm", {

@@ -52,6 +52,9 @@ def register_event_handlers(bot):
                 
                 if web_app_number == 0:  # Event creation
                     handle_event_creation(message, data)
+                elif web_app_number == 1:
+                    print("confirming event:", data)
+                    #handle_event_confirmation(message, data)
                 else:
                     bot.reply_to(message, "Invalid web app data received")
             
@@ -105,9 +108,11 @@ def handle_event_creation(message, data):
         markup.add(share_button)
         
         # Add confirm button
+        params = f"confirm={event_id}"
+        miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
         confirm_button = types.InlineKeyboardButton(
             text="Confirm Best Time",
-            callback_data=f"confirm_{event_id}"
+            url=miniapp_url
         )
         markup.add(confirm_button)
 
