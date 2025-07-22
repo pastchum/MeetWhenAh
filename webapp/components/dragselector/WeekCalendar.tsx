@@ -176,25 +176,10 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
 
       // Group consecutive time slots into blocks
       const sortedSlots = Array.from(selectedSlots).sort();
-
+      console.log("Sorted slots:", sortedSlots);
       for (let i = 0; i < sortedSlots.length; i++) {
         const startTime = sortedSlots[i];
         let endTime = startTime;
-
-        // Find consecutive slots (30-minute intervals)
-        while (i + 1 < sortedSlots.length) {
-          const currentDate = new Date(startTime);
-          const nextDate = new Date(sortedSlots[i + 1]);
-          const timeDiff = nextDate.getTime() - currentDate.getTime();
-
-          // If next slot is exactly 30 minutes after current, it's consecutive
-          if (timeDiff === 30 * 60 * 1000) {
-            endTime = sortedSlots[i + 1];
-            i++;
-          } else {
-            break;
-          }
-        }
 
         // Add 30 minutes to end time to make it exclusive
         const endDateTime = new Date(endTime);
@@ -204,7 +189,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
           user_uuid: userUuid,
           event_id: eventId,
           start_time: startTime,
-          end_time: endTime,
+          end_time: endDateTime.toISOString(),
         };
         availabilityData.push(data);
       }

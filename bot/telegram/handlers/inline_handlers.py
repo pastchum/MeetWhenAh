@@ -6,11 +6,13 @@ import logging
 from ..config.config import bot
 
 # Import from services
-from services.event_service import getEvent, generate_event_description
-from services.database_service import getEntry, setEntry, updateEntry
-from services.event_service import getEventSleepPreferences, join_event
-from services.user_service import updateUsername
-from services.event_service import getUserAvailability, updateUserAvailability
+from services.event_service import (
+    getEvent, 
+    generate_event_description,
+    getConfirmedEvent,
+    generate_confirmed_event_description,
+    generate_confirmed_event_participants_list
+)
 
 # Import from utils
 from utils.web_app import create_web_app_url
@@ -22,7 +24,7 @@ def register_inline_handlers(bot):
     """Register all inline query handlers"""
     
     @bot.inline_handler(func=lambda query: query.query.startswith("availability_"))
-    def handle_inline_query(query):
+    def handle_availability_query(query):
         """Handle inline queries for event sharing"""
         print(query.query)
         try:
@@ -68,6 +70,54 @@ def register_inline_handlers(bot):
                 reply_markup=markup
             )
             
+            bot.answer_inline_query(query.id, [result])
+            
+        except Exception as e:
+            logger.error(f"Error in inline query handler: {str(e)}")
+
+    @bot.inline_handler(func=lambda query: query.query.startswith("join_"))
+    def handle_join_query(query):
+        """Handle inline queries for event joining"""
+        try: 
+            event_id = query.query.strip().split("_")[1]
+            if not event_id:
+                return
+            
+            # Get event details
+            event = getConfirmedEvent(event_id)
+            if not event:
+                not_found_result = types.InlineQueryResultArticle(
+                    id=event_id,
+                    title="Event not found",
+                    description="Event not found",
+                    input_message_content=types.InputTextMessageContent(
+                        message_text="Event not found"
+                    )
+                )
+                bot.answer_inline_query(query.id, [not_found_result])
+                return
+            
+            description = generate_confirmed_event_description(event)
+            participants = generate_confirmed_event_participants_list(event)
+            description += f"\n\nParticipants: {participants}"
+
+            markup = types.InlineKeyboardMarkup()
+            miniapp_btn = types.InlineKeyboardButton(
+                text="Join Event",
+                callback_data=f"join:{event_id}"
+            )
+            markup.add(miniapp_btn)
+
+            result = types.InlineQueryResultArticle(
+                id=event_id,
+                title=f"Join: {event['event_name']}",
+                description=description,
+                input_message_content=types.InputTextMessageContent(
+                    message_text=description
+                ),
+                reply_markup=markup
+            )
+
             bot.answer_inline_query(query.id, [result])
             
         except Exception as e:

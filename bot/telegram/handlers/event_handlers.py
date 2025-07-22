@@ -10,7 +10,13 @@ from ..config.config import bot
 
 # Import from services
 from services.user_service import updateUsername
-from services.event_service import getEventSleepPreferences, getUserAvailability, updateUserAvailability, create_event, get_event_by_id, join_event
+from services.event_service import (
+    create_event, 
+    confirmEvent, 
+    join_event, 
+    generate_event_description, 
+    get_event_by_id
+    )
 from services.availability_service import ask_availability
 
 # Import from utils
@@ -46,6 +52,9 @@ def register_event_handlers(bot):
                 
                 if web_app_number == 0:  # Event creation
                     handle_event_creation(message, data)
+                elif web_app_number == 1:
+                    print("confirming event:", data)
+                    #handle_event_confirmation(message, data)
                 else:
                     bot.reply_to(message, "Invalid web app data received")
             
@@ -90,12 +99,23 @@ def handle_event_creation(message, data):
         
         # Create share button
         markup = types.InlineKeyboardMarkup()
+
+        # Add share button
         share_button = types.InlineKeyboardButton(
             text="Share Event",
             switch_inline_query=f"availability_{event_id}"
         )
         markup.add(share_button)
         
+        # Add confirm button
+        params = f"confirm={event_id}"
+        miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
+        confirm_button = types.InlineKeyboardButton(
+            text="Confirm Best Time",
+            url=miniapp_url
+        )
+        markup.add(confirm_button)
+
         # Send confirmation message
         bot.reply_to(
             message,
@@ -109,16 +129,38 @@ def handle_event_creation(message, data):
     except Exception as e:
         bot.reply_to(message, f"Error creating event: {str(e)}")
 
-def create_hours_available(start_date, end_date):
-    """Create hours available structure"""
-    hours_available = []
-    for date in daterange(start_date, end_date):
-        hours_available.append({
-            'date': date.strftime('%Y-%m-%d'),
-            'hours': []
-        })
-    return hours_available
+def handle_event_confirmation(message, data):
+    """Handle event confirmation from web app data"""
+    try:
+        event_id = data.get('event_id')
+        best_start_time = data.get('best_start_time')
+        best_end_time = data.get('best_end_time')
+        participants = data.get('participants')
 
-def create_event_text(start_date, end_date):
-    """Create event text for sharing"""
-    return f"New event from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}" 
+        # Confirm the event
+        success = confirmEvent(event_id, best_start_time, best_end_time)
+        if not success:
+            bot.reply_to(message, "Failed to confirm event")
+        else:
+            bot.reply_to(message, "Event confirmed successfully")
+            # add participants to event
+            for participant in participants:
+                success = join_event(event_id, participant)
+                if not success:
+                    bot.reply_to(message, f"Failed to add participant {participant} to event")
+            
+            # create share message
+            description = generate_event_description(get_event_by_id(event_id))
+
+            markup = types.InlineKeyboardMarkup()
+            share_button = types.InlineKeyboardButton(
+                text="Share Event",
+                switch_inline_query=f"join_{event_id}"
+            )
+            markup.add(share_button)
+
+            bot.reply_to(message, f"Event confirmed successfully!\n\n{description}", reply_markup=markup)
+    except Exception as e:
+        bot.reply_to(message, f"Error confirming event: {str(e)}")
+        return
+
