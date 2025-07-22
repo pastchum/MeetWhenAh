@@ -12,6 +12,11 @@ export interface UserData {
   sleep_end?: string;
 }
 
+export interface NewUserData {
+  tele_id: string;
+  tele_user: string;
+}
+
 export class UserService {
   /**
    * Get a user by their Telegram ID
@@ -39,15 +44,15 @@ export class UserService {
   /**
    * Set a user by their Telegram ID
    */
-  async setUser(teleId: string, username: string): Promise<boolean> {
+  async setUser(user: NewUserData): Promise<boolean> {
     try {
       const userUuid = crypto.randomUUID();
       const now = new Date().toISOString();
       
       const userData = {
         uuid: userUuid,
-        tele_id: teleId,
-        tele_user: username,
+        tele_id: user.tele_id,
+        tele_user: user.tele_user,
         initialised: true,
         callout_cleared: true,
         created_at: now,
@@ -101,7 +106,7 @@ export class UserService {
   /**
    * Update or create a user's username
    */
-  async updateUsername(teleId: string, username: string): Promise<boolean> {
+  async updateUsername(teleId: string, tele_user: string): Promise<boolean> {
     try {
       const user = await this.getUser(teleId);
       
@@ -110,7 +115,7 @@ export class UserService {
         const { error } = await supabase
           .from('users')
           .update({
-            username: username,
+            tele_user: tele_user,
             updated_at: new Date().toISOString()
           })
           .eq('tele_id', teleId);
@@ -121,7 +126,11 @@ export class UserService {
         }
       } else {
         // Create new user
-        return await this.setUser(teleId, username);
+        const userData = {
+          tele_id: teleId,
+          tele_user: tele_user,
+        };
+        return await this.setUser(userData);
       }
 
       return true;
