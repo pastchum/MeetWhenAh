@@ -1,4 +1,4 @@
-import { UserData } from "@/utils/user_service";
+import { NewUserData, UserData } from "@/utils/user_service";
 
 export async function fetchUserDataFromId(tele_id: string) : Promise<UserData | null> {
     try {
@@ -28,7 +28,7 @@ export async function fetchUserDataFromUsername(username: string) : Promise<User
     }
 }
 
-export async function addUserToDatabase(user: UserData) {
+export async function addUserToDatabase(user: NewUserData) {
     try {
         const response = await fetch(`/api/user/add`, {
             method: 'POST',
@@ -43,4 +43,21 @@ export async function addUserToDatabase(user: UserData) {
         console.error('Error adding user:', error);
         return null;
     } 
+}
+
+export async function updateUsername(teleId: string, tele_user: string) {
+    try {
+        const response = await fetch(`/api/user/update-username`, {
+            method: 'POST',
+            body: JSON.stringify({ tele_id: teleId, tele_user: tele_user }),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update username');
+        }
+        const result = await response.json();
+        return result.data || null;
+    } catch (error) {
+        console.error('Error updating username:', error);
+        return null;
+    }
 }

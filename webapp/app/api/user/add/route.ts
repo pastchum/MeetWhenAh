@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { UserService } from '@/utils/user_service';
+import { NewUserData, UserService } from '@/utils/user_service';
 
 const userService = new UserService();
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, tele_id } = body;
-    
-    const success = await userService.setUser(tele_id, username);
+    const { tele_user, tele_id } = body;
+    const newUserData: NewUserData = {
+      tele_id: tele_id,
+      tele_user: tele_user,
+    };
+    const success = await userService.setUser(newUserData);
     
     if (success) {
       return NextResponse.json({
