@@ -53,8 +53,7 @@ def register_event_handlers(bot):
                 if web_app_number == 0:  # Event creation
                     handle_event_creation(message, data)
                 elif web_app_number == 1:
-                    print("confirming event:", data)
-                    #handle_event_confirmation(message, data)
+                    handle_event_confirmation(message, data)
                 else:
                     bot.reply_to(message, "Invalid web app data received")
             
@@ -131,6 +130,7 @@ def handle_event_creation(message, data):
 
 def handle_event_confirmation(message, data):
     """Handle event confirmation from web app data"""
+    print("handle_event_confirmation", data)
     try:
         event_id = data.get('event_id')
         best_start_time = data.get('best_start_time')

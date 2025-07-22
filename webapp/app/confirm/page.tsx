@@ -22,6 +22,7 @@ export default function ConfirmPage() {
   const [teleUser, setTeleUser] = useState<string>("");
   const [teleId, setTeleId] = useState<string>("");
   const [isEventCreator, setIsEventCreator] = useState(false);
+  const [tg, setTg] = useState<any>(null);
 
   // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
@@ -31,6 +32,12 @@ export default function ConfirmPage() {
 
     const username = urlParams.get("username");
     setTeleUser(username || "");
+
+    if (window.Telegram?.WebApp) {
+      setTg(window.Telegram.WebApp);
+    } else {
+      console.error("Telegram Web App script not loaded");
+    }
 
     if (window.Telegram.WebApp.initDataUnsafe.user) {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
@@ -200,9 +207,10 @@ export default function ConfirmPage() {
 
   // Handle confirm
   async function handleConfirm() {
-    if (!isEventCreator) {
+    if (!isEventCreator || !tg) {
       return;
     }
+
     setSubmitting(true);
     try {
       await fetch("/api/event/confirm", {
@@ -215,19 +223,15 @@ export default function ConfirmPage() {
         }),
       });
 
-      // Optionally, send data to Telegram WebApp
-      if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.sendData(
-          JSON.stringify({
-            web_app_number: 1,
-            event_id: eventId,
-            best_start_time: bestStart,
-            best_end_time: bestEnd,
-            participants: [],
-          })
-        );
-        window.Telegram.WebApp.close();
-      }
+      // Send data to Telegram WebApp after successful API call
+      const data = {
+        web_app_number: 1,
+        event_id: eventId,
+        best_start_time: bestStart,
+        best_end_time: bestEnd,
+      };
+      tg.sendData(JSON.stringify(data, null, 4));
+      tg.close();
     } catch (e) {
       console.error("Error confirming event:", e);
     }
