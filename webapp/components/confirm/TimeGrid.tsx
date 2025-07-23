@@ -48,15 +48,7 @@ const TimeGrid: React.FC<TimeGridProps> = ({
   // Helper function to normalize ISO datetime to local timezone for comparison
   const normalizeIsoDatetime = (isoString: string): string => {
     const date = new Date(isoString);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-
-    // Recreate the date in local timezone to ensure consistent timezone handling
-    const localDate = new Date(year, month - 1, day, hours, minutes);
-    return localDate.toISOString();
+    return date.toISOString();
   };
 
   // Check if a slot is selected
@@ -83,9 +75,9 @@ const TimeGrid: React.FC<TimeGridProps> = ({
     // Check each participant's availability
     Object.values(eventAvailability).forEach((userAvailability) => {
       userAvailability.forEach((block) => {
-        const blockStart = new Date(block.start_time);
-        const blockEnd = new Date(block.end_time);
-        const targetTime = new Date(targetDateTime);
+        const blockStart = new Date(normalizeIsoDatetime(block.start_time));
+        const blockEnd = new Date(normalizeIsoDatetime(block.end_time));
+        const targetTime = new Date(normalizeIsoDatetime(targetDateTime));
 
         // Check if target time falls within this availability block
         if (targetTime >= blockStart && targetTime < blockEnd) {

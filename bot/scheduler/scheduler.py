@@ -5,8 +5,8 @@ import math
 import logging
 import uuid
 
-# Import from other
-
+# Import from utils
+from utils.date_utils import parse_date, format_date
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -120,6 +120,7 @@ class Scheduler:
             else:
                 new_participants = availability_map[start_time] + [block["user_uuid"]]
                 availability_map[start_time] = sorted(new_participants)
+
         return availability_map
 
     def _create_event_blocks(self, availability_map: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -264,45 +265,13 @@ class Scheduler:
         """
         Parse datetime string in various formats including ISO format with timezone
         """
-        # Try ISO format with timezone first (most common for database TIMESTAMPTZ)
-        try:
-            return datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
-        except ValueError:
-            pass
-        
-        # Try strptime with timezone format
-        try:
-            return datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S%z")
-        except ValueError:
-            pass
-        
-        # Try the old format as fallback (timezone-naive, assume UTC)
-        try:
-            dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
-            return dt.replace(tzinfo=timezone.utc)
-        except ValueError:
-            pass
-        
-        # Try ISO format without timezone (assume UTC)
-        try:
-            dt = datetime.fromisoformat(datetime_str)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            return dt
-        except ValueError:
-            pass
-        
-        # If all else fails, raise an error
-        raise ValueError(f"Unable to parse datetime string: {datetime_str}")
+        return parse_date(datetime_str)
 
     def _format_datetime(self, dt: datetime) -> str:
         """
         Format datetime to ISO format with timezone
         """
-        if dt.tzinfo is None:
-            # If no timezone info, assume UTC
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt.isoformat()
+        return format_date(dt)
     
     def get_event_participants(self, availability_blocks: List[Dict[str, Any]], best_start_time: str, best_end_time: str) -> List[Dict[str, Any]]:
         """
@@ -332,7 +301,7 @@ if __name__ == "__main__":
             {"start_time": "2025-01-01 11:00:00", "end_time": "2025-01-01 11:30:00", "event_id": "1", "user_uuid": "2"},
             {"start_time": "2025-01-01 11:00:00", "end_time": "2025-01-01 11:30:00", "event_id": "1", "user_uuid": "1"},
             {"start_time": "2025-01-01 10:30:00", "end_time": "2025-01-01 11:00:00", "event_id": "1", "user_uuid": "1"},
-                        {"start_time": "2025-01-01 10:30:00", "end_time": "2025-01-01 11:00:00", "event_id": "1", "user_uuid": "2"},
+            {"start_time": "2025-01-01 10:30:00", "end_time": "2025-01-01 11:00:00", "event_id": "1", "user_uuid": "2"},
             {"start_time": "2025-01-01 10:30:00", "end_time": "2025-01-01 11:00:00", "event_id": "1", "user_uuid": "3"},
             {"start_time": "2025-01-01 11:30:00", "end_time": "2025-01-01 12:00:00", "event_id": "1", "user_uuid": "2"},
             {"start_time": "2025-01-01 12:00:00", "end_time": "2025-01-01 12:30:00", "event_id": "1", "user_uuid": "1"},

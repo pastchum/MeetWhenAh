@@ -8,6 +8,9 @@ from scheduler.scheduler import Scheduler
 from .database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries, deleteEntry
 from .user_service import getUser
 
+# Import from utils
+from utils.date_utils import format_date_for_message, format_time_from_iso, parse_date, parse_time, format_time
+
 # Import from other
 import uuid
 
@@ -27,8 +30,8 @@ def create_event(event_name: str, event_description: str, start_date: str, end_d
         "event_name": event_name,
         "event_description": event_description,
         "event_type": event_type,
-        "start_date": datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).isoformat(),
-        "end_date": datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).isoformat(),
+        "start_date": start_date,
+        "end_date": end_date,
         "start_hour": start_hour,
         "end_hour": end_hour,
         "creator": creator_uuid,
@@ -220,9 +223,13 @@ def generate_confirmed_event_description(event: dict) -> str:
         return description
     description += f"Event Name: {event['event_name']}\n"
     description += f"Event Description: {event['event_description']}\n"
-    start_time = datetime.strptime(event_data['confirmed_start_time'], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d %H:%M")
-    end_time = datetime.strptime(event_data['confirmed_end_time'], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d %H:%M")
-    description += f"Start Time: {start_time} to End Time: {end_time}\n"
+    start_date = parse_date(event_data['confirmed_start_time'])
+    start_date_str = format_date_for_message(start_date)
+    start_time_str = format_time_from_iso(event_data['confirmed_start_time'])
+    end_date = parse_date(event_data['confirmed_end_time'])
+    end_date_str = format_date_for_message(end_date)
+    end_time_str = format_time_from_iso(event_data['confirmed_end_time'])
+    description += f"Start Date: {start_date_str} {start_time_str} to End Date: {end_date_str} {end_time_str}\n"
 
     return description
 
@@ -250,14 +257,16 @@ def generate_event_description(event: dict) -> str:
     if "event_description" in event:
         description += f"Event Description: {event['event_description']}\n"
     if "start_date" in event:
-        start_date = datetime.strptime(event['start_date'][:10], "%Y-%m-%d").strftime("%d %B %Y")
-        description += f"Start Date: {start_date}\n"
+        start_date = parse_date(event['start_date'])
+        start_date_str = format_date_for_message(start_date)
+        description += f"Start Date: {start_date_str}\n"
     if "end_date" in event: 
-        end_date = datetime.strptime(event['end_date'][:10], "%Y-%m-%d").strftime("%d %B %Y")
-        description += f"End Date: {end_date}\n"
+        end_date = parse_date(event['end_date'])
+        end_date_str = format_date_for_message(end_date)
+        description += f"End Date: {end_date_str}\n"
     if "start_hour" in event and "end_hour" in event:
-        start_hour = datetime.strptime(event['start_hour'][:8], "%H:%M:%S").strftime("%H:%M")
-        end_hour = datetime.strptime(event['end_hour'][:8], "%H:%M:%S").strftime("%H:%M")
+        start_hour = format_time(parse_time(event['start_hour']))
+        end_hour = format_time(parse_time(event['end_hour']))
         description += f"Start Time: {start_hour} to End Time: {end_hour}\n"
     return description
 

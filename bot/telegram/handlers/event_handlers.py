@@ -19,11 +19,12 @@ from services.event_service import (
     confirmEvent, 
     join_event, 
     generate_confirmed_event_description, 
+    generate_event_description,
     )
 from services.availability_service import ask_availability
 
 # Import from utils
-from utils.date_utils import daterange
+from utils.date_utils import daterange, parse_date, format_date_for_message, format_date
 
 # Keep track of processed message IDs to prevent duplicate processing
 processed_messages = set()
@@ -77,6 +78,8 @@ def handle_event_creation(message, data):
         event_description = data.get('event_details')
         start_date = data.get('start')
         end_date = data.get('end')
+        start_date = parse_date(start_date)
+        end_date = parse_date(end_date)
         
         print("Event details:", event_name, event_description, start_date, end_date)
         
@@ -89,8 +92,8 @@ def handle_event_creation(message, data):
         event_id = create_event(
             event_name=event_name,
             event_description=event_description,
-            start_date=start_date,
-            end_date=end_date,
+            start_date=format_date(start_date),
+            end_date=format_date(end_date),
             creator_id=str(message.from_user.id),
             auto_join=True
         )
@@ -119,10 +122,14 @@ def handle_event_creation(message, data):
         )
         markup.add(confirm_button)
 
+        event = getEvent(event_id)
+
+        generated_description = generate_event_description(event)
+
         # Send confirmation message
         bot.reply_to(
             message,
-            f"Event created successfully!\n\nName: {event_name}\nDetails: {event_description}\nDates: {start_date} to {end_date}\n\nShare this event with others:",
+            f"Event created successfully!\n\n{generated_description}\n\nShare this event with others:",
             reply_markup=markup
         )
         
