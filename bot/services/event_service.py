@@ -5,7 +5,8 @@ from typing import Dict, List, Optional
 from scheduler.scheduler import Scheduler
 
 # Import from services
-from .database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries
+from .database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries, deleteEntry
+from .user_service import getUser
 
 # Import from other
 import uuid
@@ -37,19 +38,15 @@ def create_event(event_name: str, event_description: str, start_date: str, end_d
     print(success)
     return event_id if success else None
 
-def get_event_by_id(event_id: str) -> Dict:
-    """Get event details by ID"""
-    event = getEntry("events", "event_id", event_id)
-    return event.to_dict() if event else None
-
-def join_event(event_id: str, user_uuid: str) -> bool:
+def join_event(event_id: str, tele_id: str) -> bool:
     """Add a user to an event's participants"""
-    event = getEntry("event_confirmations", "event_id", event_id)
+    event = getConfirmedEvent(event_id)
     if not event:
         return False
-    user_data = getEntry("users", "uuid", user_uuid)
-    if not user_data:
+    user = getUser(tele_id)
+    if not user:
         return False
+    user_uuid = user["uuid"]
     
     # add user to event membership table
     membership_data = {
@@ -62,6 +59,35 @@ def join_event(event_id: str, user_uuid: str) -> bool:
     if not success:
         return False
     return True
+
+def leave_event(event_id: str, tele_id: str) -> bool:
+    """Remove a user from an event's participants"""
+    event = getConfirmedEvent(event_id)
+    if not event:
+        return False
+    user = getUser(tele_id)
+    if not user:
+        return False
+    user_uuid = user["uuid"]
+    success = deleteEntry("membership", "event_id", event_id, "user_uuid", user_uuid)
+    if not success:
+        return False
+    return True
+
+def check_membership(event_id: str, tele_id: str) -> bool:
+    """Check if a user is a member of an event"""
+    event = getConfirmedEvent(event_id)
+    if not event:
+        return False
+    user = getUser(tele_id)
+    if not user:
+        return False
+    user_uuid = user["uuid"]
+    membership = getEntries("membership", "event_id", event_id)
+    for member in membership:
+        if member["user_uuid"] == user_uuid:
+            return True
+    return False
 
 def getEventSleepPreferences(event_id: str) -> Dict[str, Dict[str, int]]:
     """Get sleep preferences for all participants in an event"""
@@ -140,7 +166,17 @@ def getUserEvents(user_id):
     
 def get_event_best_time(event_id: str) -> List[Dict]:
     """Get the best time for an event"""
-    scheduler = Scheduler()
+
+    # get event data
+    event = getEntry("events", "event_id", event_id)
+    if not event:
+        return []
+    
+    min_participants = event.get("min_participants", 2)
+    min_duration_blocks = event.get("min_duration_blocks", 2)
+    max_duration_blocks = event.get("max_duration_blocks", 4)
+
+    scheduler = Scheduler(min_participants=min_participants, min_block_size=min_duration_blocks, max_block_size=max_duration_blocks)
 
     availability_blocks = getEntries("availability_blocks", "event_id", event_id)
     if not availability_blocks:
@@ -178,21 +214,22 @@ def getConfirmedEvent(event_id: str) -> Dict:
 def generate_confirmed_event_description(event: dict) -> str:
     """Generate a description for a confirmed event"""
     description = ""
-    event_id = event[event_id]
-    event_data = getEntry("_datas", "_data_id", event_id)
+    event_id = event["event_id"]
+    event_data = getEntry("event_confirmations", "event_id", event_id)
     if not event_data:
         return description
-    description += f"Event Name: {event_data['event_name']}\n"
-    description += f"Event Description: {event_data['event_description']}\n"
-    description += f"Start Time: {event['confirmed_start_time']}\n"
-    description += f"End Time: {event['confirmed_end_time']}\n"
+    description += f"Event Name: {event['event_name']}\n"
+    description += f"Event Description: {event['event_description']}\n"
+    start_time = datetime.strptime(event_data['confirmed_start_time'], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d %H:%M")
+    end_time = datetime.strptime(event_data['confirmed_end_time'], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d %H:%M")
+    description += f"Start Time: {start_time} to End Time: {end_time}\n"
 
     return description
 
 def generate_confirmed_event_participants_list(event: dict) -> str:
     """Generate a list for the participants of a confirmed event"""
     description = ""
-    event_id = event[event_id]
+    event_id = event["event_id"]
     participants = getEntries("membership", "event_id", event_id)
     if not participants:
         return description
@@ -223,7 +260,6 @@ def generate_event_description(event: dict) -> str:
         end_hour = datetime.strptime(event['end_hour'][:8], "%H:%M:%S").strftime("%H:%M")
         description += f"Start Time: {start_hour} to End Time: {end_hour}\n"
     return description
-
 
 if __name__ == "__main__":
     event_id = "44e211d3-a094-4133-9ea0-4539c091c07c"

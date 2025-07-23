@@ -20,7 +20,33 @@ DEFAULT_MIN_BLOCK_SIZE = 2  # No of blocks (2 * 30 min blocks)
 TIME_SLOT_SIZE = 30  # minutes
 SENSITIVITY_THRESHOLD = 2  # Threshold for considering a block to be valid (e.g. if the number of participants changes by more than this threshold, the block is not valid)
 MIN_PARTICIPANTS = 2  # Minimum number of participants in an event block
-MAX_MULTIPLIER = 2  # Maximum multiplier for the minimum block size
+MAX_BLOCK_SIZE = 4  # Maximum duration of the event block in minutes
+TIMING_WEIGHTS = {
+    0: 1.0,
+    1: 1.0,
+    2: 1.0,
+    3: 1.0,
+    4: 1.0,
+    5: 1.0,
+    6: 1.0,
+    7: 1.0,
+    8: 1.5,
+    9: 1.5,
+    10: 2.0,
+    11: 2.0,
+    12: 2.0,
+    13: 2.0,
+    14: 2.0,
+    15: 2.0,
+    16: 2.0,
+    17: 3.0,
+    18: 3.0,
+    19: 3.0,
+    20: 2.0,
+    21: 1.5,
+    22: 1.0,
+    23: 1.0,
+}
 
 """
 Algorithm for calculating optimal meeting times:
@@ -64,12 +90,12 @@ class Scheduler:
     This service handles the core scheduling logic for finding the best meeting times
     based on participants' availability and preferences.
     """
-    def __init__(self, sleep_hours: dict = DEFAULT_SLEEP_HOURS, min_block_size: int = DEFAULT_MIN_BLOCK_SIZE, min_participants: int = MIN_PARTICIPANTS, sensitivity_threshold: int = SENSITIVITY_THRESHOLD, max_multiplier: int = MAX_MULTIPLIER):
+    def __init__(self, sleep_hours: dict = DEFAULT_SLEEP_HOURS, min_block_size: int = DEFAULT_MIN_BLOCK_SIZE, min_participants: int = MIN_PARTICIPANTS, sensitivity_threshold: int = SENSITIVITY_THRESHOLD, max_block_size: int = MAX_BLOCK_SIZE):
         self.sleep_hours = sleep_hours
         self.min_block_size = min_block_size
         self.min_participants = min_participants
         self.sensitivity_threshold = sensitivity_threshold
-        self.max_multiplier = max_multiplier
+        self.max_block_size = max_block_size
 
     def _create_availability_map(self, availability_blocks: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -101,9 +127,7 @@ class Scheduler:
         Create event blocks from the availability map
         """
         event_blocks = []
-        max_block_size = self.min_block_size * self.max_multiplier
         sorted_slots = sorted(availability_map.keys())
-        print("Sorted slots: ", sorted_slots)
         for time_slot in sorted_slots:
             # initialise the event block if minimum number of participants are available for any given availability block
             start_time = time_slot
@@ -112,7 +136,7 @@ class Scheduler:
             if len(participants) >= self.min_participants:
                 # Scan through all subsequent blocks and merge consecutive ones as long as they have more than the minimum participants
                 i = 1
-                while i < max_block_size:
+                while i < self.max_block_size:
                     next_block = time_slot + timedelta(minutes=i * 30)
                     if next_block in availability_map:
                         new_intersection = intersection.intersection(set(availability_map[next_block]))
@@ -211,7 +235,8 @@ class Scheduler:
             end = self._parse_datetime(end)
         duration = (end - start).total_seconds() / 30
         participant_count = len(event_block["participants"])
-        return participant_count * duration
+        timing_weight = TIMING_WEIGHTS[start.hour]
+        return participant_count * duration * timing_weight
     
     def _get_best_event_block(self, event_blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -239,21 +264,31 @@ class Scheduler:
         """
         Parse datetime string in various formats including ISO format with timezone
         """
-        # Try ISO format first (most common for database TIMESTAMPTZ)
+        # Try ISO format with timezone first (most common for database TIMESTAMPTZ)
         try:
             return datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
         except ValueError:
             pass
         
-        # Try the old format as fallback
+        # Try strptime with timezone format
         try:
-            return datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+            return datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S%z")
         except ValueError:
             pass
         
-        # Try ISO format without timezone
+        # Try the old format as fallback (timezone-naive, assume UTC)
         try:
-            return datetime.fromisoformat(datetime_str)
+            dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+            return dt.replace(tzinfo=timezone.utc)
+        except ValueError:
+            pass
+        
+        # Try ISO format without timezone (assume UTC)
+        try:
+            dt = datetime.fromisoformat(datetime_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
         except ValueError:
             pass
         
@@ -268,6 +303,27 @@ class Scheduler:
             # If no timezone info, assume UTC
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat()
+    
+    def get_event_participants(self, availability_blocks: List[Dict[str, Any]], best_start_time: str, best_end_time: str) -> List[Dict[str, Any]]:
+        """
+        Get the participants of an event by availability blocks and the confirmed best start and end time
+        """
+        participants = []
+
+        # generate availability map
+        availability_map = self._create_availability_map(availability_blocks)
+
+        start_time = self._parse_datetime(best_start_time)
+        end_time = self._parse_datetime(best_end_time)
+        
+        # get participants
+        for block in availability_map:
+            block_start_time = self._parse_datetime(block)
+            if block_start_time >= start_time and block_start_time <= end_time:
+                print("Adding participants: ", availability_map[block])
+                participants.extend(availability_map[block])
+
+        return participants
 
 if __name__ == "__main__":
     scheduler = Scheduler()

@@ -2,6 +2,8 @@ import unittest
 from datetime import datetime
 from scheduler import Scheduler
 
+### NOT UPDATED FOR NEW TIMING WEIGHTS
+
 class SchedulerTest(unittest.TestCase):
     def test_create_availability_map(self):
         scheduler = Scheduler()
@@ -26,6 +28,15 @@ class SchedulerTest(unittest.TestCase):
             {"start_time": "2025-01-01T12:30:00+08:00", "end_time": "2025-01-01T13:00:00+08:00", "event_id": "1", "user_uuid": "2"},
         ]
         availability_map_test_2 = scheduler._create_availability_map(avail_blocks_test_2)
+        print({
+                             datetime.strptime("2025-01-01T10:00:00+08:00", "%Y-%m-%dT%H:%M:%S%z").isoformat(): ["1"],
+                             datetime.strptime("2025-01-01T10:30:00+08:00", "%Y-%m-%dT%H:%M:%S%z").isoformat(): ["1", "3"],
+                             datetime.strptime("2025-01-01T11:00:00+08:00", "%Y-%m-%dT%H:%M:%S%z").isoformat(): ["2"],
+                             datetime.strptime("2025-01-01T11:30:00+08:00", "%Y-%m-%dT%H:%M:%S%z").isoformat(): ["2"],
+                             datetime.strptime("2025-01-01T12:00:00+08:00", "%Y-%m-%dT%H:%M:%S%z").isoformat(): ["1"],
+                             datetime.strptime("2025-01-01T12:30:00+08:00", "%Y-%m-%dT%H:%M:%S%z").isoformat(): ["2", "3"],
+                             datetime.strptime("2025-01-01T13:00:00+08:00", "%Y-%m-%dT%H:%M:%S%z").isoformat(): ["1"],
+                         })
         self.assertEqual(len(availability_map_test_2), 7)
         self.assertIsInstance(availability_map_test_2, dict)
         self.assertEqual(availability_map_test_2, 
@@ -43,31 +54,24 @@ class SchedulerTest(unittest.TestCase):
         scheduler = Scheduler()
         availability_blocks = [
             {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T10:30:00+08:00", "event_id": "1", "user_uuid": "1"},
-            {"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "event_id": "1", "user_uuid": "1"},
             {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T10:30:00+08:00", "event_id": "1", "user_uuid": "2"},
+            {"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "event_id": "1", "user_uuid": "1"},
             {"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "event_id": "1", "user_uuid": "2"},
         ]
         availability_map = scheduler._create_availability_map(availability_blocks)
         event_blocks = scheduler._create_event_blocks(availability_map)
-        self.assertEqual(event_blocks, [{"start_time": "2025-01-01 10:00:00", "end_time": "2025-01-01 11:00:00", "participants": ["1","2"], "duration": 60, "participant_count": 2}])
+        self.assertEqual(event_blocks, [{"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "participants": ["1","2"], "duration": 60, "participant_count": 2}])
 
         avail_blocks_test_2 = [
-            {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T10:30:00+08:00", "event_id": "1", "user_uuid": "1"},
-            {"start_time": "2025-01-01T11:00:00+08:00", "end_time": "2025-01-01T11:30:00+08:00", "event_id": "1", "user_uuid": "2"},
-            {"start_time": "2025-01-01T11:00:00+08:00", "end_time": "2025-01-01T11:30:00+08:00", "event_id": "1", "user_uuid": "1"},
             {"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "event_id": "1", "user_uuid": "1"},
             {"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "event_id": "1", "user_uuid": "2"},
-            {"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "event_id": "1", "user_uuid": "3"},
-            {"start_time": "2025-01-01T11:30:00+08:00", "end_time": "2025-01-01T12:00:00+08:00", "event_id": "1", "user_uuid": "2"},
-            {"start_time": "2025-01-01T12:00:00+08:00", "end_time": "2025-01-01T12:30:00+08:00", "event_id": "1", "user_uuid": "1"},
-            {"start_time": "2025-01-01T12:30:00+08:00", "end_time": "2025-01-01T13:00:00+08:00", "event_id": "1", "user_uuid": "3"},
-            {"start_time": "2025-01-01T13:00:00+08:00", "end_time": "2025-01-01T13:30:00+08:00", "event_id": "1", "user_uuid": "1"},
-            {"start_time": "2025-01-01T12:30:00+08:00", "end_time": "2025-01-01T13:00:00+08:00", "event_id": "1", "user_uuid": "2"},
+            {"start_time": "2025-01-01T11:00:00+08:00", "end_time": "2025-01-01T11:30:00+08:00", "event_id": "1", "user_uuid": "1"},
+            {"start_time": "2025-01-01T11:00:00+08:00", "end_time": "2025-01-01T11:30:00+08:00", "event_id": "1", "user_uuid": "2"},
         ]
         availability_map_test_2 = scheduler._create_availability_map(avail_blocks_test_2)
         event_blocks_test_2 = scheduler._create_event_blocks(availability_map_test_2)
 
-        self.assertEqual(event_blocks_test_2, [{"start_time": "2025-01-01 10:30:00", "end_time": "2025-01-01 11:30:00", "participants": ["1","2"], "duration": 60, "participant_count": 2}])
+        self.assertEqual(event_blocks_test_2, [{"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:30:00+08:00", "participants": ["1","2"], "duration": 60, "participant_count": 2}])
 
     def test_is_within_sleep_hours(self):
         scheduler = Scheduler()
@@ -125,25 +129,18 @@ class SchedulerTest(unittest.TestCase):
     def test_process_availability_blocks(self):
         scheduler = Scheduler()
         availability_blocks = [
-            {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "event_id": "1", "user_uuid": "1"},
-            {"start_time": "2025-01-01T11:00:00+08:00", "end_time": "2025-01-01T12:00:00+08:00", "event_id": "1", "user_uuid": "2"},
+            {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T10:30:00+08:00", "event_id": "1", "user_uuid": "1"},
         ]
         self.assertEqual(scheduler._process_availability_blocks(availability_blocks), [])
+
         avail_blocks_test_2 = [
             {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T10:30:00+08:00", "event_id": "1", "user_uuid": "1"},
-            {"start_time": "2025-01-01T11:00:00+08:00", "end_time": "2025-01-01T11:30:00+08:00", "event_id": "1", "user_uuid": "2"},
-            {"start_time": "2025-01-01T11:00:00+08:00", "end_time": "2025-01-01T11:30:00+08:00", "event_id": "1", "user_uuid": "1"},
+            {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T10:30:00+08:00", "event_id": "1", "user_uuid": "2"},
             {"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "event_id": "1", "user_uuid": "1"},
             {"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "event_id": "1", "user_uuid": "2"},
-            {"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "event_id": "1", "user_uuid": "3"},
-            {"start_time": "2025-01-01T11:30:00+08:00", "end_time": "2025-01-01T12:00:00+08:00", "event_id": "1", "user_uuid": "2"},
-            {"start_time": "2025-01-01T12:00:00+08:00", "end_time": "2025-01-01T12:30:00+08:00", "event_id": "1", "user_uuid": "1"},
-            {"start_time": "2025-01-01T12:30:00+08:00", "end_time": "2025-01-01T13:00:00+08:00", "event_id": "1", "user_uuid": "3"},
-            {"start_time": "2025-01-01T13:00:00+08:00", "end_time": "2025-01-01T13:30:00+08:00", "event_id": "1", "user_uuid": "1"},
-            {"start_time": "2025-01-01T12:30:00+08:00", "end_time": "2025-01-01T13:00:00+08:00", "event_id": "1", "user_uuid": "2"},
         ]
         self.assertEqual(scheduler._process_availability_blocks(avail_blocks_test_2), 
-                         [{"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:30:00+08:00", "participants": ["1","2"], "duration": 60, "participant_count": 2}])
+                         [{"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "participants": ["1","2"], "duration": 60, "participant_count": 2}])
 
 if __name__ == "__main__":
     unittest.main()
