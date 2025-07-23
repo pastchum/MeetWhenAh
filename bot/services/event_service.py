@@ -5,7 +5,8 @@ from typing import Dict, List, Optional
 from scheduler.scheduler import Scheduler
 
 # Import from services
-from .database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries
+from .database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries, deleteEntry
+from .user_service import getUser
 
 # Import from other
 import uuid
@@ -37,14 +38,15 @@ def create_event(event_name: str, event_description: str, start_date: str, end_d
     print(success)
     return event_id if success else None
 
-def join_event(event_id: str, user_uuid: str) -> bool:
+def join_event(event_id: str, tele_id: str) -> bool:
     """Add a user to an event's participants"""
-    event = getEntry("event_confirmations", "event_id", event_id)
+    event = getConfirmedEvent(event_id)
     if not event:
         return False
-    user_data = getEntry("users", "uuid", user_uuid)
-    if not user_data:
+    user = getUser(tele_id)
+    if not user:
         return False
+    user_uuid = user["uuid"]
     
     # add user to event membership table
     membership_data = {
@@ -57,6 +59,35 @@ def join_event(event_id: str, user_uuid: str) -> bool:
     if not success:
         return False
     return True
+
+def leave_event(event_id: str, tele_id: str) -> bool:
+    """Remove a user from an event's participants"""
+    event = getConfirmedEvent(event_id)
+    if not event:
+        return False
+    user = getUser(tele_id)
+    if not user:
+        return False
+    user_uuid = user["uuid"]
+    success = deleteEntry("membership", "event_id", event_id, "user_uuid", user_uuid)
+    if not success:
+        return False
+    return True
+
+def check_membership(event_id: str, tele_id: str) -> bool:
+    """Check if a user is a member of an event"""
+    event = getConfirmedEvent(event_id)
+    if not event:
+        return False
+    user = getUser(tele_id)
+    if not user:
+        return False
+    user_uuid = user["uuid"]
+    membership = getEntries("membership", "event_id", event_id)
+    for member in membership:
+        if member["user_uuid"] == user_uuid:
+            return True
+    return False
 
 def getEventSleepPreferences(event_id: str) -> Dict[str, Dict[str, int]]:
     """Get sleep preferences for all participants in an event"""

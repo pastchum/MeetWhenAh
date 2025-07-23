@@ -11,7 +11,10 @@ from services.event_service import (
     generate_event_description,
     getConfirmedEvent,
     generate_confirmed_event_description,
-    generate_confirmed_event_participants_list
+    generate_confirmed_event_participants_list,
+    join_event,
+    check_membership,
+    leave_event
 )
 
 # Import from utils
@@ -135,36 +138,27 @@ def register_inline_handlers(bot):
         except Exception as e:
             logger.error(f"Error in inline query handler: {str(e)}")
 
-    '''
-    @bot.callback_query_handler(func=lambda call: call.data)
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("join:"))
     def handle_join_callback(call):
         """Handle join event button clicks"""
         try:
-            logger.info(f"Join callback data: {call.data}")
-            event_id = call.data.split(':')[1]
-            user_id = str(call.from_user.id)
-            username = call.from_user.username or user_id
-            
-            # Join the event
-            success = join_event(event_id, user_id, username)
-            
-            if success:
+            event_id = call.data.split(":")[1]
+            tele_id = call.from_user.id
+            membership_status = check_membership(event_id, tele_id)
+            if membership_status:
+                leave_event(event_id, tele_id)
                 bot.answer_callback_query(
                     call.id,
-                    "You've successfully joined the event! I'll send you a message to set your availability.",
-                    show_alert=True
+                    f"{call.from_user.username} has left the event.",
+                    show_alert=False
                 )
-                
-                # Ask for availability
-                from handlers.availability_handlers import ask_availability
-                ask_availability(call.message.chat.id, event_id, username)
             else:
+                join_event(event_id, tele_id)
                 bot.answer_callback_query(
                     call.id,
-                    "Failed to join the event. Please try again later.",
-                    show_alert=True
+                    f"{call.from_user.username} has joined the event.",
+                    show_alert=False
                 )
-                
         except Exception as e:
             logger.error(f"Error in join callback handler: {str(e)}")
             bot.answer_callback_query(
@@ -172,113 +166,4 @@ def register_inline_handlers(bot):
                 "An error occurred. Please try again later.",
                 show_alert=True
             )
-
-    return bot
-
-@bot.callback_query_handler(func=lambda call: True)
-def handle_callback_query(call):
-    try:
-        if call.data.startswith('join:'):
-            event_id = call.data.split(':')[1]
-            handle_join_event(call.message, event_id, call.from_user)
-        elif call.data.startswith('event:'):
-            event_id = call.data.split(':')[1]
-            handle_event_selection(call.message, event_id)
             
-    except Exception as e:
-        print(e)
-        bot.answer_callback_query(call.id, "An error occurred. Please try again.")
-
-def handle_join_event(message, event_id, user):
-    event_data = getEntry("events", "event_id", event_id)
-    
-    if not event_data:
-        bot.send_message(message.chat.id, "This event no longer exists.")
-        return
-        
-    members = event_data.get('members', [])
-    
-    if str(user.id) in members:
-        bot.send_message(message.chat.id, "You have already joined this event!")
-        return
-        
-    members.append(str(user.id))
-    event_data['members'] = members
-    event_data['text'] = event_data['text'] + f"\n <b>{user.username}</b>"
-    
-    setEntry("events", event_data)
-    
-    # Update the original message with new member list
-    try:
-        bot.edit_message_text(
-            chat_id=message.chat.id,
-            message_id=message.message_id,
-            text=event_data['text'],
-            reply_markup=create_join_markup(event_id),
-            parse_mode='HTML'
-        )
-    except Exception as e:
-        print(f"Failed to update message: {e}")
-    
-    # Send private message to user to update availability
-    try:
-        username = user.username or str(user.id)
-        bot.send_message(
-            user.id,
-            "Please update your availability for this event:",
-            reply_markup=create_availability_markup(event_id, username)
-        )
-    except Exception as e:
-        print(f"Failed to send private message: {e}")
-
-def handle_event_selection(message, event_id):
-    event_data = getEntry("events", "event_id", event_id)
-    
-    if not event_data:
-        bot.send_message(message.chat.id, "This event no longer exists.")
-        return
-    
-    # Get username from the user who clicked the button
-    username = message.from_user.username or str(message.from_user.id)
-        
-    web_app_url = create_web_app_url("/dragselector", 1, event_id=event_id, username=username)
-    markup = types.InlineKeyboardMarkup()
-    webapp_button = types.InlineKeyboardButton(
-        text="Update Availability",
-        web_app=types.WebAppInfo(url=web_app_url)
-    )
-    markup.add(webapp_button)
-    
-    bot.edit_message_text(
-        chat_id=message.chat.id,
-        message_id=message.message_id,
-        text=f"Please update your availability for this event.",
-        reply_markup=markup
-    )
-
-def create_join_markup(event_id):
-    markup = types.InlineKeyboardMarkup()
-    join_button = types.InlineKeyboardButton(
-        text="Join",
-        callback_data=f"join:{event_id}"
-    )
-    markup.add(join_button)
-    return markup
-
-def create_availability_markup(event_id, username=None):
-    # If username is not provided, we can't create a proper URL for group contexts
-    # This function should be called with a username parameter
-    if not username:
-        # Fallback - create a generic URL (this should be avoided in group contexts)
-        web_app_url = create_web_app_url("/dragselector", 1, event_id=event_id)
-    else:
-        web_app_url = create_web_app_url("/dragselector", 1, event_id=event_id, username=username)
-    
-    markup = types.InlineKeyboardMarkup()
-    webapp_button = types.InlineKeyboardButton(
-        text="Update Availability",
-        web_app=types.WebAppInfo(url=web_app_url)
-    )
-    markup.add(webapp_button)
-    return markup 
-'''
