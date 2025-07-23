@@ -107,11 +107,12 @@ def handle_event_creation(message, data):
         markup.add(share_button)
         
         # Add confirm button
-        params = f"confirm={event_id}"
-        miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
+        params = f"event_id={event_id}"
+        webapp_url = f"https://meet-when-ah.vercel.app/confirm?{params}"
+        web_app_info = types.WebAppInfo(url=webapp_url)
         confirm_button = types.InlineKeyboardButton(
             text="Confirm Best Time",
-            url=miniapp_url
+            web_app=web_app_info
         )
         markup.add(confirm_button)
 

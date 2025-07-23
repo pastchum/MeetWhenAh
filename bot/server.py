@@ -8,9 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Import services
 from services.database_service import getEntry
-from services.event_service import getEvent, getUserAvailability, updateUserAvailability
+from services.event_service import get_event_best_time
 
 from telebot.types import Update
+
+from scheduler.scheduler import Scheduler
 
 # Import bot instance (we'll need to set up the import path correctly)
 import sys
@@ -70,6 +72,14 @@ async def telegram_webhook(request: Request):
 async def health_check():
     """Health check endpoint for the webhook"""
     return {"status": "healthy"}
+
+@app.post("/api/event/get-best-time")
+async def get_best_time(request: Request):
+    """Get the best time for an event"""
+    data = await request.json()
+    event_id = data.get("event_id")
+    best_time = get_event_best_time(event_id)
+    return {"data": best_time}
 
 if __name__ == "__main__":
     # Load environment variables

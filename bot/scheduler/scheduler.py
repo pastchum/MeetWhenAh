@@ -21,6 +21,32 @@ TIME_SLOT_SIZE = 30  # minutes
 SENSITIVITY_THRESHOLD = 2  # Threshold for considering a block to be valid (e.g. if the number of participants changes by more than this threshold, the block is not valid)
 MIN_PARTICIPANTS = 2  # Minimum number of participants in an event block
 MAX_MULTIPLIER = 2  # Maximum multiplier for the minimum block size
+TIMING_WEIGHTS = {
+    0: 1.0,
+    1: 1.0,
+    2: 1.0,
+    3: 1.0,
+    4: 1.0,
+    5: 1.0,
+    6: 1.0,
+    7: 1.0,
+    8: 1.5,
+    9: 1.5,
+    10: 2.0,
+    11: 2.0,
+    12: 2.0,
+    13: 2.0,
+    14: 2.0,
+    15: 2.0,
+    16: 2.0,
+    17: 3.0,
+    18: 3.0,
+    19: 3.0,
+    20: 2.0,
+    21: 1.5,
+    22: 1.0,
+    23: 1.0,
+}
 
 """
 Algorithm for calculating optimal meeting times:
@@ -211,7 +237,8 @@ class Scheduler:
             end = self._parse_datetime(end)
         duration = (end - start).total_seconds() / 30
         participant_count = len(event_block["participants"])
-        return participant_count * duration
+        timing_weight = TIMING_WEIGHTS[start.hour]
+        return participant_count * duration * timing_weight
     
     def _get_best_event_block(self, event_blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -239,21 +266,31 @@ class Scheduler:
         """
         Parse datetime string in various formats including ISO format with timezone
         """
-        # Try ISO format first (most common for database TIMESTAMPTZ)
+        # Try ISO format with timezone first (most common for database TIMESTAMPTZ)
         try:
             return datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
         except ValueError:
             pass
         
-        # Try the old format as fallback
+        # Try strptime with timezone format
         try:
-            return datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+            return datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S%z")
         except ValueError:
             pass
         
-        # Try ISO format without timezone
+        # Try the old format as fallback (timezone-naive, assume UTC)
         try:
-            return datetime.fromisoformat(datetime_str)
+            dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+            return dt.replace(tzinfo=timezone.utc)
+        except ValueError:
+            pass
+        
+        # Try ISO format without timezone (assume UTC)
+        try:
+            dt = datetime.fromisoformat(datetime_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
         except ValueError:
             pass
         

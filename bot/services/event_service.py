@@ -140,7 +140,17 @@ def getUserEvents(user_id):
     
 def get_event_best_time(event_id: str) -> List[Dict]:
     """Get the best time for an event"""
-    scheduler = Scheduler()
+
+    # get event data
+    event = getEntry("events", "event_id", event_id)
+    if not event:
+        return []
+    
+    min_participants = event.get("min_participants", 2)
+    min_duration_blocks = event.get("min_duration_blocks", 2)
+    max_duration_blocks = event.get("max_duration_blocks", 4)
+
+    scheduler = Scheduler(min_participants=min_participants, min_duration_blocks=min_duration_blocks, max_duration_blocks=max_duration_blocks)
 
     availability_blocks = getEntries("availability_blocks", "event_id", event_id)
     if not availability_blocks:
@@ -223,7 +233,6 @@ def generate_event_description(event: dict) -> str:
         end_hour = datetime.strptime(event['end_hour'][:8], "%H:%M:%S").strftime("%H:%M")
         description += f"Start Time: {start_hour} to End Time: {end_hour}\n"
     return description
-
 
 if __name__ == "__main__":
     event_id = "44e211d3-a094-4133-9ea0-4539c091c07c"
