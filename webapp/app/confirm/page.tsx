@@ -8,6 +8,7 @@ import {
   fetchUserDataFromId,
   fetchUserDataFromUsername,
 } from "@/routes/user_routes";
+import ConfirmDatePicker from "@/components/confirm/ConfirmDatePicker";
 
 export default function ConfirmPage() {
   const [eventDetails, setEventDetails] = useState<EventData | null>(null);
@@ -215,11 +216,24 @@ export default function ConfirmPage() {
     return items;
   };
 
+  //handle date change
+  const handleDateChange = (dates: {
+    startDate: Date | null;
+    endDate: Date | null;
+  }) => {
+    if (dates.startDate) {
+      setBestStart(dates.startDate.toISOString());
+    }
+    if (dates.endDate) {
+      setBestEnd(dates.endDate.toISOString());
+    }
+  };
+
   // Handle confirm
   async function handleConfirm() {
-    /*if (!isEventCreator || !tg) {
+    if (!isEventCreator) {
       return;
-    }*/
+    }
 
     setSubmitting(true);
     try {
@@ -233,15 +247,10 @@ export default function ConfirmPage() {
         }),
       });
 
-      // Send data to Telegram WebApp after successful API call
-      const data = {
-        web_app_number: 1,
-        event_id: eventId,
-        best_start_time: bestStart,
-        best_end_time: bestEnd,
-      };
-      tg.sendData(JSON.stringify(data, null, 4));
-      tg.close();
+      // Close the Telegram WebApp if open
+      if (tg) {
+        tg.close();
+      }
     } catch (e) {
       console.error("Error confirming event:", e);
     }
@@ -343,39 +352,22 @@ export default function ConfirmPage() {
         <h2 className="text-xl font-semibold mb-4 text-gray-50">
           Confirm Event Timing
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-100 mb-2">
-              Start time:
-            </label>
-            <input
-              type="datetime-local"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={bestStart}
-              onChange={(e) => setBestStart(e.target.value)}
-              disabled={loading}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-100 mb-2">
-              End time:
-            </label>
-            <input
-              type="datetime-local"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={bestEnd}
-              onChange={(e) => setBestEnd(e.target.value)}
-              disabled={loading}
-            />
-          </div>
-        </div>
+        <ConfirmDatePicker
+          startDate={bestStart}
+          endDate={bestEnd}
+          onDateChange={handleDateChange}
+        />
 
         <button
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleConfirm}
-          disabled={loading || submitting}
+          disabled={loading || submitting || !isEventCreator}
         >
-          {submitting ? "Confirming..." : "Confirm Event"}
+          {!isEventCreator
+            ? "You are not the event creator"
+            : submitting
+            ? "Confirming..."
+            : "Confirm Event"}
         </button>
       </div>
     </main>
