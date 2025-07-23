@@ -84,7 +84,8 @@ def register_inline_handlers(bot):
                 return
             
             # Get event details
-            event = getConfirmedEvent(event_id)
+            event_confirmed = getConfirmedEvent(event_id)
+            event = getEvent(event_id)
             if not event:
                 not_found_result = types.InlineQueryResultArticle(
                     id=event_id,
@@ -96,10 +97,21 @@ def register_inline_handlers(bot):
                 )
                 bot.answer_inline_query(query.id, [not_found_result])
                 return
+            elif not event_confirmed:
+                not_found_result = types.InlineQueryResultArticle(
+                    id=event_id,
+                    title="Event not confirmed",
+                    description="Event not confirmed",
+                    input_message_content=types.InputTextMessageContent(
+                        message_text="Event not confirmed"
+                    )
+                )
+                bot.answer_inline_query(query.id, [not_found_result])
+                return
             
             description = generate_confirmed_event_description(event)
             participants = generate_confirmed_event_participants_list(event)
-            description += f"\n\nParticipants: {participants}"
+            description += f"\n\nParticipants:\n{participants}"
 
             markup = types.InlineKeyboardMarkup()
             miniapp_btn = types.InlineKeyboardButton(

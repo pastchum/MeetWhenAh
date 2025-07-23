@@ -20,7 +20,7 @@ DEFAULT_MIN_BLOCK_SIZE = 2  # No of blocks (2 * 30 min blocks)
 TIME_SLOT_SIZE = 30  # minutes
 SENSITIVITY_THRESHOLD = 2  # Threshold for considering a block to be valid (e.g. if the number of participants changes by more than this threshold, the block is not valid)
 MIN_PARTICIPANTS = 2  # Minimum number of participants in an event block
-MAX_MULTIPLIER = 2  # Maximum multiplier for the minimum block size
+MAX_BLOCK_SIZE = 4  # Maximum duration of the event block in minutes
 TIMING_WEIGHTS = {
     0: 1.0,
     1: 1.0,
@@ -90,12 +90,12 @@ class Scheduler:
     This service handles the core scheduling logic for finding the best meeting times
     based on participants' availability and preferences.
     """
-    def __init__(self, sleep_hours: dict = DEFAULT_SLEEP_HOURS, min_block_size: int = DEFAULT_MIN_BLOCK_SIZE, min_participants: int = MIN_PARTICIPANTS, sensitivity_threshold: int = SENSITIVITY_THRESHOLD, max_multiplier: int = MAX_MULTIPLIER):
+    def __init__(self, sleep_hours: dict = DEFAULT_SLEEP_HOURS, min_block_size: int = DEFAULT_MIN_BLOCK_SIZE, min_participants: int = MIN_PARTICIPANTS, sensitivity_threshold: int = SENSITIVITY_THRESHOLD, max_block_size: int = MAX_BLOCK_SIZE):
         self.sleep_hours = sleep_hours
         self.min_block_size = min_block_size
         self.min_participants = min_participants
         self.sensitivity_threshold = sensitivity_threshold
-        self.max_multiplier = max_multiplier
+        self.max_block_size = max_block_size
 
     def _create_availability_map(self, availability_blocks: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -127,9 +127,7 @@ class Scheduler:
         Create event blocks from the availability map
         """
         event_blocks = []
-        max_block_size = self.min_block_size * self.max_multiplier
         sorted_slots = sorted(availability_map.keys())
-        print("Sorted slots: ", sorted_slots)
         for time_slot in sorted_slots:
             # initialise the event block if minimum number of participants are available for any given availability block
             start_time = time_slot
@@ -138,7 +136,7 @@ class Scheduler:
             if len(participants) >= self.min_participants:
                 # Scan through all subsequent blocks and merge consecutive ones as long as they have more than the minimum participants
                 i = 1
-                while i < max_block_size:
+                while i < self.max_block_size:
                     next_block = time_slot + timedelta(minutes=i * 30)
                     if next_block in availability_map:
                         new_intersection = intersection.intersection(set(availability_map[next_block]))
@@ -305,6 +303,27 @@ class Scheduler:
             # If no timezone info, assume UTC
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat()
+    
+    def get_event_participants(self, availability_blocks: List[Dict[str, Any]], best_start_time: str, best_end_time: str) -> List[Dict[str, Any]]:
+        """
+        Get the participants of an event by availability blocks and the confirmed best start and end time
+        """
+        participants = []
+
+        # generate availability map
+        availability_map = self._create_availability_map(availability_blocks)
+
+        start_time = self._parse_datetime(best_start_time)
+        end_time = self._parse_datetime(best_end_time)
+        
+        # get participants
+        for block in availability_map:
+            block_start_time = self._parse_datetime(block)
+            if block_start_time >= start_time and block_start_time <= end_time:
+                print("Adding participants: ", availability_map[block])
+                participants.extend(availability_map[block])
+
+        return participants
 
 if __name__ == "__main__":
     scheduler = Scheduler()

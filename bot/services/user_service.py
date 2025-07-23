@@ -11,6 +11,11 @@ def getUser(tele_id: str) -> dict:
     user = getEntry("users", "tele_id", tele_id)
     return user
 
+def getUserByUuid(uuid: str) -> dict:
+    """Get a user by their UUID"""
+    user = getEntry("users", "uuid", uuid)
+    return user
+
 def setUser(tele_id: str, username: str) -> bool:
     user_uuid = str(uuid.uuid4())
     """Set a user by their Telegram ID"""

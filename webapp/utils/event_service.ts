@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/db';
-import { Scheduler } from './scheduler';
 
 export interface EventData {
   event_id: string;
@@ -109,6 +108,30 @@ export class EventService {
     }
   }
 
+  /**
+   * confirm an event
+   */
+  async confirmEvent(eventId: string, bestStartTime: string, bestEndTime: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('event_confirmations')
+        .insert({
+          event_id: eventId,
+          best_start_time: bestStartTime,
+          best_end_time: bestEndTime
+        });
+
+      if (error) {
+        console.error('Error confirming event:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error confirming event:', error);
+      return false;
+    }
+  }
   
   /**
    * Add a user to an event's participants
@@ -242,22 +265,16 @@ export class EventService {
    */
   async getEventBestTime(eventId: string): Promise<EventBlock[]> {
     try {
-      // Get all availability blocks for the event
-      const { data: availabilityBlocks, error } = await supabase
-        .from('availability_blocks')
-        .select('*')
-        .eq('event_id', eventId);
-
-      if (error || !availabilityBlocks) {
-        console.error('Error getting availability blocks:', error);
-        return [];
+      const data = {
+        event_id: eventId,
       }
-
-      // Use the scheduler to find the best meeting times
-      const scheduler = new Scheduler();
-      const bestTimes = scheduler.getBestMeetingTimes(availabilityBlocks);
-      
-      return bestTimes;
+      const response = await fetch(process.env.API_URL + '/api/event/get-best-time', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      console.log(result);
+      return result.data;
     } catch (error) {
       console.error('Error getting event best time:', error);
       return [];

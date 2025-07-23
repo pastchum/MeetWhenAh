@@ -73,8 +73,18 @@ export default function ConfirmPage() {
           const res = await fetch(`/api/event/${eventId}/best-time`);
           if (res.ok) {
             const data = await res.json();
-            setBestStart(data.best_start_time || "");
-            setBestEnd(data.best_end_time || "");
+            console.log(data);
+
+            // Convert ISO datetime to datetime-local format
+            const convertToLocalDateTime = (isoString: string) => {
+              if (!isoString) return "";
+              const date = new Date(isoString);
+              // Format as YYYY-MM-DDTHH:mm for datetime-local input
+              return date.toISOString().slice(0, 16);
+            };
+
+            setBestStart(convertToLocalDateTime(data.data[0].start_time) || "");
+            setBestEnd(convertToLocalDateTime(data.data[0].end_time) || "");
           }
         } catch (e) {
           console.log("No best time available yet");
@@ -207,9 +217,9 @@ export default function ConfirmPage() {
 
   // Handle confirm
   async function handleConfirm() {
-    if (!isEventCreator || !tg) {
+    /*if (!isEventCreator || !tg) {
       return;
-    }
+    }*/
 
     setSubmitting(true);
     try {
@@ -363,7 +373,7 @@ export default function ConfirmPage() {
         <button
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleConfirm}
-          disabled={loading || submitting || !isEventCreator}
+          disabled={loading || submitting}
         >
           {submitting ? "Confirming..." : "Confirm Event"}
         </button>

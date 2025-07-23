@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
 from collections import defaultdict
 
@@ -88,14 +88,15 @@ class AvailabilityService:
                     minutes = int(time) % 100
                     time_formatted = f"{hours:02d}:{minutes:02d}:00"
                     
-                    # Create start_time and end_time for 30-minute blocks
-                    start_time = f"{date} {time_formatted}"
-                    
-                    # Calculate end_time (30 minutes later)
-                    from datetime import timedelta
-                    start_dt = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+                    # Create start_time and end_time for 30-minute blocks with timezone
+                    start_dt = datetime.strptime(f"{date} {time_formatted}", "%Y-%m-%d %H:%M:%S")
+                    # Assume UTC timezone if not specified
+                    start_dt = start_dt.replace(tzinfo=timezone.utc)
                     end_dt = start_dt + timedelta(minutes=30)
-                    end_time = end_dt.strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    # Format as ISO strings with timezone
+                    start_time = start_dt.isoformat()
+                    end_time = end_dt.isoformat()
                     
                     block_data = {
                         "start_time": start_time,

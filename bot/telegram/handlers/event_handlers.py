@@ -8,14 +8,17 @@ from telebot import types
 # Import from config
 from ..config.config import bot
 
+# Import from scheduler
+from scheduler.scheduler import Scheduler
+
 # Import from services
-from services.user_service import updateUsername
+from services.user_service import updateUsername, getUserByUuid
 from services.event_service import (
+    getEvent,
     create_event, 
     confirmEvent, 
     join_event, 
-    generate_event_description, 
-    get_event_by_id
+    generate_confirmed_event_description, 
     )
 from services.availability_service import ask_availability
 
@@ -129,29 +132,46 @@ def handle_event_creation(message, data):
     except Exception as e:
         bot.reply_to(message, f"Error creating event: {str(e)}")
 
-def handle_event_confirmation(message, data):
+def handle_event_confirmation(event_id, best_start_time, best_end_time):
     """Handle event confirmation from web app data"""
-    print("handle_event_confirmation", data)
+    print("handle_event_confirmation", event_id, best_start_time, best_end_time)
     try:
-        event_id = data.get('event_id')
-        best_start_time = data.get('best_start_time')
-        best_end_time = data.get('best_end_time')
-        participants = data.get('participants')
+        # get event details
+        event = getEvent(event_id)
+
+        # set up scheduler
+        min_participants = event.get("min_participants")
+        min_duration_blocks = event.get("min_duration_blocks")
+        max_duration_blocks = event.get("max_duration_blocks")
+        scheduler = Scheduler(min_participants=min_participants, min_block_size=min_duration_blocks, max_block_size=max_duration_blocks)
+
+        # get event creator
+        creator_id = event.get("creator")
+        creator = getUserByUuid(creator_id)
+        creator_tele_id = creator.get("tele_id")
+
+        # get participants
+        participants = []
+        #participants = scheduler.get_event_participants(event_id, best_start_time, best_end_time)
 
         # Confirm the event
         success = confirmEvent(event_id, best_start_time, best_end_time)
         if not success:
-            bot.reply_to(message, "Failed to confirm event")
+            message = f"Failed to confirm event {event.get('event_name')}."
+            bot.send_message(creator_tele_id, message)
         else:
-            bot.reply_to(message, "Event confirmed successfully")
+            print("Event confirmed successfully.")
+            message = f"Event {event.get('event_name')} confirmed successfully."
+            bot.send_message(chat_id=creator_tele_id, text=message)
+            print("Message should be sent to creator ", creator.get("tele_user"))
             # add participants to event
             for participant in participants:
                 success = join_event(event_id, participant)
                 if not success:
-                    bot.reply_to(message, f"Failed to add participant {participant} to event")
+                    bot.send_message(chat_id=creator_tele_id, text=f"Failed to add participant to event.")
             
             # create share message
-            description = generate_event_description(get_event_by_id(event_id))
+            description = generate_confirmed_event_description(event)
 
             markup = types.InlineKeyboardMarkup()
             share_button = types.InlineKeyboardButton(
@@ -160,8 +180,8 @@ def handle_event_confirmation(message, data):
             )
             markup.add(share_button)
 
-            bot.reply_to(message, f"Event confirmed successfully!\n\n{description}", reply_markup=markup)
+            bot.send_message(chat_id=creator_tele_id, text=f"Event confirmed successfully!\n\n{description}", reply_markup=markup)
     except Exception as e:
-        bot.reply_to(message, f"Error confirming event: {str(e)}")
+        bot.send_message(chat_id=creator_tele_id, text=f"Error confirming event: {str(e)}")
         return
 
