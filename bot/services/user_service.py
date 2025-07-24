@@ -19,19 +19,26 @@ def getUserByUuid(uuid: str) -> dict:
 def setUser(tele_id: str, username: str) -> bool:
     user_uuid = str(uuid.uuid4())
     """Set a user by their Telegram ID"""
-    setEntry("users", user_uuid, {
+    success = setEntry("users", user_uuid, {
         "uuid" : user_uuid,
         "tele_id": tele_id,
         "tele_user": username,
         "initialised": True,
-        "callout_cleared": True,
+        "callout_cleared": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     })
+    return success
 
 def updateUserInitialised(tele_id: str) -> bool:
     """Update a user's initialised status"""
     updateEntry("users", "tele_id", tele_id, "initialised", True)
+
+def updateUserCalloutCleared(tele_id: str) -> bool:
+    """
+    Update a user's callout cleared status. 
+    This means that the user can receive callouts from the bot.
+    """
     updateEntry("users", "tele_id", tele_id, "callout_cleared", True)
 
 def updateUsername(tele_id: str, username: str) -> bool:

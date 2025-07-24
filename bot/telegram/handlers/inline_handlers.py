@@ -16,9 +16,15 @@ from services.event_service import (
     check_membership,
     leave_event
 )
+from services.user_service import (
+    getUser,
+    setUser,
+    updateUserInitialised,
+    updateUserCalloutCleared,
+    updateUsername
+)
 
 # Import from utils
-from utils.web_app import create_web_app_url
 from utils.message_templates import HELP_MESSAGE
 
 logger = logging.getLogger(__name__)
@@ -144,6 +150,26 @@ def register_inline_handlers(bot):
         try:
             event_id = call.data.split(":")[1]
             tele_id = call.from_user.id
+            user_data = getUser(tele_id)
+            tele_user = call.from_user.username
+            if not user_data:
+                success = setUser(tele_id, tele_user)
+                if not success:
+                    logger.error(f"Error setting user: {str(e)}")
+                    bot.answer_callback_query(
+                        call.id,
+                        "An error occurred. Please try again later.",
+                        show_alert=True
+                    )
+                    return
+                updateUserInitialised(tele_id)
+                updateUserCalloutCleared(tele_id)
+            
+            # update username if necessary
+            if user_data["tele_user"] != tele_user:
+                updateUsername(tele_id, tele_user)
+
+            # Check if user is already a member of the event
             membership_status = check_membership(event_id, tele_id)
             if membership_status:
                 leave_event(event_id, tele_id)
