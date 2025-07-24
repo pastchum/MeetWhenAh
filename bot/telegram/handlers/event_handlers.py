@@ -158,8 +158,7 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
         creator_tele_id = creator.get("tele_id")
 
         # get participants
-        participants = []
-        #participants = scheduler.get_event_participants(event_id, best_start_time, best_end_time)
+        participants = scheduler.get_event_participants(event_id, best_start_time, best_end_time)
 
         # Confirm the event
         success = confirmEvent(event_id, best_start_time, best_end_time)

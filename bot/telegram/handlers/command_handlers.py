@@ -5,7 +5,14 @@ from tzlocal import get_localzone
 
 # Import from services
 from services.database_service import getEntry, setEntry, updateEntry
-from services.user_service import updateUsername, setUserSleepPreferences, getUser, setUser, updateUserInitialised
+from services.user_service import (
+    updateUsername,
+    setUserSleepPreferences,
+    getUser,
+    setUser,
+    updateUserInitialised,
+    updateUserCalloutCleared
+)
 
 # Import from utils
 from utils.message_templates import WELCOME_MESSAGE, HELP_MESSAGE
@@ -30,6 +37,7 @@ def register_command_handlers(bot):
             else:
                 if not db_result["initialised"]:
                     updateUserInitialised(tele_id)
+                    updateUserCalloutCleared(tele_id)
                 if db_result["tele_user"] != str(message.from_user.username):
                     print("Username changed, updating in DB.")
                     updateUsername(message.from_user.id, message.from_user.username)

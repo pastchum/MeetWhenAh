@@ -54,7 +54,7 @@ export class UserService {
         tele_id: user.tele_id,
         tele_user: user.tele_user,
         initialised: true,
-        callout_cleared: true,
+        callout_cleared: false,
         created_at: now,
         updated_at: now
       };
