@@ -129,7 +129,7 @@ export default function ConfirmPage() {
       }
     }
     fetchUserUuidFromTeleUserAsync();
-  }, [teleId]);
+  }, [teleUser]);
 
   // check if user uuid is the same as the event creator
   useEffect(() => {

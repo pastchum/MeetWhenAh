@@ -37,8 +37,8 @@ CREATE TABLE events (
   start_hour     TIMETZ         NOT NULL DEFAULT '00:00:00.000000+08:00',
   end_hour       TIMETZ         NOT NULL DEFAULT '23:30:00.000000+08:00',
   min_participants INT NOT NULL DEFAULT 2,
-  min_duration_blocks INT NOT NULL DEFAULT 2, -- in terms of blocks
-  max_duration_blocks INT NOT NULL DEFAULT 4, -- in terms of blocks
+  min_duration INT NOT NULL DEFAULT 2, -- in terms of blocks
+  max_duration INT NOT NULL DEFAULT 4, -- in terms of blocks
   creator         UUID            NOT NULL
                     REFERENCES users(uuid)
                     ON DELETE RESTRICT,
@@ -54,6 +54,28 @@ CREATE TABLE event_confirmations (
   confirmed_start_time TIMESTAMPTZ,
   confirmed_end_time TIMESTAMPTZ,
   PRIMARY KEY (event_id)
+);
+
+-- 2.2) Event Chats
+CREATE TABLE event_chats (
+  event_id        UUID            NOT NULL
+                    REFERENCES events(event_id)
+                    ON DELETE CASCADE,
+  chat_id         BIGINT          NOT NULL,
+  thread_id       BIGINT,
+  is_reminders_enabled BOOLEAN NOT NULL DEFAULT false,
+  PRIMARY KEY (event_id, chat_id)
+);
+
+-- 2.3) Event Reminders
+CREATE TABLE event_reminders (
+  event_id        UUID            NOT NULL
+                    REFERENCES events(event_id)
+                    ON DELETE CASCADE,
+  chat_id         BIGINT          NOT NULL,
+  thread_id     BIGINT,
+  job_id   VARCHAR(255)       NOT NULL,
+  PRIMARY KEY (event_id, chat_id)
 );
 
 -- 3) Membership
