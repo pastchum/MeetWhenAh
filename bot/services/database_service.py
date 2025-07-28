@@ -21,7 +21,7 @@ def getEntry(table: str, key_field: str, key_value: str):
     except Exception as e:
         print(f"Error getting entry from {table}: {e}")
         return None
-    
+
 def getEntries(table: str, key_field: str, key_value: str):
     """Get multiple entries from a table by a key field"""
     try:
@@ -57,7 +57,7 @@ def updateEntry(table: str, id: str, data: dict) -> bool:
     except Exception as e:
         print(f"Error updating entry in {table}: {e}")
         return False 
-    
+
 def deleteEntry(table: str, id_field: str, id: str, key_field: str, key_value: str) -> bool:
     """Delete an entry from a table with the given ID"""
     try:

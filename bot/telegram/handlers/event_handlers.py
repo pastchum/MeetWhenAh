@@ -147,24 +147,25 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
     """Handle event confirmation from web app data"""
     print("handle_event_confirmation", event_id, best_start_time, best_end_time)
     try:
+        # get event details
+        event = getEvent(event_id)
+        # get event creator
+        creator_id = event["creator"]
+        creator = getUserByUuid(creator_id)
+        creator_tele_id = creator["tele_id"]
+
         # check if event is already confirmed
         if getConfirmedEvent(event_id):
             bot.send_message(chat_id=creator_tele_id, text=f"Event {event['event_name']} is already confirmed.")
             return
-
-        # get event details
-        event = getEvent(event_id)
-
+        
         # set up scheduler
         min_participants = event["min_participants"]
         min_duration_blocks = event["min_duration"]
         max_duration_blocks = event["max_duration"]
         best_time_algo = BestTimeAlgo(min_participants=min_participants, min_block_size=min_duration_blocks, max_block_size=max_duration_blocks)
 
-        # get event creator
-        creator_id = event["creator"]
-        creator = getUserByUuid(creator_id)
-        creator_tele_id = creator["tele_id"]
+
         # get participants
         availability_blocks = get_event_availability(event_id)
         participants = best_time_algo.get_event_participants(availability_blocks, best_start_time, best_end_time)

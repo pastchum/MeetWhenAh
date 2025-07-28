@@ -15,8 +15,6 @@ from services.event_service import get_event_best_time
 
 from telebot.types import Update
 
-from scheduler.scheduler import Scheduler
-
 # Import bot instance (we'll need to set up the import path correctly)
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
