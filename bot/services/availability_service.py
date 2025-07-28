@@ -9,7 +9,13 @@ from telegram.config.config import bot
 
 # Import from services
 from .database_service import getEntry, setEntry, updateEntry
-from .event_service import getEvent, getUserAvailability, updateUserAvailability
+from .event_service import (
+    getEvent, 
+    getUserAvailability, 
+    updateUserAvailability, 
+    getConfirmedEvent, 
+    generate_confirmed_event_description
+)
 
 # Import from utils
 from utils.message_templates import HELP_MESSAGE
@@ -47,6 +53,31 @@ def ask_availability(chat_id: int, event_id: str, thread_id: int = None):
         logger.error(f"Error in ask_availability: {str(e)}")
         bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Failed to set up availability selection. Please try again later.")
 
+def send_confirmed_event_availability(event_id: str, chat_id: int, thread_id: int = None):
+    """Send a confirmed event's availability to a chat"""
+    try:
+        # Get event details
+        event = getConfirmedEvent(event_id)
+        if not event:
+            bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Event not found")
+            return
+        # generate event description
+        event_description = generate_confirmed_event_description(event_id)
+            
+        # add join button
+        markup = types.InlineKeyboardMarkup()
+        join_button = types.InlineKeyboardButton(text="Join Event", callback_data=f"join:{event_id}")
+        markup.add(join_button)
+
+        # add toggle reminders button
+        toggle_reminders_button = types.InlineKeyboardButton(text="Toggle Reminders", callback_data=f"toggle_reminders:{event_id}")
+        markup.add(toggle_reminders_button)
+
+        # send event description
+        bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text=event_description, reply_markup=markup)
+    except Exception as e:
+        logger.error(f"Error in send_confirmed_event_availability: {str(e)}")
+        bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Failed to send confirmed event availability. Please try again later.")
 
 def format_availability_summary(event_id: str, username: str) -> str:
     """Format a summary of a user's availability for an event"""

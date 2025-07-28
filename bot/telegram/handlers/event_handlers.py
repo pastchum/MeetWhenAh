@@ -18,11 +18,14 @@ from services.event_service import (
     getEvent,
     create_event, 
     confirmEvent, 
-    join_event, 
+    join_event_by_uuid, 
     generate_confirmed_event_description, 
     generate_event_description,
+    get_event_availability,
+    getConfirmedEvent, 
+    get_event_chat
     )
-from services.availability_service import ask_availability
+from services.availability_service import ask_availability, send_confirmed_event_availability
 
 # Import from utils
 from utils.date_utils import daterange, parse_date, format_date_for_message, format_date
@@ -75,10 +78,10 @@ def handle_event_creation(message, data):
     """Handle event creation from web app data"""
     try:
         # Extract event details
-        event_name = data.get('event_name')
-        event_description = data.get('event_details')
-        start_date = data.get('start')
-        end_date = data.get('end')
+        event_name = data['event_name']
+        event_description = data['event_details']
+        start_date = data['start']
+        end_date = data['end']
         start_date = parse_date(start_date)
         end_date = parse_date(end_date)
         
@@ -144,41 +147,49 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
     """Handle event confirmation from web app data"""
     print("handle_event_confirmation", event_id, best_start_time, best_end_time)
     try:
+        # check if event is already confirmed
+        if getConfirmedEvent(event_id):
+            bot.send_message(chat_id=creator_tele_id, text=f"Event {event['event_name']} is already confirmed.")
+            return
+
         # get event details
         event = getEvent(event_id)
 
         # set up scheduler
-        min_participants = event.get("min_participants")
-        min_duration_blocks = event.get("min_duration_blocks")
-        max_duration_blocks = event.get("max_duration_blocks")
+        min_participants = event["min_participants"]
+        min_duration_blocks = event["min_duration"]
+        max_duration_blocks = event["max_duration"]
         scheduler = Scheduler(min_participants=min_participants, min_block_size=min_duration_blocks, max_block_size=max_duration_blocks)
 
         # get event creator
-        creator_id = event.get("creator")
+        creator_id = event["creator"]
         creator = getUserByUuid(creator_id)
-        creator_tele_id = creator.get("tele_id")
-
+        creator_tele_id = creator["tele_id"]
         # get participants
-        participants = scheduler.get_event_participants(event_id, best_start_time, best_end_time)
-
+        availability_blocks = get_event_availability(event_id)
+        participants = scheduler.get_event_participants(availability_blocks, best_start_time, best_end_time)
+        print("participants", participants)
         # Confirm the event
         success = confirmEvent(event_id, best_start_time, best_end_time)
-        if not success:
-            message = f"Failed to confirm event {event.get('event_name')}."
+        print("success", success)
+        if not success: 
+            # event failed to confirm
+            message = f"Failed to confirm event {event['event_name']}."
             bot.send_message(creator_tele_id, message)
         else:
+            # event confirmed successfully
             print("Event confirmed successfully.")
-            message = f"Event {event.get('event_name')} confirmed successfully."
+            message = f"Event {event['event_name']} confirmed successfully."
             bot.send_message(chat_id=creator_tele_id, text=message)
-            print("Message should be sent to creator ", creator.get("tele_user"))
+            print("Message should be sent to creator ", creator["tele_user"])
             # add participants to event
             for participant in participants:
-                success = join_event(event_id, participant)
+                success = join_event_by_uuid(event_id, participant)
                 if not success:
                     bot.send_message(chat_id=creator_tele_id, text=f"Failed to add participant to event.")
-            
+            print("participants", participants)
             # create share message
-            description = generate_confirmed_event_description(event)
+            description = generate_confirmed_event_description(event_id)
 
             markup = types.InlineKeyboardMarkup()
             share_button = types.InlineKeyboardButton(
@@ -188,6 +199,12 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
             markup.add(share_button)
 
             bot.send_message(chat_id=creator_tele_id, text=f"Event confirmed successfully!\n\n{description}", reply_markup=markup)
+
+            # send availability to event chat
+            chat_id, thread_id = get_event_chat(event_id)
+            if chat_id:
+                print("sending availability to event chat", chat_id, thread_id)
+                send_confirmed_event_availability(event_id, chat_id, thread_id)
     except Exception as e:
         bot.send_message(chat_id=creator_tele_id, text=f"Error confirming event: {str(e)}")
         return

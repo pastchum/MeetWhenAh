@@ -80,9 +80,9 @@ async def health_check():
 async def confirm_event(request: Request):
     """Confirm an event"""
     data = await request.json()
-    event_id = data.get("event_id")
-    best_start_time = data.get("best_start_time")
-    best_end_time = data.get("best_end_time")
+    event_id = data["event_id"]
+    best_start_time = data["best_start_time"]
+    best_end_time = data["best_end_time"]
 
     # process confirm event
     success = handle_event_confirmation(event_id, best_start_time, best_end_time)
@@ -92,7 +92,7 @@ async def confirm_event(request: Request):
 async def get_best_time(request: Request):
     """Get the best time for an event"""
     data = await request.json()
-    event_id = data.get("event_id")
+    event_id = data["event_id"]
     best_time = get_event_best_time(event_id)
     print("best_time", best_time)
     return {"data": best_time}

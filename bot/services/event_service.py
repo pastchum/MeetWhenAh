@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 # Import from scheduler
 from scheduler.scheduler import Scheduler
@@ -41,6 +41,24 @@ def create_event(event_name: str, event_description: str, start_date: str, end_d
     print(success)
     return event_id if success else None
 
+def join_event_by_uuid(event_id: str, user_uuid: str) -> bool:
+    """Add a user to an event's participants"""
+    event = getConfirmedEvent(event_id)
+    if not event:
+        return False
+    
+    # add user to event membership table
+    membership_data = {
+        "event_id": event_id,
+        "user_uuid": user_uuid,
+        "joined_at": datetime.now(timezone.utc).isoformat(),
+        "emoji_icon": "👋"
+    }
+    success = setEntry("membership", event_id, membership_data)
+    if not success:
+        return False
+    return True
+
 def join_event(event_id: str, tele_id: str) -> bool:
     """Add a user to an event's participants"""
     event = getConfirmedEvent(event_id)
@@ -76,6 +94,30 @@ def leave_event(event_id: str, tele_id: str) -> bool:
     if not success:
         return False
     return True
+
+def set_chat(event_id: str, chat_id: int, thread_id: int = None) -> bool:
+    """Set a chat for an event"""
+    event = getEvent(event_id)
+    if not event:
+        return False
+    chat_data = {
+        "event_id": event_id,
+        "chat_id": chat_id,
+        "thread_id": thread_id,
+        "reminders_enabled": False
+    }
+    success = setEntry("event_chats", event_id, chat_data)
+    if not success:
+        return False
+    return True
+
+def get_event_chat(event_id: str) -> Tuple[int, int]:
+    """Get a chat for an event"""
+    event_chat = getEntry("event_chats", "event_id", event_id)
+    print("event_chat", event_chat)
+    if not event_chat:
+        return None, None
+    return event_chat["chat_id"], event_chat["thread_id"]
 
 def check_ownership(event_id: str, tele_id: str) -> bool:
     """Check if a user is the owner of an event"""
@@ -120,9 +162,14 @@ def getEventSleepPreferences(event_id: str) -> Dict[str, Dict[str, int]]:
     
     return sleep_prefs
 
+def get_event_availability(event_id: str) -> List[Dict]:
+    """Get all availability blocks for an event"""
+    availability = getEntries("availability_blocks", "event_id", event_id)
+    return availability
+
 def getUserAvailability(tele_id: str, event_id: str) -> List[Dict]:
     """Get a user's availability for an event"""
-    availability = getEntries("availability_blocks", "event_id", event_id)
+    availability = get_event_availability(event_id)
     if not availability:
         return []
     
@@ -158,26 +205,6 @@ def updateUserAvailability(tele_id: str, event_id: str, availability_data: List[
         return False
     return True
     
-def getUserEvents(user_id):
-    """Get all events that a user is a member of."""
-    try:
-        events = []
-        from ..services.user_service import supabase_client
-        
-        # Query events where user is a member
-        event_data = supabase_client.from_('events').select('*').filter('members', 'cs', str(user_id)).execute()
-        
-        for event_data in event_data['data']:
-            events.append({
-                'id': event_data.get('event_id'),
-                'name': event_data.get('event_name', 'Unnamed Event')
-            })
-            
-        return events
-    except Exception as e:
-        print(f"Error getting user events: {e}")
-        return [] 
-    
 def get_event_best_time(event_id: str) -> List[Dict]:
     """Get the best time for an event"""
 
@@ -187,12 +214,12 @@ def get_event_best_time(event_id: str) -> List[Dict]:
         return []
     
     min_participants = event.get("min_participants", 2)
-    min_duration_blocks = event.get("min_duration_blocks", 2)
-    max_duration_blocks = event.get("max_duration_blocks", 4)
+    min_duration_blocks = event.get("min_duration", 2)
+    max_duration_blocks = event.get("max_duration", 4)
 
     scheduler = Scheduler(min_participants=min_participants, min_block_size=min_duration_blocks, max_block_size=max_duration_blocks)
 
-    availability_blocks = getEntries("availability_blocks", "event_id", event_id)
+    availability_blocks = get_event_availability(event_id)
     if not availability_blocks:
         return []
     
@@ -225,21 +252,30 @@ def getConfirmedEvent(event_id: str) -> Dict:
     event = getEntry("event_confirmations", "event_id", event_id)
     return event if event else None
 
-def generate_confirmed_event_description(event: dict) -> str:
+def generate_confirmed_event_description(event_id: str) -> str:
     """Generate a description for a confirmed event"""
+    event_data = getEvent(event_id)
+    confirmed_event_data = getConfirmedEvent(event_id)
+    if not confirmed_event_data:
+        return "Event not confirmed"
     description = ""
-    event_id = event["event_id"]
-    event_data = getEntry("event_confirmations", "event_id", event_id)
     if not event_data:
         return description
-    description += f"Event Name: {event['event_name']}\n"
-    description += f"Event Description: {event['event_description']}\n"
-    start_date = parse_date(event_data['confirmed_start_time'])
+    # add event name and description
+    description += f"Event Name: {event_data['event_name']}\n"
+    description += f"Event Description: {event_data['event_description']}\n"
+
+    # parse start time
+    start_date = parse_date(confirmed_event_data['confirmed_start_time'])
     start_date_str = format_date_for_message(start_date)
-    start_time_str = format_time_from_iso(event_data['confirmed_start_time'])
-    end_date = parse_date(event_data['confirmed_end_time'])
+    start_time_str = format_time_from_iso(confirmed_event_data['confirmed_start_time'])
+
+    # parse end time
+    end_date = parse_date(confirmed_event_data['confirmed_end_time'])
     end_date_str = format_date_for_message(end_date)
-    end_time_str = format_time_from_iso(event_data['confirmed_end_time'])
+    end_time_str = format_time_from_iso(confirmed_event_data['confirmed_end_time'])
+
+    # add start and end time
     description += f"Start Date: {start_date_str} {start_time_str} to End Date: {end_date_str} {end_time_str}\n"
 
     return description

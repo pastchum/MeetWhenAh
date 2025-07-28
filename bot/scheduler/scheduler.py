@@ -278,19 +278,17 @@ class Scheduler:
         Get the participants of an event by availability blocks and the confirmed best start and end time
         """
         participants = []
-
         # generate availability map
         availability_map = self._create_availability_map(availability_blocks)
-
         start_time = self._parse_datetime(best_start_time)
         end_time = self._parse_datetime(best_end_time)
         
         # get participants
         for block in availability_map:
-            block_start_time = self._parse_datetime(block)
-            if block_start_time >= start_time and block_start_time <= end_time:
-                print("Adding participants: ", availability_map[block])
-                participants.extend(availability_map[block])
+            if block >= start_time and block <= end_time:
+                for participant in availability_map[block]:
+                    if participant not in participants:
+                        participants.append(participant)
 
         return participants
 
