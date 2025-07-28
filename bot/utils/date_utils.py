@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Generator
+import pytz
 
 def daterange(start_date: datetime, end_date: datetime) -> Generator[datetime, None, None]:
     """Generate a range of dates between start_date and end_date (inclusive)"""
@@ -47,7 +48,8 @@ def parse_date(datetime_str: str) -> datetime:
 
 def format_date_for_message(date: datetime) -> str:
     """Format a date object to string in YYYY-MM-DD format"""
-    return date.strftime("%Y-%m-%d")
+    date_local = date.astimezone(pytz.timezone("Asia/Singapore"))
+    return date_local.strftime("%Y-%m-%d")
 
 def format_time(time: int) -> str:
     """Format a time integer (HHMM) to string (HH:MM)"""
@@ -57,8 +59,10 @@ def format_time(time: int) -> str:
 
 def format_time_from_iso(datetime_str: str) -> str:
     """Format a datetime string in ISO format to string in HH:MM format"""
-    date = parse_date(datetime_str)
-    return date.strftime("%H:%M")
+    date_utc = parse_date(datetime_str)
+    tz = pytz.timezone("Asia/Singapore")
+    date_local = date_utc.astimezone(tz)
+    return date_local.strftime("%H:%M")
 
 def parse_time(time_str: str) -> int:
     """Parse a time string in the form of HH:mm:ss+tz to integer (HHMM)"""
