@@ -97,14 +97,16 @@ def leave_event(event_id: str, tele_id: str) -> bool:
 
 def set_chat(event_id: str, chat_id: int, thread_id: int = None) -> bool:
     """Set a chat for an event"""
+    print("Setting chat for event", event_id, chat_id, thread_id)
     event = getEvent(event_id)
     if not event:
+        print("Event not found")
         return False
     chat_data = {
         "event_id": event_id,
         "chat_id": chat_id,
         "thread_id": thread_id,
-        "reminders_enabled": False
+        "is_reminders_enabled": False
     }
     success = setEntry("event_chats", event_id, chat_data)
     if not success:
@@ -125,10 +127,11 @@ def check_ownership(event_id: str, tele_id: str) -> bool:
     if not event:
         return False
     creator_uuid = event["creator"]
-    creator_data = getEntry("users", "uuid", creator_uuid)
-    if not creator_data:
+    user = getUser(tele_id)
+    if not user:
         return False
-    return creator_data["tele_id"] == tele_id
+    user_uuid = user["uuid"]
+    return creator_uuid == user_uuid
 
 def check_membership(event_id: str, tele_id: str) -> bool:
     """Check if a user is a member of an event"""

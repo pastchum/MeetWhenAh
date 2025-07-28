@@ -28,12 +28,10 @@ def register_share_handlers(bot):
     @bot.message_handler(func=lambda message: message.text.lower().startswith(f"@{bot_username}".lower()))
     def handle_share(message):
         """Handle share command"""
-
+        print("handle_share", message)
         try:
             # get message details
-            message_id = message.id
             chat_id = message.chat.id
-            user_id = message.from_user.id
             thread_id = message.message_thread_id
             event_id = message.text.split(" ")[1]
 
@@ -45,7 +43,6 @@ def register_share_handlers(bot):
 
             # get event id
             logger.info(f"Sharing event {event_id}")
-
             
             event = getEvent(event_id)
             if not event:

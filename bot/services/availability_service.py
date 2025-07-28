@@ -70,7 +70,7 @@ def send_confirmed_event_availability(event_id: str, chat_id: int, thread_id: in
         markup.add(join_button)
 
         # add toggle reminders button
-        toggle_reminders_button = types.InlineKeyboardButton(text="Toggle Reminders", callback_data=f"toggle_reminders:{event_id}")
+        toggle_reminders_button = types.InlineKeyboardButton(text="Toggle Reminders", callback_data=f"reminders:{event_id}")
         markup.add(toggle_reminders_button)
 
         # send event description

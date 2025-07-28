@@ -19,7 +19,7 @@ from utils.date_utils import daterange, parse_date, format_date_for_message, for
 
 def register_reminder_handlers(bot):
     """Register all reminder handlers"""
-    @bot.message_handler(func=lambda message: message.text == "/togglereminders")
+    
     def handle_toggle_reminders(message):
         """Handle toggle reminders command"""
         chat_id = message.chat.id

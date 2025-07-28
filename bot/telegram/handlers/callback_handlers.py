@@ -90,20 +90,9 @@ def register_callback_handlers(bot):
         try:
             event_id = call.data.split(":")[1]
             tele_id = call.from_user.id
-            user_data = getUser(tele_id)
-            tele_user = call.from_user.username
-
-            is_owner = check_ownership(event_id, tele_id)
-            if not is_owner:
-                bot.answer_callback_query(
-                    call.id,
-                    "You are not the owner of this event.",
-                    show_alert=True
-                )
-                return
             
             # toggle reminders
-            toggle_reminders(message=call.message, event_id=event_id)
+            toggle_reminders(call=call, event_id=event_id, tele_id=tele_id)
         except Exception as e:
             logger.error(f"Error in reminders callback handler: {str(e)}")
             bot.answer_callback_query(
