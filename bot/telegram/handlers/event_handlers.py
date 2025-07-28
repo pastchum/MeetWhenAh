@@ -9,8 +9,8 @@ import os
 # Import from config
 from ..config.config import bot
 
-# Import from scheduler
-from scheduler.scheduler import Scheduler
+# Import from best time algo
+from best_time_algo.best_time_algo import BestTimeAlgo
 
 # Import from services
 from services.user_service import updateUsername, getUserByUuid
@@ -159,7 +159,7 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
         min_participants = event["min_participants"]
         min_duration_blocks = event["min_duration"]
         max_duration_blocks = event["max_duration"]
-        scheduler = Scheduler(min_participants=min_participants, min_block_size=min_duration_blocks, max_block_size=max_duration_blocks)
+        best_time_algo = BestTimeAlgo(min_participants=min_participants, min_block_size=min_duration_blocks, max_block_size=max_duration_blocks)
 
         # get event creator
         creator_id = event["creator"]
@@ -167,7 +167,7 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
         creator_tele_id = creator["tele_id"]
         # get participants
         availability_blocks = get_event_availability(event_id)
-        participants = scheduler.get_event_participants(availability_blocks, best_start_time, best_end_time)
+        participants = best_time_algo.get_event_participants(availability_blocks, best_start_time, best_end_time)
         print("participants", participants)
         # Confirm the event
         success = confirmEvent(event_id, best_start_time, best_end_time)

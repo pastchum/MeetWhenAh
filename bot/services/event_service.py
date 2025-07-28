@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
-# Import from scheduler
-from scheduler.scheduler import Scheduler
+# Import from best time algo
+from best_time_algo.best_time_algo import BestTimeAlgo
 
 # Import from services
 from .database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries, deleteEntry
@@ -220,13 +220,13 @@ def get_event_best_time(event_id: str) -> List[Dict]:
     min_duration_blocks = event.get("min_duration", 2)
     max_duration_blocks = event.get("max_duration", 4)
 
-    scheduler = Scheduler(min_participants=min_participants, min_block_size=min_duration_blocks, max_block_size=max_duration_blocks)
+    best_time_algo = BestTimeAlgo(min_participants=min_participants, min_block_size=min_duration_blocks, max_block_size=max_duration_blocks)
 
     availability_blocks = get_event_availability(event_id)
     if not availability_blocks:
         return []
     
-    best_event_blocks = scheduler._process_availability_blocks(availability_blocks)
+    best_event_blocks = best_time_algo._process_availability_blocks(availability_blocks)
 
     return best_event_blocks
 
@@ -283,10 +283,9 @@ def generate_confirmed_event_description(event_id: str) -> str:
 
     return description
 
-def generate_confirmed_event_participants_list(event: dict) -> str:
+def generate_confirmed_event_participants_list(event_id: str) -> str:
     """Generate a list for the participants of a confirmed event"""
     description = ""
-    event_id = event["event_id"]
     participants = getEntries("membership", "event_id", event_id)
     if not participants:
         return description

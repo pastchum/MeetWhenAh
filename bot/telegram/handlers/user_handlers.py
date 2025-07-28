@@ -5,8 +5,8 @@ import logging
 # Import from config
 from ..config.config import bot
 
-# Import from scheduler
-from scheduler.scheduler import DEFAULT_SLEEP_HOURS
+# Import from best time algo
+from best_time_algo.best_time_algo import DEFAULT_SLEEP_HOURS
 
 # Import from services
 from services.user_service import setUserSleepPreferences

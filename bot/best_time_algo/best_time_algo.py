@@ -84,7 +84,7 @@ Extensions:
 2. Preferential time of day for event (e.g. morning, afternoon, evening)
 """
 
-class Scheduler:
+class BestTimeAlgo:
     """
     Class to process availability data and find optimal meeting times.
     This service handles the core scheduling logic for finding the best meeting times
@@ -293,7 +293,7 @@ class Scheduler:
         return participants
 
 if __name__ == "__main__":
-    scheduler = Scheduler()
+    scheduler = BestTimeAlgo()
     availability_blocks = [
             {"start_time": "2025-01-01 10:00:00", "end_time": "2025-01-01 10:30:00", "event_id": "1", "user_uuid": "1"},
             {"start_time": "2025-01-01 11:00:00", "end_time": "2025-01-01 11:30:00", "event_id": "1", "user_uuid": "2"},

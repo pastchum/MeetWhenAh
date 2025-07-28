@@ -8,8 +8,7 @@ from telebot import types
 # Import from config
 from ..config.config import bot
 
-# Import from scheduler
-from scheduler.scheduler import Scheduler
+
 
 # Import from services
 from services.user_service import updateUsername, getUser
