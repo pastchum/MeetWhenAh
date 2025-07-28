@@ -7,9 +7,9 @@ import logging
 # Import handlers
 from telegram.handlers.event_handlers import register_event_handlers
 from telegram.handlers.user_handlers import register_user_handlers
-from telegram.handlers.callback_handlers import register_callback_handlers
 from telegram.handlers.welcome_handlers import register_welcome_handlers
 from telegram.handlers.share_handlers import register_share_handlers
+from telegram.handlers.reminder_handlers import register_reminder_handlers
 
 # Import bot instance and configs
 from telegram.config.config import bot, logger
@@ -62,8 +62,8 @@ def register_handlers():
     register_event_handlers(bot)
     register_user_handlers(bot)
     register_welcome_handlers(bot)
-    register_callback_handlers(bot)
     register_share_handlers(bot)
+    register_reminder_handlers(bot)
 
 def initialise_bot():
     """Main function to start the Telegram bot."""
