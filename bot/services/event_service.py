@@ -77,6 +77,17 @@ def leave_event(event_id: str, tele_id: str) -> bool:
         return False
     return True
 
+def check_ownership(event_id: str, tele_id: str) -> bool:
+    """Check if a user is the owner of an event"""
+    event = getEvent(event_id)
+    if not event:
+        return False
+    creator_uuid = event["creator"]
+    creator_data = getEntry("users", "uuid", creator_uuid)
+    if not creator_data:
+        return False
+    return creator_data["tele_id"] == tele_id
+
 def check_membership(event_id: str, tele_id: str) -> bool:
     """Check if a user is a member of an event"""
     event = getConfirmedEvent(event_id)

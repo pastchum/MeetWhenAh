@@ -17,13 +17,13 @@ from utils.web_app import create_web_app_url
 
 logger = logging.getLogger(__name__)
 
-def ask_availability(chat_id: int, event_id: str):
+def ask_availability(chat_id: int, event_id: str, thread_id: int = None):
     """Ask user to provide availability for an event"""
     try:
         # Get event details
         event = getEvent(event_id)
         if not event:
-            bot.send_message(chat_id, "Event not found")
+            bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Event not found")
             return
         
         params = f"dragselector={event_id}"
@@ -37,14 +37,15 @@ def ask_availability(chat_id: int, event_id: str):
         markup.add(miniapp_btn)
 
         bot.send_message(
-            chat_id,
-            f"Please select your availability for {event['event_name']}:",
+            chat_id=chat_id,
+            message_thread_id=thread_id,
+            text=f"Please select your availability for {event['event_name']}:",
             reply_markup=markup,
         )
         
     except Exception as e:
         logger.error(f"Error in ask_availability: {str(e)}")
-        bot.send_message(chat_id, "Failed to set up availability selection. Please try again later.")
+        bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Failed to set up availability selection. Please try again later.")
 
 
 def format_availability_summary(event_id: str, username: str) -> str:

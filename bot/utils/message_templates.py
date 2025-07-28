@@ -16,9 +16,15 @@ Here are the commands you can use:
 
 /start - Start the bot and create events
 /help - Show this help message
-/sleep - Set your sleep hours (helps with scheduling)
-/myavailability - Check your availability for an event
-/updateavailability - Update your availability for an event
+/togglereminders - Toggle reminders for an event
 
 To create a new event, use the "Create Event" button in our chat.
 """ 
+
+REMINDER_ON_MESSAGE = """
+Reminders are now on for this event.
+"""
+
+REMINDER_OFF_MESSAGE = """
+Reminders are now off for this event.
+"""

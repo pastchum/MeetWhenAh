@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import uuid
 import telebot
 from telebot import types
+import os
 
 # Import from config
 from ..config.config import bot
@@ -108,13 +109,13 @@ def handle_event_creation(message, data):
         # Add share button
         share_button = types.InlineKeyboardButton(
             text="Share Event",
-            switch_inline_query=f"availability_{event_id}"
+            switch_inline_query=f"{event_id}"
         )
         markup.add(share_button)
         
         # Add confirm button
         params = f"event_id={event_id}"
-        webapp_url = f"https://meet-when-ah.vercel.app/confirm?{params}"
+        webapp_url = f"{os.getenv('WEBAPP_URL')}/confirm?{params}"
         web_app_info = types.WebAppInfo(url=webapp_url)
         confirm_button = types.InlineKeyboardButton(
             text="Confirm Best Time",
@@ -134,7 +135,7 @@ def handle_event_creation(message, data):
         )
         
         # Ask creator for availability
-        ask_availability(message.chat.id, event_id)
+        ask_availability(chat_id=message.chat.id, event_id=event_id, thread_id=None)
         
     except Exception as e:
         bot.reply_to(message, f"Error creating event: {str(e)}")
@@ -182,7 +183,7 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
             markup = types.InlineKeyboardMarkup()
             share_button = types.InlineKeyboardButton(
                 text="Share Event",
-                switch_inline_query=f"join_{event_id}"
+                switch_inline_query=f"{event_id}"
             )
             markup.add(share_button)
 
