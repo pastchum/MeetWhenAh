@@ -245,14 +245,14 @@ def confirmEvent(event_id: str, best_start_time: str, best_end_time: str) -> boo
         "confirmed_start_time": best_start_time,
         "confirmed_end_time": best_end_time
     }
-    success = setEntry("event_confirmations", event_id, confirmed_event_data)
+    success = setEntry("confirmed_events", event_id, confirmed_event_data)
     if not success:
         return False
     return True
 
 def getConfirmedEvent(event_id: str) -> Dict:
     """Get a confirmed event"""
-    event = getEntry("event_confirmations", "event_id", event_id)
+    event = getEntry("confirmed_events", "event_id", event_id)
     return event if event else None
 
 def generate_confirmed_event_description(event_id: str) -> str:

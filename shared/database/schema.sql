@@ -39,6 +39,8 @@ CREATE TABLE events (
   min_participants INT NOT NULL DEFAULT 2,
   min_duration INT NOT NULL DEFAULT 2, -- in terms of blocks
   max_duration INT NOT NULL DEFAULT 4, -- in terms of blocks
+  is_reminders_enabled BOOLEAN NOT NULL DEFAULT false,
+  timezone VARCHAR(255) NOT NULL DEFAULT 'Asia/Singapore',
   creator         UUID            NOT NULL
                     REFERENCES users(uuid)
                     ON DELETE RESTRICT,
@@ -46,7 +48,7 @@ CREATE TABLE events (
 );
 
 -- 2.1) Event Confirmations
-CREATE TABLE event_confirmations (
+CREATE TABLE confirmed_events (
   event_id        UUID            NOT NULL
                     REFERENCES events(event_id)
                     ON DELETE CASCADE,
@@ -63,18 +65,6 @@ CREATE TABLE event_chats (
                     ON DELETE CASCADE,
   chat_id         BIGINT          NOT NULL,
   thread_id       BIGINT,
-  is_reminders_enabled BOOLEAN NOT NULL DEFAULT false,
-  PRIMARY KEY (event_id, chat_id)
-);
-
--- 2.3) Event Reminders
-CREATE TABLE event_reminders (
-  event_id        UUID            NOT NULL
-                    REFERENCES events(event_id)
-                    ON DELETE CASCADE,
-  chat_id         BIGINT          NOT NULL,
-  thread_id     BIGINT,
-  job_id   VARCHAR(255)       NOT NULL,
   PRIMARY KEY (event_id, chat_id)
 );
 
