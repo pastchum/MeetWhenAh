@@ -5,11 +5,12 @@ import logging
 # Import from config
 from ..config.config import bot
 
-# Import from scheduler
-from scheduler.scheduler import DEFAULT_SLEEP_HOURS
+# Import from best time algo
+from best_time_algo.best_time_algo import DEFAULT_SLEEP_HOURS
 
 # Import from services
-from services.user_service import setUserSleepPreferences
+from services.user_service import setUserSleepPreferences, setUser, updateUserInitialised, updateUserCalloutCleared, updateUsername, getUser
+from services.event_service import check_membership, join_event, leave_event
 
 # Import from utils
 from utils.message_templates import HELP_MESSAGE
@@ -34,6 +35,57 @@ def register_user_handlers(bot):
             reply_markup=markup
         )
         bot.register_next_step_handler(msg, process_sleep_start)
+
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("join:"))
+    def handle_join_callback(call):
+        """Handle join event button clicks"""
+        try:
+            logger.info(f"Join callback data: {call}")
+            event_id = call.data.split(":")[1]
+            tele_id = call.from_user.id
+            user_data = getUser(tele_id)
+            tele_user = call.from_user.username
+            if not user_data:
+                success = setUser(tele_id, tele_user)
+                if not success:
+                    logger.error(f"Error setting user: {str(e)}")
+                    bot.answer_callback_query(
+                        call.id,
+                        "An error occurred. Please try again later.",
+                        show_alert=True
+                    )
+                    return
+                updateUserInitialised(tele_id)
+                updateUserCalloutCleared(tele_id)
+            
+            # update username if necessary
+            if user_data["tele_user"] != tele_user:
+                updateUsername(tele_id, tele_user)
+
+            # Check if user is already a member of the event
+            membership_status = check_membership(event_id, tele_id)
+            if membership_status:
+                leave_event(event_id, tele_id)
+                bot.answer_callback_query(
+                    call.id,
+                    f"{call.from_user.username} has left the event.",
+                    show_alert=False
+                )
+            else:
+                join_event(event_id, tele_id)
+                bot.answer_callback_query(
+                    call.id,
+                    f"{call.from_user.username} has joined the event.",
+                    show_alert=False
+                )
+        except Exception as e:
+            logger.error(f"Error in join callback handler: {str(e)}")
+            bot.answer_callback_query(
+                call.id,
+                "An error occurred. Please try again later.",
+                show_alert=True
+            )
 
     def process_sleep_start(message):
         start_time = message.text.strip()

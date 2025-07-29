@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, Header, HTTPException, status
 from pydantic import BaseModel
 import uvicorn
 from dotenv import load_dotenv
@@ -12,10 +12,9 @@ from telegram.handlers.event_handlers import handle_event_confirmation
 # Import services
 from services.database_service import getEntry
 from services.event_service import get_event_best_time
+from services.reminder_service import send_daily_availability_reminders, send_daily_event_reminders, send_upcoming_event_reminders
 
 from telebot.types import Update
-
-from scheduler.scheduler import Scheduler
 
 # Import bot instance (we'll need to set up the import path correctly)
 import sys
@@ -80,9 +79,9 @@ async def health_check():
 async def confirm_event(request: Request):
     """Confirm an event"""
     data = await request.json()
-    event_id = data.get("event_id")
-    best_start_time = data.get("best_start_time")
-    best_end_time = data.get("best_end_time")
+    event_id = data["event_id"]
+    best_start_time = data["best_start_time"]
+    best_end_time = data["best_end_time"]
 
     # process confirm event
     success = handle_event_confirmation(event_id, best_start_time, best_end_time)
@@ -92,10 +91,27 @@ async def confirm_event(request: Request):
 async def get_best_time(request: Request):
     """Get the best time for an event"""
     data = await request.json()
-    event_id = data.get("event_id")
+    event_id = data["event_id"]
     best_time = get_event_best_time(event_id)
     print("best_time", best_time)
     return {"data": best_time}
+
+@app.post("/api/reminders")
+async def send_reminders(api_key: str = Header(...)):
+    """Send reminders for all events"""
+    expected_key = os.getenv("REMINDER_API_KEY")
+    if api_key != expected_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API Key"
+        )
+
+    send_daily_availability_reminders()
+    send_daily_event_reminders()
+    send_upcoming_event_reminders()
+
+    return {"success": True}
+
 
 if __name__ == "__main__":
     # Load environment variables
