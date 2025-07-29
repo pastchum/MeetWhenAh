@@ -41,7 +41,9 @@ def send_group_message(group_id: str, message_thread_id: str, message: str):
 
 def send_daily_availability_reminders():
     """Send daily availability reminders for all events"""
-    events = supabase.rpc("get_unconfirmed_active_events_at_noon_local_time").execute()
+    response = supabase.rpc("get_unconfirmed_active_events_at_noon_local_time").execute()
+    events = response.data
+    print("events", events)
     for event in events:
         event_id = event["event_id"]
         event_chats = getEntries("event_chats", "event_id", event_id)
@@ -51,10 +53,14 @@ def send_daily_availability_reminders():
             message = generate_availability_reminder_message(event_id)
             send_group_message(event_chat["chat_id"], event_chat["thread_id"], message)
 
+    print("done sending daily availability reminders")
+    return True
+
 def send_daily_event_reminders():
     """Send daily reminders for all events"""
-    events = supabase.rpc("get_events_at_noon_local_time").execute()
-
+    response = supabase.rpc("get_confirmed_events_at_local_noon").execute()
+    events = response.data
+    print("events", events)
     for event in events:
         event_id = event["event_id"]
         message = generate_event_reminder_message(event_id)
@@ -73,9 +79,14 @@ def send_daily_event_reminders():
         for event_chat in event_chats:
             send_group_message(event_chat["chat_id"], event_chat["thread_id"], message)
 
+    print("done sending daily event reminders")
+    return True
+
 def send_upcoming_event_reminders():
     """Send upcoming event reminders for all events"""
-    events = supabase.rpc("get_confirmed_events_starting_soon").execute()
+    response = supabase.rpc("get_confirmed_events_starting_soon").execute()
+    events = response.data
+    print("events", events)
     for event in events:
         event_id = event["event_id"]
         event_chats = getEntries("event_chats", "event_id", event_id)
@@ -84,6 +95,9 @@ def send_upcoming_event_reminders():
         for event_chat in event_chats:
             message = generate_event_reminder_message(event_id)
             send_group_message(event_chat["chat_id"], event_chat["thread_id"], message)
+
+    print("done sending upcoming event reminders")
+    return True
 
 def send_event_reminder(event_id: str):
     """Send an event reminder at an offset from the confirmed start time"""

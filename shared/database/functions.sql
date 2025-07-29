@@ -76,6 +76,7 @@ BEGIN
   JOIN confirmed_events ce ON ce.event_id = e.event_id
   WHERE e.cancelled = false
     AND e.is_reminders_enabled = true
-    AND ce.confirmed_start_time BETWEEN now() AND now() + INTERVAL '2 hours';
+    AND ce.confirmed_start_time >= now()
+    AND ce.confirmed_start_time < now() + INTERVAL '2 hours';
 END;
 $$ LANGUAGE plpgsql;
