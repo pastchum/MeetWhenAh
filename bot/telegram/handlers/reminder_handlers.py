@@ -11,19 +11,14 @@ logger = logging.getLogger(__name__)
 # Import from config
 from ..config.config import bot
 
-# Import from background scheduler
-from background_scheduler.background_scheduler import scheduler
-
 # Import from services
-from services.reminder_service import send_daily_reminders, toggle_reminders
+from services.reminder_service import toggle_reminders
 
 # Import from utils
 from utils.date_utils import daterange, parse_date, format_date_for_message, format_date
 
 def register_reminder_handlers(bot):
-    """Register all reminder handlers"""
-    scheduler.add_job(send_daily_reminders, 'cron', hour=12, minute=0)
-    
+    """Register all reminder handlers"""    
     @bot.callback_query_handler(func=lambda call: call.data.startswith("reminders:"))
     def handle_reminders_callback(call):
         """Handle reminders button clicks"""
