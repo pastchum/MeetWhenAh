@@ -28,9 +28,3 @@ This directory contains user-facing documentation for the Meet When Ah? bot.
 
 - [Bot Commands](./commands.md)
 - [Advanced Features](./advanced.md)
-
-## Troubleshooting
-
-- [Common Issues](./troubleshooting.md)
-- [FAQ](./faq.md)
-- [Support](./support.md) 

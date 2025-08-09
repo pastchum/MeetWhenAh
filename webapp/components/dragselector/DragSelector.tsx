@@ -84,7 +84,7 @@ const Container = forwardRef<HTMLDivElement, ContainerProps>(function Component(
         style={finalContainerStyles}
       >
         {/* Time column header */}
-        <div className="sticky left-0 top-0 z-10 bg-zinc-200 dark:bg-zinc-800 py-2 px-1 text-center font-bold">
+        <div className="sticky left-0 top-0 z-10 bg-dark-secondary py-2 px-1 text-center font-bold text-text-primary">
           Time
         </div>
 
@@ -92,7 +92,7 @@ const Container = forwardRef<HTMLDivElement, ContainerProps>(function Component(
         {dates.map((date) => (
           <div
             key={date.toISOString()}
-            className="py-2 px-1 text-center font-bold text-sm whitespace-nowrap"
+            className="py-2 px-1 text-center font-bold text-sm whitespace-nowrap text-text-primary"
           >
             {date.toLocaleDateString("en-GB", {
               weekday: "short",
@@ -106,7 +106,7 @@ const Container = forwardRef<HTMLDivElement, ContainerProps>(function Component(
         {timeIntervals.map((time) => (
           <Fragment key={time}>
             {/* Time label - sticky on mobile scroll */}
-            <div className="sticky left-0 bg-zinc-200 dark:bg-zinc-800 py-1 px-2 text-sm font-medium text-center">
+            <div className="sticky left-0 bg-dark-secondary py-1 px-2 text-sm font-medium text-center text-text-primary">
               {`${time.slice(0, 2)}:${time.slice(2)}`}
             </div>
 
@@ -167,7 +167,7 @@ export default function DragSelector({
 
   // Log component initialization and ref setup
   useEffect(() => {
-    console.log("%c🎯 DragSelector Initialized", "color: #0ea5e9", {
+    console.log("[DRAGSELECTOR] DragSelector Initialized", {
       removeNight,
       startDate: startDate.toISOString(),
       numDays,
@@ -188,7 +188,7 @@ export default function DragSelector({
 
   // Log when refs are updated
   useEffect(() => {
-    console.log("%c📌 Container Ref Update", "color: #059669", {
+    console.log("[CONTAINER] Container Ref Update", {
       containerExists: !!selectContainerRef.current,
       containerClass: selectContainerRef.current?.className,
       containerRect: selectContainerRef.current?.getBoundingClientRect(),
@@ -197,7 +197,7 @@ export default function DragSelector({
 
   // Log selection box ref updates
   useEffect(() => {
-    console.log("%c🎨 Selection Box Ref Update", "color: #8b5cf6", {
+    console.log("[SELECTION] Selection Box Ref Update", {
       exists: !!selectionBoxRef.current,
       style: selectionBoxRef.current?.style.cssText,
       rect: selectionBoxRef.current?.getBoundingClientRect(),
@@ -214,7 +214,7 @@ export default function DragSelector({
   // Log selection updates
   useEffect(() => {
     if (selection) {
-      console.log("%c📍 Selection Updated", "color: #8b5cf6", {
+      console.log("[SELECTION] Selection Updated", {
         selectionRect: {
           left: Math.round(selection.left),
           top: Math.round(selection.top),
@@ -244,7 +244,7 @@ export default function DragSelector({
         />
         <div
           ref={selectionBoxRef}
-          className="fixed bg-blue-500/20 border-2 border-blue-600/40 rounded pointer-events-none"
+          className="fixed bg-selection-primary border-2 border-selection-border rounded pointer-events-none"
           style={{ zIndex: 50 }}
         />
       </SelectionContext.Provider>

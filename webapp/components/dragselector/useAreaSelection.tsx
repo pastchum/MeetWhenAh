@@ -60,7 +60,7 @@ export default function useAreaSelection({
   const createMoveHandler = useCallback(() => {
     const moveHandler = (e: MouseEvent | TouchEvent) => {
       // Log the initial call
-      console.log("%c🔍 Move Handler Initial Call", "color: #2563eb", {
+      console.log("[MOVE] Move Handler Initial Call", {
         mouseDownRef: mouseDownRef.current,
         eventType: e.type,
         isDragging,
@@ -142,7 +142,7 @@ export default function useAreaSelection({
           ...prev,
           end: { x: pageX, y: pageY },
         };
-        console.log("🎨 Draw Area Update:", {
+        console.log("[DRAW] Draw Area Update:", {
           previous: prev,
           new: newArea,
         });
@@ -238,7 +238,7 @@ export default function useAreaSelection({
       setDrawArea(initialDrawArea);
 
       console.log(
-        "%c📍 Initial Draw Area Set",
+        "[INIT] Initial Draw Area Set",
         "color: #059669",
         initialDrawArea
       );
@@ -250,7 +250,7 @@ export default function useAreaSelection({
         box.style.top = `${pageY}px`;
         box.style.width = "0";
         box.style.height = "0";
-        console.log("%c🎯 Selection Box Initialized", "color: #8b5cf6");
+        console.log("[SELECTION] Selection Box Initialized");
       }
 
       // Create and attach new move handler
@@ -262,7 +262,7 @@ export default function useAreaSelection({
       document.addEventListener("mouseup", handlePointerUp, { capture: true });
       document.addEventListener("touchend", handlePointerUp, { capture: true });
 
-      console.log("%c🎯 Event Listeners Attached", "color: #0ea5e9");
+      console.log("[EVENTS] Event Listeners Attached");
 
       if ("touches" in e) {
         setTouchStartTime(Date.now());

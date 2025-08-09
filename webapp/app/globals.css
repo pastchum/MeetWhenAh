@@ -2,30 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+@font-face {
+  font-family: 'Minecraft';
+  src: url('/fonts/Minecraft.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+:root {
+  /* Selection colors for drag selector */
+  --color-selection-primary: rgba(200, 80, 80, 0.8);
+  --color-selection-border: rgba(200, 80, 80, 0.9);
+  --color-selection-hover: rgba(220, 100, 100, 0.9);
+  --color-selection-active: rgba(180, 70, 70, 0.9);
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  /* background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb)); */
-  background-size: auto;
-  background-color: black;
+  color: #ffffff;
+  background-color: #000000;
+  font-family: 'Minecraft', monospace;
 }
 
 @layer utilities {
@@ -45,6 +41,8 @@ body {
     {
         @apply dark:invert dark:hue-rotate-180 dark:saturate-[1.25];
     }
+
+
 }
 
 .fade-enter {
@@ -64,3 +62,10 @@ body {
   opacity: 0;
   transition: opacity 0.5s ease-in-out;
 }
+
+
+
+
+
+
+
