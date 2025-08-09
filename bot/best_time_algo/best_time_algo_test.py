@@ -1,12 +1,12 @@
 import unittest
 from datetime import datetime
-from scheduler import Scheduler
+from best_time_algo.best_time_algo import BestTimeAlgo
 
 ### NOT UPDATED FOR NEW TIMING WEIGHTS
 
-class SchedulerTest(unittest.TestCase):
+class BestTimeAlgoTest(unittest.TestCase):
     def test_create_availability_map(self):
-        scheduler = Scheduler()
+        scheduler = BestTimeAlgo()
         availability_blocks = [
             {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T10:30:00+08:00", "event_id": "1", "user_uuid": "1"},
             {"start_time": "2025-01-01T11:00:00+08:00", "end_time": "2025-01-01T11:30:00+08:00", "event_id": "1", "user_uuid": "2"},
@@ -51,7 +51,7 @@ class SchedulerTest(unittest.TestCase):
                          })
 
     def test_create_event_blocks(self):
-        scheduler = Scheduler()
+        scheduler = BestTimeAlgo()
         availability_blocks = [
             {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T10:30:00+08:00", "event_id": "1", "user_uuid": "1"},
             {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T10:30:00+08:00", "event_id": "1", "user_uuid": "2"},
@@ -74,32 +74,32 @@ class SchedulerTest(unittest.TestCase):
         self.assertEqual(event_blocks_test_2, [{"start_time": "2025-01-01T10:30:00+08:00", "end_time": "2025-01-01T11:30:00+08:00", "participants": ["1","2"], "duration": 60, "participant_count": 2}])
 
     def test_is_within_sleep_hours(self):
-        scheduler = Scheduler()
+        scheduler = BestTimeAlgo()
         event_block = {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "participants": ["1", "2"]}
         self.assertTrue(scheduler._is_within_sleep_hours(event_block))
 
     def test_is_within_sensitivity_threshold(self):
-        scheduler = Scheduler()
+        scheduler = BestTimeAlgo()
         event_block = {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "participants": ["1", "2"]}
         self.assertTrue(scheduler._is_within_sensitivity_threshold(event_block))
 
     def test_is_within_minimum_block_size(self):
-        scheduler = Scheduler()
+        scheduler = BestTimeAlgo()
         event_block = {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "participants": ["1", "2"]}
         self.assertTrue(scheduler._is_within_minimum_block_size(event_block))
 
     def test_is_within_minimum_participants(self):
-        scheduler = Scheduler()
+        scheduler = BestTimeAlgo()
         event_block = {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "participants": ["1", "2"]}
         self.assertTrue(scheduler._is_within_minimum_participants(event_block))
 
     def test_is_valid_event_block(self):
-        scheduler = Scheduler()
+        scheduler = BestTimeAlgo()
         event_block = {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "participants": ["1", "2"]}
         self.assertTrue(scheduler._is_valid_event_block(event_block))
 
     def test_score_event_block(self):
-        scheduler = Scheduler()
+        scheduler = BestTimeAlgo()
         event_block = {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "participants": ["1", "2"]}
         self.assertGreater(scheduler._score_event_block(event_block), 0)
         event_block_2 = {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "participants": ["1", "2", "3"]}
@@ -109,7 +109,7 @@ class SchedulerTest(unittest.TestCase):
 
 
     def test_get_best_event_block(self):
-        scheduler = Scheduler()
+        scheduler = BestTimeAlgo()
         event_blocks = [
             {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T11:00:00+08:00", "participants": ["1", "2"], "duration": 60, "participant_count": 2},
             {"start_time": "2025-01-01T11:00:00+08:00", "end_time": "2025-01-01T12:00:00+08:00", "participants": ["1", "2"], "duration": 60, "participant_count": 2},
@@ -127,7 +127,7 @@ class SchedulerTest(unittest.TestCase):
 
 
     def test_process_availability_blocks(self):
-        scheduler = Scheduler()
+        scheduler = BestTimeAlgo()
         availability_blocks = [
             {"start_time": "2025-01-01T10:00:00+08:00", "end_time": "2025-01-01T10:30:00+08:00", "event_id": "1", "user_uuid": "1"},
         ]

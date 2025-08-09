@@ -12,3 +12,6 @@ gotrue
 httpx
 fastapi
 tzlocal
+
+apscheduler
+pytz
