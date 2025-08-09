@@ -10,8 +10,10 @@ import {
   fetchUserDataFromUsername,
   fetchUserDataFromId,
   addUserToDatabase,
-  updateUsername,
 } from "@/routes/user_routes";
+import { useTelegramViewport } from "@/hooks/useTelegramViewport";
+import { Button } from "@nextui-org/react";
+import { getLocalDayAndTime } from "@/lib/datetime-utils";
 
 // Interface for aggregated time periods
 interface TimePeriod {
@@ -20,6 +22,9 @@ interface TimePeriod {
 }
 
 export default function DragSelectorPage() {
+  // Get viewport dimensions from Telegram Web App
+  const viewport = useTelegramViewport();
+  
   const [eventDetails, setEventDetails] = useState<EventData>({
     event_id: "",
     event_name: "",
@@ -48,12 +53,22 @@ export default function DragSelectorPage() {
 
   // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
+    console.log('[DragSelector] Initial setup useEffect triggered');
+    
     const urlParams = new URLSearchParams(window.location.search);
+    console.log('[DragSelector] URL params:', Object.fromEntries(urlParams.entries()));
 
     if (window.Telegram.WebApp.initDataUnsafe.user) {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
+      console.log('[DragSelector] Telegram user found:', {
+        id: telegramId,
+        username: window.Telegram.WebApp.initDataUnsafe.user.username
+      });
       setTeleId(telegramId.toString());
+    } else {
+      console.log('[DragSelector] No Telegram user data found');
     }
+    
     // disable vertical swipes
     if (window.Telegram.WebApp) {
       window.Telegram.WebApp.disableVerticalSwipes();
@@ -62,14 +77,20 @@ export default function DragSelectorPage() {
     // Set event_id from URL parameters
     const urlEventId = urlParams.get("event_id");
     if (urlEventId) {
+      console.log('[DragSelector] Setting eventId from URL:', urlEventId);
       setEventId(urlEventId);
+    } else {
+      console.log('[DragSelector] No eventId in URL');
     }
 
     // Try to get username from URL or use a default
     const urlUsername = urlParams.get("username");
     if (urlUsername) {
+      console.log('[DragSelector] Setting username from URL:', urlUsername);
       setUsername(urlUsername);
       fetchUserUuidFromUsername(urlUsername);
+    } else {
+      console.log('[DragSelector] No username in URL');
     }
   }, []);
 
@@ -104,25 +125,41 @@ export default function DragSelectorPage() {
 
   // get user uuid from telegram id
   useEffect(() => {
-    if (!teleId) return;
+    console.log('[DragSelector] User UUID useEffect triggered:', { teleId });
+    
+    if (!teleId) {
+      console.log('[DragSelector] No teleId available');
+      return;
+    }
+    
     const fetchUserUuidFromTeleId = async () => {
+      console.log('[DragSelector] Fetching user data for teleId:', teleId.toString());
+      
       const userData = await fetchUserDataFromId(teleId.toString());
+      console.log('[DragSelector] User data response:', userData);
+      
       if (userData) {
+        console.log('[DragSelector] Setting user data:', {
+          uuid: userData.uuid,
+          username: userData.tele_user
+        });
         setUserUuid(userData.uuid);
         setUsername(userData.tele_user);
-        if (window.Telegram.WebApp.initDataUnsafe.user) {
-          const telegramUser = window.Telegram.WebApp.initDataUnsafe.user;
-          if (telegramUser.username !== userData.tele_user) {
-            updateUsername(teleId.toString(), telegramUser.username || "");
-          }
-        }
       } else {
         // add user to database
         const telegramUser = window.Telegram.WebApp.initDataUnsafe.user;
         if (telegramUser) {
           const newUserData = {
+            uuid: crypto.randomUUID(),
             tele_id: telegramUser.id.toString(),
             tele_user: telegramUser.username || "",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            initialised: true,
+            callout_cleared: true,
+            sleep_start_time: "00:00:00",
+            sleep_end_time: "00:00:00",
+            tmp_sleep_start: "00:00:00",
           };
           const newUser = await addUserToDatabase(newUserData);
           if (newUser) {
@@ -148,13 +185,24 @@ export default function DragSelectorPage() {
 
   // get user availability
   useEffect(() => {
-    if (!userUuid || !username || !teleId) return;
+    console.log('[DragSelector] Availability useEffect triggered:', {
+      userUuid,
+      username,
+      teleId,
+      eventId
+    });
+    
+    if (!userUuid || !username || !teleId || !eventId) {
+      console.log('[DragSelector] Missing required data for availability fetch');
+      return;
+    }
+    
     const fetchUserAvailability = async () => {
       const availability = await fetchUserAvailabilityFromAPI(
         teleId.toString(),
         eventId
       );
-      console.log(availability);
+      console.log('[DragSelector] Availability response:', availability);
       if (availability) {
         // Convert availability blocks to ISO datetime strings
         const newSelectionData = new Set<string>();
@@ -169,18 +217,15 @@ export default function DragSelectorPage() {
               return;
             }
 
-            // Add start time to selection data (normalized to local timezone)
-            const normalizedStartTime = normalizeIsoDatetime(block.start_time);
-            newSelectionData.add(normalizedStartTime);
+            // Add start time to selection data (normalize to UTC ISO format)
+            newSelectionData.add(startDate.toISOString());
 
             // If there are multiple 30-minute slots, add them too
             let currentTime = new Date(startDate);
             currentTime.setMinutes(currentTime.getMinutes() + 30);
 
             while (currentTime < endDate) {
-              const timeString = normalizeIsoDatetime(
-                currentTime.toISOString()
-              );
+              const timeString = currentTime.toISOString();
               newSelectionData.add(timeString);
               currentTime.setMinutes(currentTime.getMinutes() + 30);
             }
@@ -239,31 +284,7 @@ export default function DragSelectorPage() {
     return `${hours.toString().padStart(2, "0")}:${mins
       .toString()
       .padStart(2, "0")}`;
-  };
-
-  // Helper function to convert ISO datetime to day and time
-  const getDayAndTimeFromIso = (
-    isoString: string
-  ): { day: string; time: number } => {
-    const date = new Date(isoString);
-    const day = format(date, "yyyy-MM-dd");
-    const time = date.getHours() * 60 + date.getMinutes();
-    return { day, time };
-  };
-
-  // Helper function to normalize ISO datetime to local timezone for comparison
-  const normalizeIsoDatetime = (isoString: string): string => {
-    const date = new Date(isoString);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-
-    // Recreate the date in local timezone to ensure consistent timezone handling
-    const localDate = new Date(year, month - 1, day, hours, minutes);
-    return localDate.toISOString();
-  };
+    };
 
   // Aggregate consecutive time slots into periods
   const aggregateTimePeriods = (timeSet: Set<number>): TimePeriod[] => {
@@ -306,7 +327,7 @@ export default function DragSelectorPage() {
     const dayGroups = new Map<string, Set<number>>();
 
     selectionData.forEach((isoString) => {
-      const { day, time } = getDayAndTimeFromIso(isoString);
+      const { day, time } = getLocalDayAndTime(isoString);
       if (!dayGroups.has(day)) {
         dayGroups.set(day, new Set<number>());
       }
@@ -361,76 +382,109 @@ export default function DragSelectorPage() {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex items-center mb-4">
-        <h1 className="text-2xl font-bold">Weekly Availability Selector</h1>
-        <span className="ml-4 text-sm px-3 py-1 bg-white rounded shadow-sm text-gray-600">
-          Click on a day header to select the entire day, or drag across time
-          slots to select specific periods.
-        </span>
-      </div>
-      {eventDetails.event_name && (
-        <div className="text-2xl font-bold text-center text-slate-50">
-          {eventDetails.event_name}
+    <div 
+      className="flex flex-col w-full"
+      style={{ 
+        height: `${viewport.totalHeight}px`,
+        transform: 'translateZ(0)' // Create new stacking context
+      }}
+    >
+      {/* Fixed Header Section */}
+      <div className="flex-shrink-0 p-4 bg-dark-secondary border-b border-border-primary">
+        {eventDetails.event_name && (
+          <div className="text-2xl font-bold text-center text-white">
+            {eventDetails.event_name}
+          </div>
+        )}
+
+        {username && (
+          <div className="mb-2 text-sm text-text-tertiary">
+            Setting availability for: {username}
+          </div>
+        )}
+
+        <div className="mb-4 flex justify-between items-center">
+          <Button
+            onClick={navigatePreviousPeriod}
+            variant="bordered"
+            className="border-[#a83838] text-[#a83838] hover:bg-[#a83838] hover:text-white"
+            disabled={startDate <= new Date(eventDetails.start_date)}
+          >
+            ← Previous Week
+          </Button>
+
+          <Button
+            onClick={navigateToEventStart}
+            color="primary"
+            variant="solid"
+            className="bg-[#8c2e2e] hover:bg-[#722525]"
+          >
+            Event Start
+          </Button>
+
+          <Button
+            onClick={navigateNextPeriod}
+            variant="bordered"
+            className="border-[#a83838] text-[#a83838] hover:bg-[#a83838] hover:text-white"
+            disabled={addDays(startDate, 7) >= new Date(eventDetails.end_date)}
+          >
+            Next Week →
+          </Button>
         </div>
-      )}
+      </div>
 
-      {username && (
-        <div className="mb-2 text-sm text-gray-500">
-          Setting availability for: {username}
+            {/* Fixed Instructions */}
+      <div className="flex-shrink-0 px-4 pb-4">
+        <div className="flex items-center">
+          <span className="text-sm px-3 py-1 bg-dark-tertiary rounded shadow-sm text-text-secondary border border-border-primary">
+            Click on a day header to select the entire day, or drag across time
+            slots to select specific periods.
+          </span>
         </div>
-      )}
-
-      <div className="mb-4 flex justify-between items-center">
-        <button
-          onClick={navigatePreviousPeriod}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          disabled={startDate <= new Date(eventDetails.start_date)}
-        >
-          Previous 7 Days
-        </button>
-
-        <button
-          onClick={navigateToEventStart}
-          className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded"
-        >
-          Event Start
-        </button>
-
-        <button
-          onClick={navigateNextPeriod}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          disabled={addDays(startDate, 7) >= new Date(eventDetails.end_date)}
-        >
-          Next 7 Days
-        </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md">
-        <WeekCalendar
-          startDate={startDate}
-          endDate={endDate}
-          numDays={numDays}
-          tele_id={teleId}
-          eventId={eventId}
-          userUuid={userUuid}
-          onSelectionChange={setSelectionData}
-        />
+      {/* Scrollable WeekCalendar */}
+      <div className="flex-1 px-4 overflow-hidden">
+        <div 
+          className="bg-dark-secondary rounded-lg shadow-md h-full overflow-y-auto border border-border-primary"
+          style={{ transform: 'translateZ(0)' }}
+        >
+          <WeekCalendar
+            startDate={startDate}
+            endDate={endDate}
+            numDays={numDays}
+            tele_id={teleId}
+            eventId={eventId}
+            userUuid={userUuid}
+            onSelectionChange={setSelectionData}
+          />
+        </div>
       </div>
 
-      <div className="mt-4">
-        <h2 className="text-xl font-semibold mb-2">Selected Times</h2>
-        <div className="bg-gray-100 p-4 rounded text-gray-800 h-48 overflow-y-auto">
+      {/* Fixed Selected Times Section */}
+      <div className="flex-shrink-0 p-4 bg-dark-secondary border-t border-border-primary">
+        <h2 className="text-xl font-semibold mb-2 text-white">Selected Times</h2>
+        <div className="bg-dark-tertiary p-4 rounded text-text-secondary h-32 overflow-y-auto border border-border-primary">
           {selectionData.size > 0 ? (
             formatSelectionSummary()
           ) : (
-            <div className="text-gray-600 italic">
+            <div className="text-text-tertiary italic">
               No times selected. Click on a day header to select the entire day,
               or drag across time slots to select specific periods.
             </div>
           )}
         </div>
       </div>
+
+      {/* Debug Info (only in development) */}
+      {/* {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-2 right-2 bg-black bg-opacity-75 text-white text-xs p-2 rounded z-50">
+          <div>Platform: {viewport.platform}</div>
+          <div>Total: {viewport.totalHeight}px</div>
+          <div>Window: {typeof window !== 'undefined' ? window.innerHeight : 'N/A'}px</div>
+          <div>Flex Layout: Active</div>
+        </div>
+      )} */}
     </div>
   );
 }
