@@ -1,18 +1,22 @@
 import { BackwardIcon } from '@heroicons/react/24/solid'
+import { Button } from '@nextui-org/react';
 
 export default function PreviousButton({onClick, disabled}) {
   return (
     <>
-      <button
+      <Button
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+        variant="solid"
+        color="primary"
+        size="sm"
+        className="bg-[#8c2e2e] hover:bg-[#722525]"
         data-testid="previousbutton2"
+        startContent={<BackwardIcon className="h-3 w-3" aria-hidden="true" />}
       >
-        <BackwardIcon className="-ml-0.5 h-3 w-3" aria-hidden="true" />
         Previous
-      </button>
+      </Button>
     </>
   )
 }

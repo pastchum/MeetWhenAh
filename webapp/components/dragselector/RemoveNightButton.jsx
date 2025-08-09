@@ -1,16 +1,20 @@
 import { ForwardIcon } from '@heroicons/react/24/solid';
-import { useState } from 'react';
+import { Button } from '@nextui-org/react';
+
 export default function RemoveNightButton({ onClick }) {
   
   return (
     <>
-      <button
+      <Button
         type="button"
         onClick={() => onClick()}
-        className="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+        variant="bordered"
+        color="primary"
+        size="sm"
+        className="border-[#8c2e2e] text-[#8c2e2e] hover:bg-[#8c2e2e] hover:text-white"
       >
         Toggle full day
-      </button>
+      </Button>
     </>
   )
 }
