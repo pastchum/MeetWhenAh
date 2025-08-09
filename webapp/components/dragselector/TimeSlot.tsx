@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useCallback } from "react";
+import { Chip } from "@nextui-org/react";
 
 interface TimeSlotProps {
   day: string;
@@ -14,6 +15,7 @@ interface TimeSlotProps {
   onDragStart: (day: string, time: number, isSelected: boolean) => void;
   onDragOver: (day: string, time: number) => void;
   onDragEnd: () => void;
+  onTapToToggle?: (day: string, time: number) => void;
 }
 
 const TimeSlot: React.FC<TimeSlotProps> = ({
@@ -28,98 +30,107 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   onDragStart,
   onDragOver,
   onDragEnd,
+  onTapToToggle,
 }) => {
+  // Log the props received (only for first few slots or when selected)
+  // if (time < 180 || isSelected) {
+  //   console.log('[TimeSlot] Props received:', {
+  //     day,
+  //     time,
+  //     isSelected,
+  //     isDragging,
+  //     isDisabled: endDate ? new Date(day) > endDate : false
+  //   });
+  // }
   const slotRef = useRef<HTMLDivElement>(null);
 
   // Check if this slot is disabled (date is after end date)
   const isDisabled = endDate ? new Date(day) > endDate : false;
 
-  // Format time for display (HH:MM)
-  const formatTimeLabel = (): string => {
-    const hours = Math.floor(time / 60);
-    const minutes = time % 60;
-    return `${hours.toString().padStart(2, "0")}:${minutes
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  // Handle mouse/touch down
+  // Handle mouse/touch down for drag start
   const handlePointerDown = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
       if (isDisabled) return;
       e.preventDefault();
+      // console.log('[TimeSlot] Pointer down:', { day, time, isSelected, type: e.type });
       onDragStart(day, time, isSelected);
     },
     [day, time, isSelected, onDragStart, isDisabled]
   );
 
-  // Handle mouse/touch move
+  // Handle mouse/touch move for drag
   const handlePointerMove = useCallback(() => {
     if (isDragging && !isDisabled) {
+      // console.log('[TimeSlot] Pointer move:', { day, time, isDragging });
       onDragOver(day, time);
     }
   }, [day, time, isDragging, onDragOver, isDisabled]);
 
-  // Handle mouse/touch up
+  // Handle mouse/touch up for drag end
   const handlePointerUp = useCallback(() => {
     if (isDragging) {
       onDragEnd();
     }
   }, [isDragging, onDragEnd]);
 
-  // Determine border style based on time - SWAPPED HIERARCHY
+  // Handle tap to toggle selection (when not dragging)
+  const handleClick = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      if (isDisabled || isDragging) return;
+      e.preventDefault();
+      e.stopPropagation();
+      onTapToToggle?.(day, time);
+    },
+    [day, time, isDisabled, isDragging, onTapToToggle]
+  );
+
+  // Determine border style based on time
   const getBorderStyle = () => {
-    // Make the last row's bottom border transparent
     if (isLastRow) {
       return "border-b-0";
     }
 
     if (isHalfHour) {
-      // Half hour mark (e.g. 1:30) - darker border
-      return "border-b-2 border-gray-800";
+      return "border-b-2 border-border-primary";
     } else if (isEvenHour) {
-      // Start of hour (e.g. 1:00) - medium border
-      return "border-b border-gray-400";
+      return "border-b border-border-secondary";
     } else {
-      // Other time marks - light border
-      return "border-b border-gray-200";
+      return "border-b border-border-primary";
     }
   };
 
   return (
     <div
       ref={slotRef}
-      className={`
-        h-8 ${getBorderStyle()}
-        ${
-          isDisabled
-            ? "bg-gray-100 cursor-not-allowed"
-            : isSelected
-            ? "bg-blue-500 hover:bg-blue-600"
-            : "bg-white hover:bg-gray-50"
-        }
-        transition-colors duration-100 ease-in-out
-        ${
-          isDisabled
-            ? "text-gray-400"
-            : isSelected
-            ? "text-white"
-            : "text-gray-700"
-        }
-      `}
+      className={`h-8 ${getBorderStyle()}`}
       onMouseDown={handlePointerDown}
       onTouchStart={handlePointerDown}
       onMouseMove={handlePointerMove}
       onTouchMove={handlePointerMove}
       onMouseUp={handlePointerUp}
       onTouchEnd={handlePointerUp}
+      onClick={handleClick}
       data-day={day}
       data-time={time}
     >
-      <div className="h-full w-full flex items-center justify-center text-xs">
-        {/* Optionally show the time label for debugging */}
-        {/* {formatTimeLabel()} */}
-      </div>
+      <Chip
+        variant={isSelected ? "solid" : "bordered"}
+        color={isSelected ? "primary" : "default"}
+        size="sm"
+        className={`
+          w-full h-full rounded-none
+          ${isDragging && isSelected ? "scale-95" : ""}
+        `}
+        classNames={{
+          base: isDisabled 
+            ? "bg-dark-tertiary cursor-not-allowed border-0" 
+            : "border-0",
+          content: "p-0",
+        }}
+        isDisabled={isDisabled}
+      >
+        {/* Empty content - just for visual styling */}
+      </Chip>
     </div>
   );
 };
