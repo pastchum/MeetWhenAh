@@ -1,68 +1,90 @@
 "use client";
-import Image from "next/image";
-import Details from "@/components/datepicker/Details";
-import CustomDateRangePicker from "@/components/datepicker/CustomDateRangePicker";
-import Summary from "@/components/datepicker/Summary";
+import EventForm from "@/components/datepicker/EventForm";
+import EventDateSelector from "@/components/datepicker/EventDateSelector";
+import ReviewSubmit from "@/components/datepicker/ReviewSubmit";
 import { useState, useEffect } from "react";
+import { useTelegramViewport } from "@/hooks/useTelegramViewport";
+import { Card, CardBody, CardHeader } from "@nextui-org/react";
 
 export default function DatePicker() {
+  // Telegram viewport setup
+  useTelegramViewport();
+
   const [data, setData] = useState({
     web_app_number: 0,
     event_name: "",
     event_details: "",
-    start: "",
-    end: "",
+    start: null,
+    end: null,
   });
 
   const [currentComponent, setCurrentComponent] = useState(0);
 
   const nextComponent = (newData) => {
-    console.log("next component");
-    setData({ ...data, ...newData });
-    setCurrentComponent(currentComponent + 1);
+    console.log("next component", newData);
+    if (newData) {
+      setData(prevData => ({ ...prevData, ...newData }));
+      setCurrentComponent(prev => prev + 1);
+    }
   };
 
   const prevComponent = () => {
     console.log("prev component");
-    setCurrentComponent(currentComponent - 1);
+    setCurrentComponent(prev => prev - 1);
   };
 
   const [tg, setTg] = useState(null);
+
   useEffect(() => {
-    if (window.Telegram) {
+    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
       setTg(window.Telegram.WebApp);
-    } else {
-      console.error("Telegram Web App script not loaded");
     }
   }, []);
 
-  const submit = () => {
-    data.start = data.start.toString();
-    data.end = data.end.toString();
-    console.log(data);
-    tg.sendData(JSON.stringify(data, null, 4));
-    tg.close();
-  };
+  useEffect(() => {
+    if (tg) {
+      try {
+        tg.ready();
+        tg.expand();
+      } catch (error) {
+        console.warn('Telegram WebApp error:', error);
+      }
+    }
+  }, [tg]);
 
   return (
-    <main className="dark-mode flex min-h-screen flex-col items-center justify-start overflow-hidden">
-      <div className="pt-10">
-        <p className="font-semibold text-gray-900 text-2xl"> MeetWhenAh? </p>
+    <main className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-4">
+      <div className="w-full max-w-md mb-6 text-center">
+        <h1 className="font-semibold text-3xl">
+          <span className="text-white">MeetWhen</span><span className="text-[#c44545]">?</span>
+        </h1>
       </div>
-      <div className="p-10">
-        {currentComponent === 0 && <Details nextComponent={nextComponent} />}
+      
+      <div className="w-full max-w-md">
+        {currentComponent === 0 && (
+          <Card className="bg-[#0a0a0a] border border-white shadow-lg">
+            <CardBody className="p-6">
+              <EventForm nextComponent={nextComponent} initialData={data} />
+            </CardBody>
+          </Card>
+        )}
         {currentComponent === 1 && (
-          <CustomDateRangePicker
-            nextComponent={nextComponent}
-            prevComponent={prevComponent}
-          />
+          <Card className="bg-[#0a0a0a] border border-white shadow-lg">
+            <CardBody className="p-6">
+              <EventDateSelector
+                nextComponent={nextComponent}
+                prevComponent={prevComponent}
+                initialData={data}
+              />
+            </CardBody>
+          </Card>
         )}
         {currentComponent === 2 && (
-          <Summary
-            prevComponent={prevComponent}
-            nextComponent={submit}
-            data={data}
-          />
+          <Card className="bg-[#0a0a0a] border border-white shadow-lg">
+            <CardBody className="p-6">
+              <ReviewSubmit data={data} prevComponent={prevComponent} />
+            </CardBody>
+          </Card>
         )}
       </div>
     </main>
