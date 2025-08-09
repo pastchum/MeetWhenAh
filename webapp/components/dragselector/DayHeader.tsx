@@ -19,24 +19,28 @@ const DayHeader: React.FC<DayHeaderProps> = ({
   const isDisabled = endDate ? date > endDate : false;
 
   const handleClick = useCallback(() => {
+    console.log('[DayHeader] Click detected:', { date, isDisabled });
     if (!isDisabled) {
+      console.log('[DayHeader] Calling onSelectDay with date:', date);
       onSelectDay(date);
+    } else {
+      console.log('[DayHeader] Day is disabled, not calling onSelectDay');
     }
   }, [date, onSelectDay, isDisabled]);
 
   return (
     <div
-      className={`p-2 border-r border-b border-gray-200 font-medium transition-colors duration-150 ${
+      className={`p-2 border-r border-b border-border-primary font-medium transition-colors duration-150 ${
         isDisabled
-          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-          : "bg-gray-50 text-gray-700 cursor-pointer hover:bg-blue-50"
+          ? "bg-dark-tertiary text-text-disabled cursor-not-allowed"
+          : "bg-dark-secondary text-text-primary cursor-pointer hover:bg-selection-hover"
       }`}
       style={{ width }}
       onClick={handleClick}
     >
       <div className="text-center">
-        <div className="text-sm text-gray-700">{format(date, "EEE")}</div>
-        <div className="text-xs text-gray-500">{format(date, "MMM d")}</div>
+        <div className="text-sm text-text-primary">{format(date, "EEE")}</div>
+        <div className="text-xs text-text-secondary">{format(date, "MMM d")}</div>
       </div>
     </div>
   );

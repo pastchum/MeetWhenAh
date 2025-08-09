@@ -9,8 +9,13 @@ import {
   fetchUserDataFromUsername,
 } from "@/routes/user_routes";
 import ConfirmDatePicker from "@/components/confirm/ConfirmDatePicker";
+import { useTelegramViewport } from "@/hooks/useTelegramViewport";
+import { Button, Card, CardBody, CardHeader, Spinner } from "@nextui-org/react";
 
 export default function ConfirmPage() {
+  // Telegram viewport setup
+  useTelegramViewport();
+
   const [eventDetails, setEventDetails] = useState<EventData | null>(null);
   const [bestStart, setBestStart] = useState("");
   const [bestEnd, setBestEnd] = useState("");
@@ -129,7 +134,7 @@ export default function ConfirmPage() {
       }
     }
     fetchUserUuidFromTeleUserAsync();
-  }, [teleUser]);
+  }, [teleId, teleUser]);
 
   // check if user uuid is the same as the event creator
   useEffect(() => {
@@ -264,25 +269,40 @@ export default function ConfirmPage() {
 
   if (loading) {
     return (
-      <main className="max-w-7xl mx-auto p-4">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        </div>
+      <main className="minecraft-font bg-black min-h-screen flex items-center justify-center p-4">
+        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] shadow-lg">
+          <CardBody className="flex items-center justify-center p-8">
+            <Spinner size="lg" color="primary" />
+            <p className="mt-4 text-white">Loading event details...</p>
+          </CardBody>
+        </Card>
       </main>
     );
   }
 
   if (error || !eventDetails) {
     return (
-      <main className="max-w-7xl mx-auto p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4 text-gray-50">
-            Event Not Found
-          </h1>
-          <p className="text-gray-600">
-            {error || "The requested event could not be found."}
-          </p>
-        </div>
+      <main className="minecraft-font bg-black min-h-screen flex items-center justify-center p-4">
+        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] shadow-lg max-w-md w-full">
+          <CardHeader className="pb-2">
+            <h1 className="text-2xl font-bold text-white">
+              Event Not Found
+            </h1>
+          </CardHeader>
+          <CardBody>
+            <p className="text-[#e5e5e5] mb-4">
+              {error || "The requested event could not be found."}
+            </p>
+            <Button 
+              color="primary" 
+              variant="solid"
+              onPress={() => window.history.back()}
+              className="w-full"
+            >
+              Go Back
+            </Button>
+          </CardBody>
+        </Card>
       </main>
     );
   }
@@ -298,82 +318,97 @@ export default function ConfirmPage() {
   const legendItems = generateLegendItems();
 
   return (
-    <main className="max-w-7xl mx-auto p-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2 text-gray-50">
-          {eventDetails.event_name}
-        </h1>
-        <p className="text-gray-600 text-lg">
-          {eventDetails.event_description}
-        </p>
-        <div className="mt-2 text-sm text-gray-500">
-          {eventStartDate.toLocaleDateString()} -{" "}
-          {eventEndDate.toLocaleDateString()}
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-3 text-gray-50">
-          Participant Availability Heat Map
-        </h2>
-
-        {participantCount > 0 && (
-          <div className="flex flex-wrap items-center gap-4 mb-4 text-sm text-gray-600">
-            {legendItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div
-                  className={`w-4 h-4 ${item.color} ${
-                    item.color.includes("blue-50")
-                      ? "border border-gray-200"
-                      : ""
-                  } rounded`}
-                ></div>
-                <span>{item.label}</span>
+    <main className="minecraft-font bg-black min-h-screen p-4">
+      <div className="max-w-7xl mx-auto">
+        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] shadow-lg mb-6">
+          <CardHeader className="pb-2">
+            <div className="w-full">
+              <h1 className="text-3xl font-bold mb-2 text-white">
+                {eventDetails.event_name}
+              </h1>
+              <p className="text-[#e5e5e5] text-lg">
+                {eventDetails.event_description}
+              </p>
+              <div className="mt-2 text-sm text-[#a0a0a0]">
+                {eventStartDate.toLocaleDateString()} -{" "}
+                {eventEndDate.toLocaleDateString()}
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          </CardHeader>
+        </Card>
 
-        {participantCount === 0 && (
-          <div className="mb-4 text-sm text-gray-500">
-            No participant availability data yet.
-          </div>
-        )}
+        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] shadow-lg mb-6">
+          <CardHeader className="pb-2">
+            <h2 className="text-xl font-semibold text-white">
+              Participant Availability Heat Map
+            </h2>
+          </CardHeader>
+          <CardBody>
+            {participantCount > 0 && (
+              <div className="flex flex-wrap items-center gap-4 mb-4 text-sm text-[#e5e5e5]">
+                {legendItems.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div
+                      className={`w-4 h-4 ${item.color} ${
+                        item.color.includes("blue-50")
+                          ? "border border-[#333333]"
+                          : ""
+                      } rounded`}
+                    ></div>
+                    <span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
-        <div className="border border-gray-200 rounded-lg shadow-sm">
-          <ConfirmCalendar
-            startDate={eventStartDate}
-            endDate={eventEndDate}
-            numDays={Math.min(totalDays, 7)}
-            eventId={eventId || ""}
-            onParticipantCountChange={handleParticipantCountChange}
-          />
-        </div>
-      </div>
+            {participantCount === 0 && (
+              <div className="mb-4 text-sm text-[#a0a0a0]">
+                No participant availability data yet.
+              </div>
+            )}
 
-      <hr className="my-6" />
+            <div className="border border-[#333333] rounded-lg shadow-sm">
+              <ConfirmCalendar
+                startDate={eventStartDate}
+                endDate={eventEndDate}
+                numDays={Math.min(totalDays, 7)}
+                eventId={eventId || ""}
+                onParticipantCountChange={handleParticipantCountChange}
+              />
+            </div>
+          </CardBody>
+        </Card>
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-50">
-          Confirm Event Timing
-        </h2>
-        <ConfirmDatePicker
-          startDate={bestStart}
-          endDate={bestEnd}
-          onDateChange={handleDateChange}
-        />
+        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] shadow-lg">
+          <CardHeader className="pb-2">
+            <h2 className="text-xl font-semibold text-white">
+              Confirm Event Timing
+            </h2>
+          </CardHeader>
+          <CardBody>
+            <ConfirmDatePicker
+              startDate={bestStart}
+              endDate={bestEnd}
+              onDateChange={handleDateChange}
+            />
 
-        <button
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleConfirm}
-          disabled={loading || submitting || !isEventCreator}
-        >
-          {!isEventCreator
-            ? "You are not the event creator"
-            : submitting
-            ? "Confirming..."
-            : "Confirm Event"}
-        </button>
+            <Button
+              color="primary"
+              variant="solid"
+              size="lg"
+              className="w-full mt-4"
+              onPress={handleConfirm}
+              isDisabled={loading || submitting || !isEventCreator}
+              isLoading={submitting}
+            >
+              {!isEventCreator
+                ? "You are not the event creator"
+                : submitting
+                ? "Confirming..."
+                : "Confirm Event"}
+            </Button>
+          </CardBody>
+        </Card>
       </div>
     </main>
   );

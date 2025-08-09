@@ -38,7 +38,7 @@ export default function Box({ date, time, appendMode }: BoxProps) {
         boxRect.top > selectionRect.bottom
       );
 
-      console.log("%c📦 Box Intersection Check", "color: #0d9488", {
+      console.log("[BOX] Box Intersection Check", {
         boxId: `box-${date.toISOString()}-${time}`,
         isOverlapping,
         boxRect: {
@@ -59,14 +59,14 @@ export default function Box({ date, time, appendMode }: BoxProps) {
 
       if (!isOverlapping && !appendMode) {
         const dateTime = { date: date.toLocaleDateString("en-GB"), time };
-        console.log("%c🗑️ Box Deselected", "color: #ef4444", { dateTime });
+        console.log("[DESELECT] Box Deselected", { dateTime });
         selectedElements.delete(dateTime);
         setSelectedElements(new CustomDateTimeSet(selectedElements));
       }
 
       if (isOverlapping) {
         const dateTime = { date: date.toLocaleDateString("en-GB"), time };
-        console.log("%c✅ Box Selected", "color: #22c55e", { dateTime });
+        console.log("[SELECT] Box Selected", { dateTime });
         selectedElements.add(dateTime);
         setSelectedElements(new CustomDateTimeSet(selectedElements));
       }
@@ -84,7 +84,7 @@ export default function Box({ date, time, appendMode }: BoxProps) {
 
   // Log selection state changes
   useEffect(() => {
-    console.log("%c🔄 Box State Update", "color: #f59e0b", {
+    console.log("[STATE] Box State Update", {
       boxId: `box-${date.toISOString()}-${time}`,
       isSelected,
       isBeingSelected,
@@ -96,14 +96,14 @@ export default function Box({ date, time, appendMode }: BoxProps) {
   const baseClasses =
     "w-full h-8 rounded-md transition-all duration-150 border border-transparent";
   const selectedClasses = isSelected
-    ? "bg-blue-500/80 border-blue-600 shadow-[inset_0_1px_4px_rgba(0,0,0,0.3)]"
-    : "bg-gray-200/80 hover:bg-gray-300/80 dark:bg-gray-700/80 dark:hover:bg-gray-600/80";
-  const hoverClasses = "hover:border-blue-400";
+    ? "bg-[rgba(200,80,80,0.8)] border-[rgba(200,80,80,0.9)] shadow-[inset_0_1px_4px_rgba(0,0,0,0.3)]"
+    : "bg-dark-tertiary hover:bg-dark-secondary";
+  const hoverClasses = "hover:border-[rgba(200,80,80,0.9)]";
   const activeClasses = isBeingSelected
-    ? "scale-95 bg-blue-600/90 border-blue-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]"
+    ? "scale-95 bg-[rgba(180,70,70,0.9)] border-[rgba(200,80,80,0.9)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]"
     : "";
   const touchFeedbackClasses =
-    "active:scale-95 active:bg-blue-600/90 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]";
+    "active:scale-95 active:bg-[rgba(180,70,70,0.9)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]";
 
   return (
     <div

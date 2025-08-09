@@ -10,6 +10,11 @@ import {
   updateUserAvailabilityToAPI,
 } from "@/routes/availability_routes";
 import { AvailabilityData } from "@/utils/availability_service";
+import { 
+  getUtcDatetime, 
+  getLocalDayAndTime,
+  isSlotSelected 
+} from "@/lib/datetime-utils";
 
 interface WeekCalendarProps {
   startDate?: Date;
@@ -60,60 +65,21 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   const [pendingSync, setPendingSync] = useState(false);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Helper function to convert day and time to ISO datetime
-  const getIsoDatetime = useCallback(
-    (day: string, timeMinutes: number): string => {
-      const [year, month, date] = day.split("-").map(Number);
-      const hours = Math.floor(timeMinutes / 60);
-      const minutes = timeMinutes % 60;
-
-      // Create date in local timezone, then convert to ISO
-      const dateObj = new Date(year, month - 1, date, hours, minutes);
-      return dateObj.toISOString();
-    },
-    []
-  );
-
   // Update selection based on drag operation
   const updateSelection = useCallback(
     (day: string, time: number, operation: "select" | "deselect") => {
       setSelectedSlots((prev) => {
         const newSet = new Set(prev);
-        const isoDatetime = getIsoDatetime(day, time);
+        const utcDatetime = getUtcDatetime(day, time);
 
         if (operation === "select") {
-          newSet.add(isoDatetime);
+          newSet.add(utcDatetime);
         } else {
-          newSet.delete(isoDatetime);
+          newSet.delete(utcDatetime);
         }
 
         return newSet;
       });
-    },
-    [getIsoDatetime]
-  );
-
-  // Helper function to normalize ISO datetime to local timezone for comparison
-  const normalizeIsoDatetime = useCallback((isoString: string): string => {
-    const date = new Date(isoString);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-
-    // Recreate the date in local timezone to ensure consistent timezone handling
-    const localDate = new Date(year, month - 1, day, hours, minutes);
-    return localDate.toISOString();
-  }, []);
-
-  // Helper function to convert ISO datetime back to day and time
-  const getDayAndTimeFromIso = useCallback(
-    (isoString: string): { day: string; time: number } => {
-      const date = new Date(isoString);
-      const day = format(date, "yyyy-MM-dd");
-      const time = date.getHours() * 60 + date.getMinutes();
-      return { day, time };
     },
     []
   );
@@ -139,16 +105,15 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
             return;
           }
 
-          // Add start time to selection data (normalized to local timezone)
-          const normalizedStartTime = normalizeIsoDatetime(slot.start_time);
-          newSelectedSlots.add(normalizedStartTime);
+          // Add start time to selection data (normalize to UTC ISO format)
+          newSelectedSlots.add(startDate.toISOString());
 
           // If there are multiple 30-minute slots, add them too
           let currentTime = new Date(startDate);
           currentTime.setMinutes(currentTime.getMinutes() + 30);
 
           while (currentTime < endDate) {
-            const timeString = normalizeIsoDatetime(currentTime.toISOString());
+            const timeString = currentTime.toISOString();
             newSelectedSlots.add(timeString);
             currentTime.setMinutes(currentTime.getMinutes() + 30);
           }
@@ -164,7 +129,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       setIsLoading(false);
       setSyncedWithBackend(true);
     }
-  }, [tele_id, eventId, normalizeIsoDatetime]);
+  }, [tele_id, eventId]);
 
   // Sync to backend
   const syncToBackend = useCallback(async () => {
@@ -176,10 +141,25 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
 
       // Group consecutive time slots into blocks
       const sortedSlots = Array.from(selectedSlots).sort();
-      console.log("Sorted slots:", sortedSlots);
+
       for (let i = 0; i < sortedSlots.length; i++) {
         const startTime = sortedSlots[i];
         let endTime = startTime;
+
+        // Find consecutive slots (30-minute intervals)
+        while (i + 1 < sortedSlots.length) {
+          const currentDate = new Date(startTime);
+          const nextDate = new Date(sortedSlots[i + 1]);
+          const timeDiff = nextDate.getTime() - currentDate.getTime();
+
+          // If next slot is exactly 30 minutes after current, it's consecutive
+          if (timeDiff === 30 * 60 * 1000) {
+            endTime = sortedSlots[i + 1];
+            i++;
+          } else {
+            break;
+          }
+        }
 
         // Add 30 minutes to end time to make it exclusive
         const endDateTime = new Date(endTime);
@@ -247,8 +227,8 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
             patternData[dayOfWeek].forEach((timeString: string) => {
               const hours = parseInt(timeString.slice(0, 2));
               const minutes = parseInt(timeString.slice(2));
-              const isoDatetime = getIsoDatetime(dayKey, hours * 60 + minutes);
-              newSelectedSlots.add(isoDatetime);
+              const utcDatetime = getUtcDatetime(dayKey, hours * 60 + minutes);
+              newSelectedSlots.add(utcDatetime);
             });
           }
         });
@@ -273,8 +253,8 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
             const timeMinutes =
               parseInt(slot.time.slice(0, 2)) * 60 +
               parseInt(slot.time.slice(2));
-            const isoDatetime = getIsoDatetime(dayKey, timeMinutes);
-            newSelectedSlots.add(isoDatetime);
+            const utcDatetime = getUtcDatetime(dayKey, timeMinutes);
+            newSelectedSlots.add(utcDatetime);
           });
 
           setSelectedSlots(newSelectedSlots);
@@ -283,52 +263,67 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
         console.error("Error parsing current availability:", error);
       }
     }
-  }, [days, getIsoDatetime]);
+  }, [days]);
 
   // Handle day header click - select whole day
   const handleSelectWholeDay = useCallback(
     (date: Date) => {
+      console.log('[WeekCalendar] handleSelectWholeDay called with date:', date);
+      
       // Don't allow selection if date is after end date
       if (endDate && date > endDate) {
+        console.log('[WeekCalendar] Date after end date, returning');
         return;
       }
 
       const dayKey = format(date, "yyyy-MM-dd");
+      console.log('[WeekCalendar] Day key:', dayKey);
 
       // Check if any slots for this day are already selected
       const daySlots = Array.from(selectedSlots).filter((slot) => {
-        const { day } = getDayAndTimeFromIso(slot);
+        const { day } = getLocalDayAndTime(slot);
         return day === dayKey;
       });
 
       const isAnySlotSelected = daySlots.length > 0;
+      console.log('[WeekCalendar] Day slots already selected:', daySlots);
+      console.log('[WeekCalendar] Is any slot selected:', isAnySlotSelected);
 
       setSelectedSlots((prev) => {
+        console.log('[WeekCalendar] Previous selectedSlots:', Array.from(prev));
         const newSet = new Set(prev);
 
         if (isAnySlotSelected) {
           // If any slots are selected, deselect the whole day
-          daySlots.forEach((slot) => newSet.delete(slot));
+          console.log('[WeekCalendar] Deselecting whole day');
+          timeSlots.forEach((time) => {
+            const utcDatetime = getUtcDatetime(dayKey, time);
+            newSet.delete(utcDatetime);
+          });
         } else {
           // Select all time slots for the day
+          console.log('[WeekCalendar] Selecting all time slots for day');
           timeSlots.forEach((time) => {
-            const isoDatetime = getIsoDatetime(dayKey, time);
-            newSet.add(isoDatetime);
+            const utcDatetime = getUtcDatetime(dayKey, time);
+            newSet.add(utcDatetime);
+            console.log('[WeekCalendar] Added slot:', { dayKey, time, utcDatetime });
           });
         }
 
+        console.log('[WeekCalendar] New selectedSlots:', Array.from(newSet));
         return newSet;
       });
 
       // Mark for syncing to backend
       setPendingSync(true);
     },
-    [selectedSlots, timeSlots, endDate, getIsoDatetime, getDayAndTimeFromIso]
+    [timeSlots, endDate]
   );
 
   // Handle drag start
   const handleDragStart = useCallback(
     (day: string, time: number, isSelected: boolean) => {
+      console.log('[WeekCalendar] Drag start:', { day, time, isSelected });
       setIsDragging(true);
       setDragOperation(isSelected ? "deselect" : "select");
       setLastSlot({ day, time });
@@ -357,6 +352,31 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   const handleDragEnd = useCallback(() => {
     setIsDragging(false);
     setLastSlot(null);
+
+    // Mark for syncing to backend
+    setPendingSync(true);
+  }, []);
+
+  // Handle tap to toggle individual slot
+  const handleTapToToggle = useCallback((day: string, time: number) => {
+    const utcDatetime = getUtcDatetime(day, time);
+
+    setSelectedSlots((prev) => {
+      const newSet = new Set(prev);
+      
+      // Check if slot is selected
+      const isSelected = newSet.has(utcDatetime);
+      
+      if (isSelected) {
+        // Remove from selection
+        newSet.delete(utcDatetime);
+      } else {
+        // Add to selection
+        newSet.add(utcDatetime);
+      }
+      
+      return newSet;
+    });
 
     // Mark for syncing to backend
     setPendingSync(true);
@@ -400,19 +420,19 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
 
   return (
     <div
-      className="relative flex flex-col overflow-auto border border-gray-200 rounded-lg"
+      className="relative flex flex-col overflow-auto border border-border-primary rounded-lg"
       style={{ userSelect: "none" }}
       ref={containerRef}
     >
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-dark-secondary bg-opacity-70 z-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon-600"></div>
         </div>
       )}
 
       {/* Day headers row */}
-      <div className="sticky top-0 z-10 flex bg-white">
-        <div className="w-16 flex-shrink-0 border-r border-b border-gray-200" />
+      <div className="sticky top-0 z-10 flex bg-dark-secondary">
+        <div className="w-16 flex-shrink-0 border-r border-b border-border-primary" />
         <div className="flex-1 flex">
           {days.map((day, idx) => (
             <DayHeader
@@ -441,6 +461,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
+          onTapToToggle={handleTapToToggle}
         />
       </div>
     </div>
