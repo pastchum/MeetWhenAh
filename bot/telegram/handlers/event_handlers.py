@@ -13,7 +13,13 @@ from ..config.config import bot
 from best_time_algo.best_time_algo import BestTimeAlgo
 
 # Import from services
-from services.user_service import updateUsername, getUserByUuid
+from services.user_service import (
+    getUser,
+    setUser,
+    updateUserInitialised,
+    updateUserCalloutCleared,
+    updateUsername
+)
 from services.event_service import (
     getEvent,
     create_event, 
@@ -29,12 +35,50 @@ from services.availability_service import ask_availability, send_confirmed_event
 
 # Import from utils
 from utils.date_utils import daterange, parse_date, format_date_for_message, format_date
+from utils.web_app import create_web_app_url
+from utils.message_templates import WELCOME_MESSAGE
 
 # Keep track of processed message IDs to prevent duplicate processing
 processed_messages = set()
 
 def register_event_handlers(bot):
     """Register all event-related handlers"""
+
+    @bot.message_handler(commands=['create'])
+    def send_welcome(message):
+        if message.chat.type == 'private':
+            tele_id = str(message.from_user.id)
+            db_result = getUser(tele_id)
+            if db_result is None:
+                print("User not found in DB, creating new entry.", message.from_user.id)
+                username = str(message.from_user.username)
+                setUser(tele_id, username)
+            else:
+                if not db_result["initialised"]:
+                    updateUserInitialised(tele_id)
+                    updateUserCalloutCleared(tele_id)
+                if db_result["tele_user"] != str(message.from_user.username):
+                    print("Username changed, updating in DB.")
+                    updateUsername(message.from_user.id, message.from_user.username)
+
+            # Create web app URL for datepicker
+            web_app_url = create_web_app_url(
+                path='/datepicker',
+                web_app_number=0  # 0 for create event
+            )
+            
+            markup = types.ReplyKeyboardMarkup(row_width=1)
+            web_app_info = types.WebAppInfo(url=web_app_url)
+            web_app_button = types.KeyboardButton(text="Create Event", web_app=web_app_info)
+            markup.add(web_app_button)
+
+            bot.reply_to(message, WELCOME_MESSAGE, reply_markup=markup)
+        else:
+            # In group chat, provide instructions to message the bot privately
+            welcome_text = "To create an event, please message me privately!"
+            markup = None
+            bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
+
 
     @bot.message_handler(content_types=['web_app_data'])
     def handle_webapp_data(message):
