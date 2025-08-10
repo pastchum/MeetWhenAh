@@ -75,6 +75,31 @@ async def health_check():
     """Health check endpoint for the webhook"""
     return {"status": "healthy"}
 
+
+@app.post("/api/share")
+async def share_event(request: Request):
+    """Share an event"""
+    data = await request.json()
+    token = data["token"]
+    event_id = data["event_id"]
+
+    # get the event
+    event = getEvent(event_id)
+    if not event:
+        return {"error": "Event not found"}
+
+    # get the event chat details
+    ctx = get_ctx(token)
+    if not ctx:
+        return {"error": "Invalid token"}
+    print("ctx", ctx)
+    # edit the message
+    success = handle_share_event(event_id, ctx["tele_id"], ctx["chat_id"], ctx["message_id"], ctx["thread_id"])
+    if not success:
+        return {"error": "Failed to handle share event"}
+    
+    return {"success": True}
+
 @app.post("/api/event/confirm")
 async def confirm_event(request: Request):
     """Confirm an event"""
@@ -110,30 +135,6 @@ async def send_reminders(api_key: str = Header(...)):
     send_daily_event_reminders()
     send_upcoming_event_reminders()
 
-    return {"success": True}
-
-@app.post("/api/share")
-async def share_event(request: Request):
-    """Share an event"""
-    data = await request.json()
-    token = data["token"]
-    event_id = data["event_id"]
-
-    # get the event
-    event = getEvent(event_id)
-    if not event:
-        return {"error": "Event not found"}
-
-    # get the event chat details
-    ctx = get_ctx(token)
-    if not ctx:
-        return {"error": "Invalid token"}
-    print("ctx", ctx)
-    # edit the message
-    success = handle_share_event(event_id, ctx["tele_id"], ctx["chat_id"], ctx["message_id"], ctx["thread_id"])
-    if not success:
-        return {"error": "Failed to handle share event"}
-    
     return {"success": True}
 
 if __name__ == "__main__":

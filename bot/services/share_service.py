@@ -28,7 +28,6 @@ def set_chat(event_id: str, chat_id: int, thread_id: int = None) -> bool:
         "event_id": event_id,
         "chat_id": chat_id,
         "thread_id": thread_id,
-        "is_reminders_enabled": False
     }
     success = setEntry("event_chats", event_id, chat_data)
     if not success:

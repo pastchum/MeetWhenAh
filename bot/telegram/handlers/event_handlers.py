@@ -18,7 +18,8 @@ from services.user_service import (
     setUser,
     updateUserInitialised,
     updateUserCalloutCleared,
-    updateUsername
+    updateUsername,
+    getUserByUuid
 )
 from services.event_service import (
     getEvent,
@@ -31,7 +32,7 @@ from services.event_service import (
     getConfirmedEvent, 
     get_event_chat
     )
-from services.availability_service import ask_availability, send_confirmed_event_availability
+from services.availability_service import ask_availability, ask_join
 
 # Import from utils
 from utils.date_utils import daterange, parse_date, format_date_for_message, format_date
@@ -236,20 +237,14 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
             # create share message
             description = generate_confirmed_event_description(event_id)
 
-            markup = types.InlineKeyboardMarkup()
-            share_button = types.InlineKeyboardButton(
-                text="Share Event",
-                switch_inline_query=f"{event_id}"
-            )
-            markup.add(share_button)
+            text = f"Event {event['event_name']} confirmed successfully.\n\n{description}\n\nShare this event with others using the /share command in your group chats!"
 
-            bot.send_message(chat_id=creator_tele_id, text=f"Event confirmed successfully!\n\n{description}", reply_markup=markup)
+            bot.send_message(chat_id=creator_tele_id, text=text)
 
             # send availability to event chat
             chat_id, thread_id = get_event_chat(event_id)
             if chat_id:
-                print("sending availability to event chat", chat_id, thread_id)
-                send_confirmed_event_availability(event_id, chat_id, thread_id)
+                ask_join(chat_id, event_id, thread_id)
     except Exception as e:
         bot.send_message(chat_id=creator_tele_id, text=f"Error confirming event: {str(e)}")
         return
