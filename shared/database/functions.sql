@@ -80,3 +80,26 @@ BEGIN
     AND ce.confirmed_start_time < now() + INTERVAL '2 hours';
 END;
 $$ LANGUAGE plpgsql;
+
+create or replace function cleanup_share_tokens()
+returns void language sql as $$
+  delete from webapp_share_tokens
+  where expires_at < now() or used_at is not null;
+$$;
+
+-- select cron.schedule('cleanup_share_tokens_hourly', '0 * * * *', $$select cleanup_share_tokens()$$);
+
+create or replace function get_and_use_share_token(p_token text)
+returns setof webapp_share_tokens
+language plpgsql
+as $$
+begin
+  return query
+  update webapp_share_tokens t
+     set used_at = now()
+   where t.token = p_token
+     and t.used_at is null
+     and t.expires_at > now()
+  returning t.*;
+end;
+$$;

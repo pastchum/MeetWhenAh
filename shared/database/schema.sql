@@ -104,6 +104,30 @@ CREATE TABLE blocked_timings (
     PRIMARY KEY (uuid, start_time, end_time)
 );
 
+-- 6) One-time webapp token to edit the original /share message
+create table if not exists webapp_share_tokens (
+  token        text primary key,
+  tele_id      bigint not null references users(tele_id),            -- Telegram user id
+  chat_id      bigint not null,
+  thread_id    bigint,                     -- topic id, nullable
+  message_id   bigint not null,
+  created_at   timestamptz not null default now(),
+  expires_at   timestamptz not null,
+  used_at      timestamptz
+);
+
+create index if not exists idx_share_tokens_expires on webapp_share_tokens (expires_at);
+create index if not exists idx_share_tokens_user    on webapp_share_tokens (user_id);
+
+-- RLS: only your backend (service key) can touch this table
+alter table webapp_share_tokens enable row level security;
+create policy "service only"
+  on webapp_share_tokens
+  for all
+  using (true)
+  with check (true);
+
+
 -- indexes
 CREATE INDEX IF NOT EXISTS idx_events_creator ON events (creator);
 CREATE INDEX IF NOT EXISTS idx_membership_event_id ON membership (event_id);
