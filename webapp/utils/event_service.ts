@@ -242,8 +242,10 @@ export class EventService {
       // Get events where user is a participant
       const { data: events, error } = await supabase
         .from('events')
-        .select('event_id, event_name')
-        .contains('participants', [userData.uuid]);
+        .select('*')
+        .eq('creator', userData.uuid)
+        .gt('start_date', new Date().toISOString())
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error getting user events:', error);

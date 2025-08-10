@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 # Import from services
-from .database_service import getEntry, setEntry, updateEntry
+from .database_service import getEntry, setEntry, updateEntry, getEntries
 
 # Import from other
 import uuid
@@ -80,3 +80,17 @@ def setUserSleepPreferences(tele_id: str, sleep_start: str, sleep_end: str) -> b
         return updateEntry("users", tele_id, user_data)
     else:
         return setEntry("users", tele_id, user_data) 
+    
+def getUpcomingUserEvents(tele_id: str) -> list[dict]:
+    """Get a user's upcoming events"""
+    #TODO: Add a supabase sql function to get upcoming events for a user based on telegram id
+    user = getEntry("users", "tele_id", tele_id)
+    if not user:
+        return []
+    user_uuid = user["uuid"]
+    events = getEntries("events", "creator", user_uuid)
+    if not events:
+        return []
+    events = [e for e in events if e["start_date"] > datetime.now(timezone.utc).isoformat()]
+    events.sort(key=lambda x: x["start_date"])
+    return events

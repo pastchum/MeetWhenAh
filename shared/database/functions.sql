@@ -1,8 +1,8 @@
 CREATE OR REPLACE FUNCTION get_unconfirmed_active_events_at_noon_local_time()
 RETURNS TABLE (
   event_id UUID,
-  event_name VARCHAR,
-  timezone VARCHAR,
+  event_name TEXT,
+  timezone TEXT,
   local_time TIME
 ) AS $$
 BEGIN
@@ -28,8 +28,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION get_confirmed_events_at_local_noon()
 RETURNS TABLE (
   event_id UUID,
-  event_name VARCHAR,
-  timezone VARCHAR,
+  event_name TEXT,
+  timezone TEXT,
   confirmed_start_time TIMESTAMPTZ,
   confirmed_end_time TIMESTAMPTZ,
   local_current_time TIME
@@ -57,8 +57,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION get_confirmed_events_starting_soon()
 RETURNS TABLE (
   event_id UUID,
-  event_name VARCHAR,
-  timezone VARCHAR,
+  event_name TEXT,
+  timezone TEXT,
   confirmed_start_time TIMESTAMPTZ,
   confirmed_end_time TIMESTAMPTZ,
   local_current_time TIME
@@ -80,3 +80,26 @@ BEGIN
     AND ce.confirmed_start_time < now() + INTERVAL '2 hours';
 END;
 $$ LANGUAGE plpgsql;
+
+create or replace function cleanup_share_tokens()
+returns void language sql as $$
+  delete from webapp_share_tokens
+  where expires_at < now() or used_at is not null;
+$$;
+
+-- select cron.schedule('cleanup_share_tokens_hourly', '0 * * * *', $$select cleanup_share_tokens()$$);
+
+create or replace function get_and_use_share_token(p_token text)
+returns setof webapp_share_tokens
+language plpgsql
+as $$
+begin
+  return query
+  update webapp_share_tokens t
+     set used_at = now()
+   where t.token = p_token
+     and t.used_at is null
+     and t.expires_at > now()
+  returning t.*;
+end;
+$$;

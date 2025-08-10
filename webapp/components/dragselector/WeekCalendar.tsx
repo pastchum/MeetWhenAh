@@ -10,10 +10,10 @@ import {
   updateUserAvailabilityToAPI,
 } from "@/routes/availability_routes";
 import { AvailabilityData } from "@/utils/availability_service";
-import { 
-  getUtcDatetime, 
+import {
+  getUtcDatetime,
   getLocalDayAndTime,
-  isSlotSelected 
+  isSlotSelected,
 } from "@/lib/datetime-utils";
 
 interface WeekCalendarProps {
@@ -268,16 +268,19 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   // Handle day header click - select whole day
   const handleSelectWholeDay = useCallback(
     (date: Date) => {
-      console.log('[WeekCalendar] handleSelectWholeDay called with date:', date);
-      
+      console.log(
+        "[WeekCalendar] handleSelectWholeDay called with date:",
+        date
+      );
+
       // Don't allow selection if date is after end date
       if (endDate && date > endDate) {
-        console.log('[WeekCalendar] Date after end date, returning');
+        console.log("[WeekCalendar] Date after end date, returning");
         return;
       }
 
       const dayKey = format(date, "yyyy-MM-dd");
-      console.log('[WeekCalendar] Day key:', dayKey);
+      console.log("[WeekCalendar] Day key:", dayKey);
 
       // Check if any slots for this day are already selected
       const daySlots = Array.from(selectedSlots).filter((slot) => {
@@ -286,44 +289,48 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       });
 
       const isAnySlotSelected = daySlots.length > 0;
-      console.log('[WeekCalendar] Day slots already selected:', daySlots);
-      console.log('[WeekCalendar] Is any slot selected:', isAnySlotSelected);
+      console.log("[WeekCalendar] Day slots already selected:", daySlots);
+      console.log("[WeekCalendar] Is any slot selected:", isAnySlotSelected);
 
       setSelectedSlots((prev) => {
-        console.log('[WeekCalendar] Previous selectedSlots:', Array.from(prev));
+        console.log("[WeekCalendar] Previous selectedSlots:", Array.from(prev));
         const newSet = new Set(prev);
 
         if (isAnySlotSelected) {
           // If any slots are selected, deselect the whole day
-          console.log('[WeekCalendar] Deselecting whole day');
+          console.log("[WeekCalendar] Deselecting whole day");
           timeSlots.forEach((time) => {
             const utcDatetime = getUtcDatetime(dayKey, time);
             newSet.delete(utcDatetime);
           });
         } else {
           // Select all time slots for the day
-          console.log('[WeekCalendar] Selecting all time slots for day');
+          console.log("[WeekCalendar] Selecting all time slots for day");
           timeSlots.forEach((time) => {
             const utcDatetime = getUtcDatetime(dayKey, time);
             newSet.add(utcDatetime);
-            console.log('[WeekCalendar] Added slot:', { dayKey, time, utcDatetime });
+            console.log("[WeekCalendar] Added slot:", {
+              dayKey,
+              time,
+              utcDatetime,
+            });
           });
         }
 
-        console.log('[WeekCalendar] New selectedSlots:', Array.from(newSet));
+        console.log("[WeekCalendar] New selectedSlots:", Array.from(newSet));
         return newSet;
       });
 
       // Mark for syncing to backend
       setPendingSync(true);
     },
-    [timeSlots, endDate]
+    [timeSlots, endDate, selectedSlots]
   );
 
   // Handle drag start
   const handleDragStart = useCallback(
     (day: string, time: number, isSelected: boolean) => {
-      console.log('[WeekCalendar] Drag start:', { day, time, isSelected });
+      console.log("[WeekCalendar] Drag start:", { day, time, isSelected });
       setIsDragging(true);
       setDragOperation(isSelected ? "deselect" : "select");
       setLastSlot({ day, time });
@@ -363,10 +370,10 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
 
     setSelectedSlots((prev) => {
       const newSet = new Set(prev);
-      
+
       // Check if slot is selected
       const isSelected = newSet.has(utcDatetime);
-      
+
       if (isSelected) {
         // Remove from selection
         newSet.delete(utcDatetime);
@@ -374,7 +381,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
         // Add to selection
         newSet.add(utcDatetime);
       }
-      
+
       return newSet;
     });
 
