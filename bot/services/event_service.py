@@ -36,6 +36,12 @@ def create_event(event_name: str, event_description: str, start_date: str, end_d
         "start_hour": start_hour,
         "end_hour": end_hour,
         "creator": creator_uuid,
+        "is_reminders_enabled": True,
+        "cancelled": False,
+        "min_participants": 2,
+        "min_duration": 2,
+        "max_duration": 4,
+        "timezone": "Asia/Singapore"
     }
     print(event_data)
     success = setEntry("events", event_id, event_data)
