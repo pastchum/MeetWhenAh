@@ -1,64 +1,56 @@
 from telebot import types
 import logging
+import os
 
 # Import from config
 from ..config.config import bot
 
 # Import from services
-from services.event_service import (
-    getEvent, 
-    getConfirmedEvent, 
-    generate_confirmed_event_description, 
-    generate_confirmed_event_participants_list,
-    set_chat
-)
-from services.availability_service import ask_availability, send_confirmed_event_availability
+from services.share_service import put_ctx
 
 # Import from other
 import uuid
 
 logger = logging.getLogger(__name__)
 
+PAGE_SIZE = 10
+
 bot_username = bot.get_me().username
+
 print(f"Bot username: {bot_username}")
 
 def register_share_handlers(bot):
     """Register all share handlers"""
 
-    @bot.message_handler(func=lambda message: message.text.lower().startswith(f"@{bot_username}".lower()))
-    def handle_share(message):
-        """Handle share command"""
-        print("handle_share", message)
-        try:
-            # get message details
+    @bot.message_handler(commands=['share'])
+    def handle_share_command(message):
+            """Handle /share command -> prompt to pick an event inline"""
             chat_id = message.chat.id
-            thread_id = message.message_thread_id
-            event_id = message.text.split(" ")[1]
+            thread_id = getattr(message, "message_thread_id", None)
 
-            # delete message    
-            #bot.delete_message(chat_id=chat_id, message_id=message_id)
+            sent_message = bot.send_message(
+                chat_id=chat_id,
+                message_thread_id=thread_id,
+                text="Please select an event to share in this chat.",
+                reply_markup=markup
+            )
 
-            # set chat
-            set_chat(event_id=event_id, chat_id=chat_id, thread_id=thread_id)
+            token = put_ctx(message.from_user.id, chat_id, sent_message.message_id, thread_id)
 
-            # get event id
-            logger.info(f"Sharing event {event_id}")
-            
-            event = getEvent(event_id)
-            if not event:
-                bot.send_message(message.chat.id, "Event not found. Please create an event first.")
-                return
-            
-            # check if event is confirmed
-            confirmed_event = getConfirmedEvent(event_id)
-            if not confirmed_event:
-                # handle availability selection
-                logger.info(f"Event not confirmed. Availability is not yet set.")
-                ask_availability(chat_id=chat_id, thread_id=thread_id, event_id=event_id)
-                return
-            
-            # handle confirmed event
-            send_confirmed_event_availability(event_id=event_id, chat_id=chat_id, thread_id=thread_id)
-        except Exception as e:
-            logger.error(f"Error sharing event: {e}")
-            bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Failed to share event. Please try again later.")
+            params = f"share_{token}"
+            miniapp_url = f"https://t.me/{bot_username}?start={params}"
+
+            markup = types.InlineKeyboardMarkup()
+            markup.add(
+                types.InlineKeyboardButton(
+                    text="Select Event",
+                    url=miniapp_url
+                )
+            )
+            bot.edit_message_text(
+                chat_id=chat_id,
+                message_thread_id=thread_id,
+                message_id=sent_message.message_id,
+                text="Select an event to share in this chat.",
+                reply_markup=markup
+            )

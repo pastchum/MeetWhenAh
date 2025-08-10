@@ -14,9 +14,9 @@ Use /help to see all available commands.
 HELP_MESSAGE = """
 Here are the commands you can use:
 
-/start - Start the bot and create events
+/create - Create a new event
+/share - Share an event with your friends
 /help - Show this help message
-/togglereminders - Toggle reminders for an event
 
 To create a new event, use the "Create Event" button in our chat.
 """ 
