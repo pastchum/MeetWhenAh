@@ -184,30 +184,15 @@ export default function SharePage() {
                 <p className="text-sm text-gray-500 mt-1">
                   Event ID: {event.id}
                 </p>
-                <p className="text-xs text-blue-600 mt-2">
-                  Click to select this event
-                </p>
                 <div className="mt-3 flex space-x-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      window.open(
-                        `/dragselector?event_id=${event.id}&tele_id=${tele_id}`,
-                        "_blank"
-                      );
-                    }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                  >
-                    Set Availability
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open(`/confirm?event_id=${event.id}`, "_blank");
+                      window.location.href = `/confirm?event_id=${event.id}`;
                     }}
                     className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors"
                   >
-                    View Details
+                    Confirm Event
                   </button>
                 </div>
               </div>

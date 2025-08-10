@@ -153,13 +153,6 @@ def handle_event_creation(message, data):
         
         # Create share button
         markup = types.InlineKeyboardMarkup()
-
-        # Add share button
-        share_button = types.InlineKeyboardButton(
-            text="Share Event",
-            switch_inline_query=f"{event_id}"
-        )
-        markup.add(share_button)
         
         # Add confirm button
         params = f"event_id={event_id}"
@@ -178,7 +171,7 @@ def handle_event_creation(message, data):
         # Send confirmation message
         bot.reply_to(
             message,
-            f"Event created successfully!\n\n{generated_description}\n\nShare this event with others:",
+            f"Event created successfully!\n\n{generated_description}\n\nShare this event with others using the /share command in your group chats! \n\nConfirm the event here when you're ready!",
             reply_markup=markup
         )
         
@@ -222,29 +215,28 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
             # event failed to confirm
             message = f"Failed to confirm event {event['event_name']}."
             bot.send_message(creator_tele_id, message)
-        else:
-            # event confirmed successfully
-            print("Event confirmed successfully.")
-            message = f"Event {event['event_name']} confirmed successfully."
-            bot.send_message(chat_id=creator_tele_id, text=message)
-            print("Message should be sent to creator ", creator["tele_user"])
-            # add participants to event
-            for participant in participants:
-                success = join_event_by_uuid(event_id, participant)
-                if not success:
-                    bot.send_message(chat_id=creator_tele_id, text=f"Failed to add participant to event.")
-            print("participants", participants)
-            # create share message
-            description = generate_confirmed_event_description(event_id)
+            return
+        # event confirmed successfully
+        print("Event confirmed successfully.")
 
-            text = f"Event {event['event_name']} confirmed successfully.\n\n{description}\n\nShare this event with others using the /share command in your group chats!"
+        print("Message should be sent to creator ", creator["tele_user"])
+        # add participants to event
+        for participant in participants:
+            success = join_event_by_uuid(event_id, participant)
+            if not success:
+                bot.send_message(chat_id=creator_tele_id, text=f"Failed to add participant to event.")
+        print("participants", participants)
+        # create share message
+        description = generate_confirmed_event_description(event_id)
 
-            bot.send_message(chat_id=creator_tele_id, text=text)
+        text = f"Event {event['event_name']} confirmed successfully.\n\n{description}\n\nShare this event with others using the /share command in your group chats!"
 
-            # send availability to event chat
-            chat_id, thread_id = get_event_chat(event_id)
-            if chat_id:
-                ask_join(chat_id, event_id, thread_id)
+        bot.send_message(chat_id=creator_tele_id, text=text)
+
+        # send availability to event chat
+        chat_id, thread_id = get_event_chat(event_id)
+        if chat_id:
+            ask_join(chat_id, event_id, thread_id)
     except Exception as e:
         bot.send_message(chat_id=creator_tele_id, text=f"Error confirming event: {str(e)}")
         return

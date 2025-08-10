@@ -69,7 +69,7 @@ def ask_join(chat_id: int, event_id: str, thread_id: int = None):
             return
         
         # generate event description
-        event_description = generate_confirmed_event_description(event)
+        event_description = generate_confirmed_event_description(event_id)
         
         # add join button
         markup = types.InlineKeyboardMarkup()
