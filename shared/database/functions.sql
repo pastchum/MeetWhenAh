@@ -1,8 +1,8 @@
 CREATE OR REPLACE FUNCTION get_unconfirmed_active_events_at_noon_local_time()
 RETURNS TABLE (
   event_id UUID,
-  event_name VARCHAR,
-  timezone VARCHAR,
+  event_name TEXT,
+  timezone TEXT,
   local_time TIME
 ) AS $$
 BEGIN
@@ -28,8 +28,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION get_confirmed_events_at_local_noon()
 RETURNS TABLE (
   event_id UUID,
-  event_name VARCHAR,
-  timezone VARCHAR,
+  event_name TEXT,
+  timezone TEXT,
   confirmed_start_time TIMESTAMPTZ,
   confirmed_end_time TIMESTAMPTZ,
   local_current_time TIME
@@ -57,8 +57,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION get_confirmed_events_starting_soon()
 RETURNS TABLE (
   event_id UUID,
-  event_name VARCHAR,
-  timezone VARCHAR,
+  event_name TEXT,
+  timezone TEXT,
   confirmed_start_time TIMESTAMPTZ,
   confirmed_end_time TIMESTAMPTZ,
   local_current_time TIME
