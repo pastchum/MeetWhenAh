@@ -32,13 +32,12 @@ def register_share_handlers(bot):
                 chat_id=chat_id,
                 message_thread_id=thread_id,
                 text="Please select an event to share in this chat.",
-                reply_markup=markup
             )
 
             token = put_ctx(message.from_user.id, chat_id, sent_message.message_id, thread_id)
 
-            params = f"share_{token}"
-            miniapp_url = f"https://t.me/{bot_username}?start={params}"
+            params = f"share={token}"
+            miniapp_url = f"https://t.me/{bot_username}/meetwhenah?startapp={params}"
 
             markup = types.InlineKeyboardMarkup()
             markup.add(
@@ -49,7 +48,6 @@ def register_share_handlers(bot):
             )
             bot.edit_message_text(
                 chat_id=chat_id,
-                message_thread_id=thread_id,
                 message_id=sent_message.message_id,
                 text="Select an event to share in this chat.",
                 reply_markup=markup

@@ -9,6 +9,9 @@ export default function Home() {
     if (startParam) {
       const params = startParam.split("=");
       const eventId = params[1];
+      if (params[0] === "share") {
+        window.location.href = `/share?token=${eventId}`;
+      }
       if (params[0] === "dragselector" && eventId) {
         window.location.href = `/dragselector?event_id=${eventId}`;
       }

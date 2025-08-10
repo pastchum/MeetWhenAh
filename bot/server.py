@@ -10,9 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from telegram.handlers.event_handlers import handle_event_confirmation
 
 # Import services
-from services.database_service import getEntry
-from services.event_service import get_event_best_time
+from services.event_service import get_event_best_time, getEvent, getConfirmedEvent, generate_confirmed_event_description, generate_event_description
 from services.reminder_service import send_daily_availability_reminders, send_daily_event_reminders, send_upcoming_event_reminders
+from services.share_service import get_ctx, handle_share_event, set_chat
 
 from telebot.types import Update
 
@@ -112,6 +112,29 @@ async def send_reminders(api_key: str = Header(...)):
 
     return {"success": True}
 
+@app.post("/api/share")
+async def share_event(request: Request):
+    """Share an event"""
+    data = await request.json()
+    token = data["token"]
+    event_id = data["event_id"]
+
+    # get the event
+    event = getEvent(event_id)
+    if not event:
+        return {"error": "Event not found"}
+
+    # get the event chat details
+    ctx = get_ctx(token)
+    if not ctx:
+        return {"error": "Invalid token"}
+    print("ctx", ctx)
+    # edit the message
+    success = handle_share_event(event_id, ctx["tele_id"], ctx["chat_id"], ctx["message_id"], ctx["thread_id"])
+    if not success:
+        return {"error": "Failed to handle share event"}
+    
+    return {"success": True}
 
 if __name__ == "__main__":
     # Load environment variables
