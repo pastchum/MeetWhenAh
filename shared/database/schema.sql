@@ -29,9 +29,9 @@ CREATE TABLE users (
 -- 2) Events
 CREATE TABLE events (
   event_id        UUID            PRIMARY KEY,
-    event_name      VARCHAR(255)    NOT NULL,
-    event_description VARCHAR(255)    NOT NULL,    
-    event_type      VARCHAR(255)    NOT NULL,
+  event_name      TEXT    NOT NULL,
+  event_description TEXT    NOT NULL,    
+  event_type      TEXT    NOT NULL,
   start_date      TIMESTAMPTZ       NOT NULL,      
   end_date        TIMESTAMPTZ       NOT NULL,      
   start_hour     TIMETZ         NOT NULL DEFAULT '00:00:00.000000+08:00',
@@ -40,7 +40,7 @@ CREATE TABLE events (
   min_duration INT NOT NULL DEFAULT 2, -- in terms of blocks
   max_duration INT NOT NULL DEFAULT 4, -- in terms of blocks
   is_reminders_enabled BOOLEAN NOT NULL DEFAULT false,
-  timezone VARCHAR(255) NOT NULL DEFAULT 'Asia/Singapore',
+  timezone TEXT NOT NULL DEFAULT 'Asia/Singapore',
   creator         UUID            NOT NULL
                     REFERENCES users(uuid)
                     ON DELETE RESTRICT,
