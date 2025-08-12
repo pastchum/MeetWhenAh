@@ -6,6 +6,7 @@ module.exports = {
   },
   moduleDirectories: ['node_modules', '<rootDir>/'],
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
+  testMatch: ['<rootDir>/__tests__/**/*.test.{js,jsx,ts,tsx}'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '\\.(css|less|scss)$': 'identity-obj-proxy',

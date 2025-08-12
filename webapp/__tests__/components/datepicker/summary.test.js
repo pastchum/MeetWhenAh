@@ -1,5 +1,5 @@
 import { render, screen, cleanup } from "@testing-library/react";
-import Summary from '../datepicker/Summary';
+import Summary from '../../components/datepicker/Summary';
 
 afterEach(() => {
   cleanup();

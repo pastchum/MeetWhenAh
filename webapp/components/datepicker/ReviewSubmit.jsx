@@ -1,6 +1,6 @@
 import PreviousButton from '@/components/datepicker/PreviousButton'
 
-export default function ReviewSubmit({ data, prevComponent}) {
+export default function ReviewSubmit({ data, prevComponent, nextComponent}) {
     const handleSubmit = () => {
         // Handle form submission logic here
         const formData = {
@@ -125,7 +125,7 @@ export default function ReviewSubmit({ data, prevComponent}) {
             <div className="absolute bottom-0 right-0">
                 <button
                     type="button"
-                    onClick={handleSubmit}
+                    onClick={() => nextComponent(data)}
                     className="inline-flex items-center justify-center gap-x-2 rounded-md bg-[#8c2e2e] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#8c2e2e]/20 hover:bg-[#722525] hover:shadow-md hover:shadow-[#c44545]/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8c2e2e] transition-all duration-150 minecraft-font border-2 border-[#8c2e2e]"
                 >
                     <span className="text-white minecraft-font text-base leading-none flex items-center">▶</span>
