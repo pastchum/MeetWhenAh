@@ -26,17 +26,17 @@ const DayHeader: React.FC<DayHeaderProps> = ({
 
   return (
     <div
-      className={`p-2 border-r border-b border-gray-200 font-medium transition-colors duration-150 ${
+      className={`p-2 border-r border-b border-[#333333] font-medium transition-colors duration-150 ${
         isDisabled
-          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-          : "bg-gray-50 text-gray-700 cursor-pointer hover:bg-blue-50"
+          ? "bg-[#1a1a1a] text-[#666666] cursor-not-allowed"
+          : "bg-[#0a0a0a] text-[#e5e5e5] cursor-pointer hover:bg-[#1a1a1a]"
       }`}
       style={{ width }}
       onClick={handleClick}
     >
       <div className="text-center">
-        <div className="text-sm text-gray-700">{format(date, "EEE")}</div>
-        <div className="text-xs text-gray-500">{format(date, "MMM d")}</div>
+        <div className="text-sm text-[#e5e5e5]">{format(date, "EEE")}</div>
+        <div className="text-xs text-[#a0a0a0]">{format(date, "MMM d")}</div>
       </div>
     </div>
   );

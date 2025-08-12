@@ -115,7 +115,7 @@ const TimeGrid: React.FC<TimeGridProps> = ({
         return (
           <div
             key={dayIdx}
-            className="border-r border-gray-200"
+            className="border-r border-[#333333]"
             style={{ width: columnWidth }}
           >
             {timeSlots.map((time, timeIdx) => (

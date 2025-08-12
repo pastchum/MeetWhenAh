@@ -27,7 +27,7 @@ const TimeColumn: React.FC<TimeColumnProps> = ({ timeSlots }) => {
   };
 
   return (
-    <div className="w-16 flex-shrink-0 border-r border-gray-200">
+    <div className="w-16 flex-shrink-0 border-r border-[#333333]">
       {timeSlots.map((minutes, idx) => {
         const isHour = isEvenHour(minutes);
         const isHalf = isHalfHour(minutes);
@@ -42,10 +42,10 @@ const TimeColumn: React.FC<TimeColumnProps> = ({ timeSlots }) => {
                 isLastRow
                   ? "border-b-0"
                   : isHalf
-                  ? "border-b-2 border-gray-800 font-medium text-gray-800"
+                  ? "border-b-2 border-[#333333] font-medium text-[#a0a0a0]"
                   : isHour
-                  ? "border-b border-gray-400 text-gray-500"
-                  : "border-b border-gray-200 text-gray-400"
+                  ? "border-b border-[#444444] text-[#a0a0a0]"
+                  : "border-b border-[#555555] text-[#a0a0a0]"
               }
             `}
           >

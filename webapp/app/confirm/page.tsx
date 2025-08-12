@@ -320,7 +320,7 @@ export default function ConfirmPage() {
   return (
     <main className="minecraft-font bg-black min-h-screen p-4">
       <div className="max-w-7xl mx-auto">
-        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] shadow-lg mb-6">
+        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] rounded-lg shadow-lg mb-6">
           <CardHeader className="pb-2">
             <div className="w-full">
               <h1 className="text-3xl font-bold mb-2 text-white">
@@ -337,7 +337,7 @@ export default function ConfirmPage() {
           </CardHeader>
         </Card>
 
-        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] shadow-lg mb-6">
+        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] rounded-lg shadow-lg mb-6">
           <CardHeader className="pb-2">
             <h2 className="text-xl font-semibold text-white">
               Participant Availability Heat Map
@@ -367,19 +367,21 @@ export default function ConfirmPage() {
               </div>
             )}
 
-            <div className="border border-[#333333] rounded-lg shadow-sm">
-              <ConfirmCalendar
-                startDate={eventStartDate}
-                endDate={eventEndDate}
-                numDays={Math.min(totalDays, 7)}
-                eventId={eventId || ""}
-                onParticipantCountChange={handleParticipantCountChange}
-              />
+            <div className="bg-[#0a0a0a] rounded-lg shadow-sm overflow-hidden">
+              <div className="h-64 overflow-y-auto">
+                <ConfirmCalendar
+                  startDate={eventStartDate}
+                  endDate={eventEndDate}
+                  numDays={Math.min(totalDays, 7)}
+                  eventId={eventId || ""}
+                  onParticipantCountChange={handleParticipantCountChange}
+                />
+              </div>
             </div>
           </CardBody>
         </Card>
 
-        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] shadow-lg">
+        <Card className="bg-[#0a0a0a] border border-[#8c2e2e] rounded-lg shadow-lg">
           <CardHeader className="pb-2">
             <h2 className="text-xl font-semibold text-white">
               Confirm Event Timing
@@ -396,7 +398,7 @@ export default function ConfirmPage() {
               color="primary"
               variant="solid"
               size="lg"
-              className="w-full mt-4"
+              className="w-full mt-4 transition-all duration-150 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)]"
               onPress={handleConfirm}
               isDisabled={loading || submitting || !isEventCreator}
               isLoading={submitting}
