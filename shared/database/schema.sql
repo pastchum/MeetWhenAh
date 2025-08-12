@@ -29,9 +29,9 @@ CREATE TABLE users (
 -- 2) Events
 CREATE TABLE events (
   event_id        UUID            PRIMARY KEY,
-    event_name      VARCHAR(255)    NOT NULL,
-    event_description VARCHAR(255)    NOT NULL,    
-    event_type      VARCHAR(255)    NOT NULL,
+  event_name      TEXT    NOT NULL,
+  event_description TEXT    NOT NULL,    
+  event_type      TEXT    NOT NULL,
   start_date      TIMESTAMPTZ       NOT NULL,      
   end_date        TIMESTAMPTZ       NOT NULL,      
   start_hour     TIMETZ         NOT NULL DEFAULT '00:00:00.000000+08:00',
@@ -40,7 +40,7 @@ CREATE TABLE events (
   min_duration INT NOT NULL DEFAULT 2, -- in terms of blocks
   max_duration INT NOT NULL DEFAULT 4, -- in terms of blocks
   is_reminders_enabled BOOLEAN NOT NULL DEFAULT false,
-  timezone VARCHAR(255) NOT NULL DEFAULT 'Asia/Singapore',
+  timezone TEXT NOT NULL DEFAULT 'Asia/Singapore',
   creator         UUID            NOT NULL
                     REFERENCES users(uuid)
                     ON DELETE RESTRICT,
@@ -103,6 +103,30 @@ CREATE TABLE blocked_timings (
     end_time            TIMESTAMPTZ            NOT NULL,
     PRIMARY KEY (uuid, start_time, end_time)
 );
+
+-- 6) One-time webapp token to edit the original /share message
+create table if not exists webapp_share_tokens (
+  token        text primary key,
+  tele_id      bigint not null references users(tele_id),            -- Telegram user id
+  chat_id      bigint not null,
+  thread_id    bigint,                     -- topic id, nullable
+  message_id   bigint not null,
+  created_at   timestamptz not null default now(),
+  expires_at   timestamptz not null,
+  used_at      timestamptz
+);
+
+create index if not exists idx_share_tokens_expires on webapp_share_tokens (expires_at);
+create index if not exists idx_share_tokens_user    on webapp_share_tokens (user_id);
+
+-- RLS: only your backend (service key) can touch this table
+alter table webapp_share_tokens enable row level security;
+create policy "service only"
+  on webapp_share_tokens
+  for all
+  using (true)
+  with check (true);
+
 
 -- indexes
 CREATE INDEX IF NOT EXISTS idx_events_creator ON events (creator);

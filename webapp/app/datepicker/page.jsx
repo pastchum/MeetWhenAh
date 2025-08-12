@@ -28,28 +28,6 @@ export default function DatePicker() {
     }
   };
 
-  const submit = () => {
-    const formData = {
-      ...data,
-      start: data.start?.toString() || "",
-      end: data.end?.toString() || ""
-    };
-    console.log("Submitting to Telegram:", formData);
-    
-    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      try {
-        tg.sendData(JSON.stringify(formData, null, 4));
-        tg.close();
-      } catch (error) {
-        console.warn('Telegram WebApp error:', error);
-        console.log("Form submitted:", formData);
-      }
-    } else {
-      console.log("Form submitted:", formData);
-    }
-  };
-
   const prevComponent = () => {
     console.log("prev component");
     setCurrentComponent(prev => prev - 1);
@@ -104,7 +82,7 @@ export default function DatePicker() {
         {currentComponent === 2 && (
           <Card className="bg-[#0a0a0a] border border-white shadow-lg">
             <CardBody className="p-6">
-              <ReviewSubmit data={data} prevComponent={prevComponent} nextComponent={submit} />
+              <ReviewSubmit data={data} prevComponent={prevComponent} />
             </CardBody>
           </Card>
         )}

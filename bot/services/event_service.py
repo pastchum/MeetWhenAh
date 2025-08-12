@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Import from best time algo
 from best_time_algo.best_time_algo import BestTimeAlgo
@@ -35,6 +36,12 @@ def create_event(event_name: str, event_description: str, start_date: str, end_d
         "start_hour": start_hour,
         "end_hour": end_hour,
         "creator": creator_uuid,
+        "is_reminders_enabled": True,
+        "cancelled": False,
+        "min_participants": 2,
+        "min_duration": 2,
+        "max_duration": 4,
+        "timezone": "Asia/Singapore"
     }
     print(event_data)
     success = setEntry("events", event_id, event_data)
@@ -91,24 +98,6 @@ def leave_event(event_id: str, tele_id: str) -> bool:
         return False
     user_uuid = user["uuid"]
     success = deleteEntry("membership", "event_id", event_id, "user_uuid", user_uuid)
-    if not success:
-        return False
-    return True
-
-def set_chat(event_id: str, chat_id: int, thread_id: int = None) -> bool:
-    """Set a chat for an event"""
-    print("Setting chat for event", event_id, chat_id, thread_id)
-    event = getEvent(event_id)
-    if not event:
-        print("Event not found")
-        return False
-    chat_data = {
-        "event_id": event_id,
-        "chat_id": chat_id,
-        "thread_id": thread_id,
-        "is_reminders_enabled": False
-    }
-    success = setEntry("event_chats", event_id, chat_data)
     if not success:
         return False
     return True
@@ -318,6 +307,12 @@ def generate_event_description(event: dict) -> str:
         end_hour = format_time(parse_time(event['end_hour']))
         description += f"Start Time: {start_hour} to End Time: {end_hour}\n"
     return description
+
+def generate_confirmed_event_markup(event_id: str) -> InlineKeyboardMarkup:
+    """Generate a markup for a confirmed event"""
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("Join Event", callback_data=f"join_event_{event_id}"))
+    return markup
 
 if __name__ == "__main__":
     event_id = "44e211d3-a094-4133-9ea0-4539c091c07c"
