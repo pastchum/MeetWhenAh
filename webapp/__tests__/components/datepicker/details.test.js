@@ -1,32 +1,62 @@
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import Details from "@/components/datepicker/Details";
-import Name from "@/components/datepicker/Details/Name";
-import TextArea from "@/components/datepicker/Details/TextArea";
+import EventForm from "@/components/datepicker/EventForm";
 
 afterEach(() => {
   cleanup();
 })
 
-test("Details page works", () => {
-  render(<Details/>);
+test("EventForm renders correctly", () => {
+  const nextComponent = jest.fn();
+  const initialData = { event_name: "", event_details: "" };
+  
+  render(<EventForm initialData={initialData} nextComponent={nextComponent} />);
+  
   const detailElement = screen.getByTestId('details');
   expect(detailElement).toBeInTheDocument();
 });
 
-test("Name change works", () => {
-  const handleInputChange = jest.fn();
-  render(<Name handleInputChange={handleInputChange}/>);
-  const detailElement = screen.getByPlaceholderText("Name of your event!");
-  expect(detailElement).toBeInTheDocument();
-  fireEvent.change(detailElement, {target: {value: 'aa'}});
-  expect(handleInputChange).toHaveBeenCalledTimes(1);
+test("Event name input works", () => {
+  const nextComponent = jest.fn();
+  const initialData = { event_name: "", event_details: "" };
+  
+  render(<EventForm initialData={initialData} nextComponent={nextComponent} />);
+  
+  const nameInput = screen.getByPlaceholderText("Enter event name");
+  expect(nameInput).toBeInTheDocument();
+  
+  fireEvent.change(nameInput, {target: {value: 'Test Event'}});
+  expect(nameInput.value).toBe('Test Event');
 });
 
-test("Textarea change works", () => {
-  const handleInputChange = jest.fn();
-  render(<TextArea handleInputChange={handleInputChange}/>);
-  const detailElement = screen.getByPlaceholderText("Details about your event");
-  expect(detailElement).toBeInTheDocument();
-  fireEvent.change(detailElement, {target: {value: 'aa'}});
-  expect(handleInputChange).toHaveBeenCalledTimes(1);
+test("Event details textarea works", () => {
+  const nextComponent = jest.fn();
+  const initialData = { event_name: "", event_details: "" };
+  
+  render(<EventForm initialData={initialData} nextComponent={nextComponent} />);
+  
+  const detailsTextarea = screen.getByPlaceholderText("Describe your event");
+  expect(detailsTextarea).toBeInTheDocument();
+  
+  fireEvent.change(detailsTextarea, {target: {value: 'Test event details'}});
+  expect(detailsTextarea.value).toBe('Test event details');
+});
+
+test("Next button is disabled when event name is empty", () => {
+  const nextComponent = jest.fn();
+  const initialData = { event_name: "", event_details: "" };
+  
+  render(<EventForm initialData={initialData} nextComponent={nextComponent} />);
+  
+  const nextButton = screen.getByTestId('nextbutton');
+  expect(nextButton).toBeDisabled();
+});
+
+test("Next button is enabled when event name is filled", () => {
+  const nextComponent = jest.fn();
+  const initialData = { event_name: "Test Event", event_details: "" };
+  
+  render(<EventForm initialData={initialData} nextComponent={nextComponent} />);
+  
+  const nextButton = screen.getByTestId('nextbutton');
+  expect(nextButton).not.toBeDisabled();
 });
