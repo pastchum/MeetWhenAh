@@ -136,29 +136,29 @@ export default function SharePage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <div className="text-lg">Loading...</div>
+      <div className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
+      <div className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-center">
         <div className="text-red-500 text-lg">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen p-6">
+    <div className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-6">
       <div className="w-full max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6 text-center">Your Events</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-white">Your Events</h1>
 
-        <div className="mb-6 p-4 bg-gray-100 rounded-lg">
-          <p className="text-sm text-gray-600">Token: {token}</p>
-          <p className="text-sm text-gray-600">Tele ID: {tele_id}</p>
-          <p className="text-sm text-gray-600">
+        <div className="mb-6 p-4 bg-[#f8f9fa] rounded-lg shadow-sm">
+          <p className="text-sm text-gray-700">Token: {token}</p>
+          <p className="text-sm text-gray-700">Tele ID: {tele_id}</p>
+          <p className="text-sm text-gray-700">
             Is Owner: {isOwner ? "Yes" : "No"}
           </p>
         </div>
@@ -166,8 +166,8 @@ export default function SharePage() {
         <div className="space-y-4">
           {userEvents.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500 text-lg">No events found</p>
-              <p className="text-gray-400 text-sm mt-2">
+              <p className="text-gray-400 text-lg">No events found</p>
+              <p className="text-gray-500 text-sm mt-2">
                 You haven&apos;t joined any events yet.
               </p>
             </div>
@@ -175,13 +175,13 @@ export default function SharePage() {
             userEvents.map((event) => (
               <div
                 key={event.id}
-                className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-[#f8f9fa] rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
                 onClick={() => handleEventSelection(event.id)}
               >
                 <h3 className="text-lg font-semibold text-gray-800">
                   {event.name}
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-600 mt-1">
                   Event ID: {event.id}
                 </p>
                 <div className="mt-3 flex space-x-2">
@@ -190,7 +190,7 @@ export default function SharePage() {
                       e.stopPropagation();
                       window.location.href = `/confirm?event_id=${event.id}`;
                     }}
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-all duration-150 minecraft-font shadow-[2px_2px_0px_0px_rgba(0,0,0,0.6)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.7)]"
                   >
                     Confirm Event
                   </button>

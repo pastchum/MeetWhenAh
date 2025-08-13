@@ -49,34 +49,34 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       .padStart(2, "0")}`;
   };
 
-  // Get background color based on availability count (blue heat map)
+  // Get background color based on availability count (maroon heat map)
   const getBackgroundColor = (): string => {
-    if (isDisabled) return "bg-gray-100";
-    if (isSelected && !readOnly) return "bg-blue-500 hover:bg-blue-600";
+    if (isDisabled) return "bg-[#1a1a1a]";
+    if (isSelected && !readOnly) return "bg-[#8c2e2e] hover:bg-[#722525]";
 
-    if (totalParticipants === 0) return "bg-gray-50 hover:bg-gray-100";
+    if (totalParticipants === 0) return "bg-[#0a0a0a] hover:bg-[#1a1a1a]";
 
     const percentage = availabilityCount / totalParticipants;
-    if (percentage === 1) return "bg-blue-600 hover:bg-blue-700";
-    if (percentage >= 0.75) return "bg-blue-400 hover:bg-blue-500";
-    if (percentage >= 0.5) return "bg-blue-200 hover:bg-blue-300";
-    if (percentage >= 0.25) return "bg-blue-100 hover:bg-blue-200";
-    if (percentage > 0) return "bg-blue-50 hover:bg-blue-100";
+    if (percentage === 1) return "bg-[#722525] hover:bg-[#5a1e1e]";
+    if (percentage >= 0.75) return "bg-[#8c2e2e] hover:bg-[#722525]";
+    if (percentage >= 0.5) return "bg-[#a83838] hover:bg-[#8c2e2e]";
+    if (percentage >= 0.25) return "bg-[#c44545] hover:bg-[#a83838]";
+    if (percentage > 0) return "bg-[#d13a3a] hover:bg-[#c44545]";
 
-    return "bg-gray-50 hover:bg-gray-100";
+    return "bg-[#0a0a0a] hover:bg-[#1a1a1a]";
   };
 
   // Get text color based on selection and availability
   const getTextColor = (): string => {
-    if (isDisabled) return "text-gray-400";
+    if (isDisabled) return "text-[#666666]";
     if (isSelected && !readOnly) return "text-white";
 
-    if (totalParticipants === 0) return "text-gray-500";
+    if (totalParticipants === 0) return "text-[#a0a0a0]";
 
     const percentage = availabilityCount / totalParticipants;
     if (percentage >= 0.5) return "text-white";
 
-    return "text-gray-700";
+    return "text-[#e5e5e5]";
   };
 
   // Get cursor style
@@ -119,13 +119,13 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 
     if (isHalfHour) {
       // Half hour mark (e.g. 1:30) - darker border
-      return "border-b-2 border-gray-800";
+      return "border-b-2 border-[#333333]";
     } else if (isEvenHour) {
       // Start of hour (e.g. 1:00) - medium border
-      return "border-b border-gray-400";
+      return "border-b border-[#444444]";
     } else {
       // Other time marks - light border
-      return "border-b border-gray-200";
+      return "border-b border-[#555555]";
     }
   };
 

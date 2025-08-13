@@ -72,19 +72,19 @@ const ConfirmCalendar: React.FC<ConfirmCalendarProps> = ({
 
   return (
     <div
-      className="relative flex flex-col overflow-auto border border-gray-200 rounded-lg"
+      className="relative flex flex-col overflow-auto border border-[#333333] rounded-lg"
       style={{ userSelect: "none" }}
       ref={containerRef}
     >
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8c2e2e]"></div>
         </div>
       )}
 
       {/* Day headers row */}
-      <div className="sticky top-0 z-10 flex bg-white">
-        <div className="w-16 flex-shrink-0 border-r border-b border-gray-200" />
+      <div className="sticky top-0 z-10 flex bg-[#1a1a1a]">
+        <div className="w-16 flex-shrink-0 border-r border-b border-[#333333]" />
         <div className="flex-1 flex">
           {days.map((day, idx) => (
             <DayHeader
