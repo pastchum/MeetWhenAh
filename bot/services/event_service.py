@@ -282,7 +282,7 @@ def generate_confirmed_event_participants_list(event_id: str) -> str:
     for participant in participants:
         user_data = getEntry("users", "uuid", participant["user_uuid"])
         if user_data:
-            description += f"{user_data['tele_user']}\n"
+            description += f"@{user_data['tele_user']}\n"
     return description
 
 def generate_event_description(event: dict) -> str:
