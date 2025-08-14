@@ -92,7 +92,7 @@ export default function ConfirmDatePicker({
 
   return (
     <div className="w-full space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 text-gray-700">
         {/* Start Date */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-300">
