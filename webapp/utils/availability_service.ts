@@ -12,6 +12,9 @@ export interface FrontendAvailabilityData {
   time: string;
 }
 
+const t = (label: string) => console.time(label);
+const tEnd = (label: string) => console.timeEnd(label);
+
 export class AvailabilityService {
   /**
    * Get a user's availability for an event
@@ -112,6 +115,7 @@ export class AvailabilityService {
    */
   async getEventAvailability(eventId: string): Promise<Record<string, AvailabilityData[]>> {
     try {
+      t("supabase call 1");
       // Get all availability blocks for the event
       const { data: availabilityBlocks, error } = await supabase
         .from('availability_blocks')
@@ -122,22 +126,27 @@ export class AvailabilityService {
         console.error('Error getting event availability:', error);
         return {};
       }
-
+      tEnd("supabase call 1");
       // Group by user
       const availabilityByUser: Record<string, AvailabilityData[]> = {};
-      
+      const UuidsToTeleIds = new Map<string, string>();
+      t("loop 1");
       for (const block of availabilityBlocks) {
         const userUuid = block.user_uuid;
         if (userUuid) {
-          // Get user details to get tele_id
-          const { data: userData } = await supabase
-            .from('users')
-            .select('tele_id')
-            .eq('uuid', userUuid)
-            .single();
-
-          if (userData) {
-            const teleId = userData.tele_id;
+          if (!UuidsToTeleIds.has(userUuid)) {
+            // Get user details to get tele_id
+            const { data: userData } = await supabase
+              .from('users')
+              .select('tele_id')
+              .eq('uuid', userUuid)
+              .single();
+            if (userData) {
+              UuidsToTeleIds.set(userUuid, userData.tele_id);
+            }
+          }
+          const teleId = UuidsToTeleIds.get(userUuid);
+          if (teleId) {
             if (!availabilityByUser[teleId]) {
               availabilityByUser[teleId] = [];
             }
@@ -145,7 +154,7 @@ export class AvailabilityService {
           }
         }
       }
-
+      tEnd("loop 1");
       return availabilityByUser;
     } catch (error) {
       console.error('Error getting event availability:', error);

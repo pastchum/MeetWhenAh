@@ -45,8 +45,20 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   const slotRef = useRef<HTMLDivElement>(null);
 
   // Check if this slot is disabled (date is after end date)
-  const isDisabled = endDate ? new Date(day) > endDate : false;
-
+  // Check if this slot is disabled (date is after end date)
+  const isDisabled = endDate
+    ? (() => {
+        // Parse day string (YYYY-MM-DD) as a date in local timezone
+        const dayDate = new Date(day + "T00:00:00");
+        // Normalize endDate to start of day for proper comparison
+        const endDateStartOfDay = new Date(
+          endDate.getFullYear(),
+          endDate.getMonth(),
+          endDate.getDate()
+        );
+        return dayDate > endDateStartOfDay;
+      })()
+    : false;
   // Handle mouse/touch down for drag start
   const handlePointerDown = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
@@ -122,8 +134,8 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
           ${isDragging && isSelected ? "scale-95" : ""}
         `}
         classNames={{
-          base: isDisabled 
-            ? "bg-dark-tertiary cursor-not-allowed border-0" 
+          base: isDisabled
+            ? "bg-dark-tertiary cursor-not-allowed border-0"
             : "border-0",
           content: "p-0",
         }}
