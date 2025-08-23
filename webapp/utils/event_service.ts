@@ -239,12 +239,16 @@ export class EventService {
         return [];
       }
 
+      // set to 00:00 of the current date
+      const currentDate = new Date().toISOString().split('T')[0] + 'T00:00:00.000000+08:00';
+      console.log(currentDate);
+
       // Get events where user is a participant
       const { data: events, error } = await supabase
         .from('events')
         .select('*')
         .eq('creator', userData.uuid)
-        .gt('start_date', new Date().toISOString())
+        .gte('end_date', currentDate)
         .order('created_at', { ascending: false });
 
       if (error) {
