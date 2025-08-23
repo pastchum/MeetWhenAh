@@ -153,15 +153,9 @@ export default function SharePage() {
   return (
     <div className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-6">
       <div className="w-full max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6 text-center text-white">Your Events</h1>
-
-        <div className="mb-6 p-4 bg-[#f8f9fa] rounded-lg shadow-sm">
-          <p className="text-sm text-gray-700">Token: {token}</p>
-          <p className="text-sm text-gray-700">Tele ID: {tele_id}</p>
-          <p className="text-sm text-gray-700">
-            Is Owner: {isOwner ? "Yes" : "No"}
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold mb-6 text-center text-white">
+          Your Events
+        </h1>
 
         <div className="space-y-4">
           {userEvents.length === 0 ? (
@@ -188,7 +182,7 @@ export default function SharePage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      window.location.href = `/confirm?event_id=${event.id}`;
+                      window.location.href = `/confirm?event_id=${event.id}&share_token=${token}`;
                     }}
                     className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-all duration-150 minecraft-font shadow-[2px_2px_0px_0px_rgba(0,0,0,0.6)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.7)]"
                   >

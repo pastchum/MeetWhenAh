@@ -29,6 +29,7 @@ export default function ConfirmPage() {
   const [teleId, setTeleId] = useState<string>("");
   const [isEventCreator, setIsEventCreator] = useState(false);
   const [tg, setTg] = useState<any>(null);
+  const [shareToken, setShareToken] = useState<string>("");
 
   // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
@@ -38,6 +39,11 @@ export default function ConfirmPage() {
 
     const username = urlParams.get("username");
     setTeleUser(username || "");
+
+    const maybeShareToken = urlParams.get("share_token");
+    if (maybeShareToken) {
+      setShareToken(maybeShareToken);
+    }
 
     if (window.Telegram?.WebApp) {
       setTg(window.Telegram.WebApp);
@@ -257,6 +263,27 @@ export default function ConfirmPage() {
         }),
       });
 
+      if (shareToken) {
+        const response = await fetch("/api/share", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            token: shareToken,
+            event_id: eventId,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log("Event shared successfully:", result);
+        } else {
+          console.error("Failed to share event");
+        }
+      } else {
+        console.error("No share token available");
+      }
       // Close the Telegram WebApp if open
       if (tg) {
         tg.close();
@@ -285,16 +312,14 @@ export default function ConfirmPage() {
       <main className="minecraft-font bg-black min-h-screen flex items-center justify-center p-4">
         <Card className="bg-[#0a0a0a] border border-[#8c2e2e] shadow-lg max-w-md w-full">
           <CardHeader className="pb-2">
-            <h1 className="text-2xl font-bold text-white">
-              Event Not Found
-            </h1>
+            <h1 className="text-2xl font-bold text-white">Event Not Found</h1>
           </CardHeader>
           <CardBody>
             <p className="text-[#e5e5e5] mb-4">
               {error || "The requested event could not be found."}
             </p>
-            <Button 
-              color="primary" 
+            <Button
+              color="primary"
               variant="solid"
               onPress={() => window.history.back()}
               className="w-full"
