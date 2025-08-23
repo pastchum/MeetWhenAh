@@ -1,34 +1,12 @@
 import { supabase } from '@/lib/db';
-
-export interface EventData {
-  event_id: string;
-  event_name: string;
-  event_description: string;
-  event_type: string;
-  start_date: string;
-  end_date: string;
-  start_hour: string;
-  end_hour: string;
-  creator: string;
-  created_at: string;
-  min_participants: number;
-  min_duration_blocks: number;
-  max_duration_blocks: number;
-}
-
-export interface EventBlock {
-  start_time: string;
-  end_time: string;
-  participants: string[];
-  duration: number;
-  participant_count: number;
-}
+import { Event, ConfirmedEvent } from '@/types/Event';
+import { EventBlock } from '@/types/EventBlock';
 
 export class EventService {
   /**
    * Get event details by ID
    */
-  async getEvent(eventId: string): Promise<EventData | null> {
+  async getEvent(eventId: string): Promise<Event | null> {
     try {
       const { data, error } = await supabase
         .from('events')
@@ -226,7 +204,7 @@ export class EventService {
   /**
    * Get all events that a user is a member of
    */
-  async getUserEvents(userTeleId: string): Promise<Array<{ id: string; name: string }>> {
+  async getUserEvents(userTeleId: string): Promise<Array<Event>> {
     try {
       // Get user details
       const { data: userData, error: userError } = await supabase
@@ -256,10 +234,44 @@ export class EventService {
         return [];
       }
 
-      return events.map(event => ({
-        id: event.event_id,
-        name: event.event_name || 'Unnamed Event'
-      }));
+      return events;
+    } catch (error) {
+      console.error('Error getting user events:', error);
+      return [];
+    }
+  }
+
+  async getUserConfirmedEvents(userTeleId: string): Promise<Array<ConfirmedEvent>> {
+    try {
+      // Get user details
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('uuid')
+        .eq('tele_id', userTeleId)
+        .single();
+
+      if (userError || !userData) {
+        return [];
+      }
+
+      // set to 00:00 of the current date
+      const currentDate = new Date().toISOString().split('T')[0] + 'T00:00:00.000000+08:00';
+      console.log(currentDate);
+
+      // Get events where user is a participant
+      const { data: confirmedEvents, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('creator', userData.uuid)
+        .gte('end_date', currentDate)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error getting user confirmed events:', error);
+        return [];
+      }
+
+      return confirmedEvents;
     } catch (error) {
       console.error('Error getting user events:', error);
       return [];

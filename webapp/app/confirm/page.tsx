@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import ConfirmCalendar from "@/components/confirm/ConfirmCalendar";
 import { fetchEventFromAPI } from "@/routes/events_routes";
-import { EventData } from "@/utils/event_service";
+import { Event } from "@/types/Event";
 import {
   fetchUserDataFromId,
   fetchUserDataFromUsername,
@@ -16,7 +15,7 @@ export default function ConfirmPage() {
   // Telegram viewport setup
   useTelegramViewport();
 
-  const [eventDetails, setEventDetails] = useState<EventData | null>(null);
+  const [eventDetails, setEventDetails] = useState<Event | null>(null);
   const [bestStart, setBestStart] = useState("");
   const [bestEnd, setBestEnd] = useState("");
   const [loading, setLoading] = useState(true);
