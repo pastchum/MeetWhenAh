@@ -47,38 +47,34 @@ def register_event_handlers(bot):
 
     @bot.message_handler(commands=['create'])
     def send_welcome(message):
-        if message.chat.type == 'private':
-            tele_id = str(message.from_user.id)
-            db_result = getUser(tele_id)
-            if db_result is None:
-                print("User not found in DB, creating new entry.", message.from_user.id)
-                username = str(message.from_user.username)
-                setUser(tele_id, username)
-            else:
-                if not db_result["initialised"]:
-                    updateUserInitialised(tele_id)
-                    updateUserCalloutCleared(tele_id)
-                if db_result["tele_user"] != str(message.from_user.username):
-                    print("Username changed, updating in DB.")
-                    updateUsername(message.from_user.id, message.from_user.username)
-
-            # Create web app URL for datepicker
-            web_app_url = create_web_app_url(
-                path='/datepicker',
-                web_app_number=0  # 0 for create event
-            )
-            
-            markup = types.ReplyKeyboardMarkup(row_width=1)
-            web_app_info = types.WebAppInfo(url=web_app_url)
-            web_app_button = types.KeyboardButton(text="Create Event", web_app=web_app_info)
-            markup.add(web_app_button)
-
-            bot.reply_to(message, WELCOME_MESSAGE, reply_markup=markup)
+        tele_id = str(message.from_user.id)
+        db_result = getUser(tele_id)
+        if db_result is None:
+            # User doesn't exist, create them
+            print("User not found in DB, creating new entry.", message.from_user.id)
+            username = str(message.from_user.username)
+            setUser(message.from_user.id, username)
         else:
-            # In group chat, provide instructions to message the bot privately
-            welcome_text = "To create an event, please message me privately!"
-            markup = None
-            bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
+            if not db_result["initialised"]:
+                updateUserInitialised(tele_id)
+                updateUserCalloutCleared(tele_id)
+            if db_result["tele_user"] != str(message.from_user.username):
+                print("Username changed, updating in DB.")
+                updateUsername(message.from_user.id, message.from_user.username)
+
+        # Create web app URL for datepicker
+        web_app_url = create_web_app_url(
+            path='/datepicker',
+            web_app_number=0  # 0 for create event
+        )
+        
+        markup = types.ReplyKeyboardMarkup(row_width=1)
+        web_app_info = types.WebAppInfo(url=web_app_url)
+        web_app_button = types.KeyboardButton(text="Create Event", web_app=web_app_info)
+        markup.add(web_app_button)
+
+        # Send the same message for both private and group chats
+        bot.reply_to(message, WELCOME_MESSAGE, reply_markup=markup)
 
 
     @bot.message_handler(content_types=['web_app_data'])
@@ -169,9 +165,16 @@ def handle_event_creation(message, data):
         generated_description = generate_event_description(event)
 
         # Send confirmation message
+        if message.chat.type == 'private':
+            success_message = f"Event created successfully!\n\n{generated_description}\n\nShare this event with others using the /share command in your group chats! \n\nConfirm the event here when you're ready!"
+        else:
+            # In group chat, mention who created the event
+            username = message.from_user.username or message.from_user.first_name
+            success_message = f"@{username} made an event!\n\n{generated_description}\n\nShare this event with others using the /share command in your group chats! \n\nConfirm the event here when you're ready!"
+        
         bot.reply_to(
             message,
-            f"Event created successfully!\n\n{generated_description}\n\nShare this event with others using the /share command in your group chats! \n\nConfirm the event here when you're ready!",
+            success_message,
             reply_markup=markup
         )
         
