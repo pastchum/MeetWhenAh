@@ -14,6 +14,7 @@ export interface EventData {
   min_participants: number;
   min_duration_blocks: number;
   max_duration_blocks: number;
+  timezone?: string;
 }
 
 export interface EventBlock {
@@ -226,7 +227,7 @@ export class EventService {
   /**
    * Get all events that a user is a member of
    */
-  async getUserEvents(userTeleId: string): Promise<Array<{ id: string; name: string }>> {
+  async getUserEvents(userTeleId: string): Promise<EventData[]> {
     try {
       // Get user details
       const { data: userData, error: userError } = await supabase
@@ -256,10 +257,7 @@ export class EventService {
         return [];
       }
 
-      return events.map(event => ({
-        id: event.event_id,
-        name: event.event_name || 'Unnamed Event'
-      }));
+      return events;
     } catch (error) {
       console.error('Error getting user events:', error);
       return [];

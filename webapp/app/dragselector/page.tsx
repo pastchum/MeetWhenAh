@@ -13,7 +13,7 @@ import {
 } from "@/routes/user_routes";
 import { useTelegramViewport } from "@/hooks/useTelegramViewport";
 import { Button } from "@nextui-org/react";
-import { getLocalDayAndTime } from "@/lib/datetime-utils";
+import { getLocalDayAndTime } from "@/utils/datetime-utils";
 
 // Interface for aggregated time periods
 interface TimePeriod {

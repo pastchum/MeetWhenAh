@@ -14,7 +14,7 @@ import {
   getUtcDatetime,
   getLocalDayAndTime,
   isSlotSelected,
-} from "@/lib/datetime-utils";
+} from "@/utils/datetime-utils";
 
 interface WeekCalendarProps {
   startDate?: Date;
