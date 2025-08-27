@@ -46,7 +46,11 @@ def ask_availability(chat_id: int, event_id: str, thread_id: int = None):
         # generate event description
         event_description = generate_event_description(event)
 
-        text = event_description + "\n\n" + "Please select your availability for " + event['event_name'] + ":"
+        text = f"""❓ **Select Your Availability**
+
+{event_description}
+
+Please select your availability for **{event['event_name']}**:"""
 
         bot.send_message(
             chat_id=chat_id,
