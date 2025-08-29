@@ -8,6 +8,9 @@ from ..config.config import bot
 # Import from services
 from services.share_service import put_ctx
 
+# Import from utils
+from utils.message_templates import SHARE_EVENT_PROMPT
+
 # Import from other
 import uuid
 
@@ -31,7 +34,7 @@ def register_share_handlers(bot):
             sent_message = bot.send_message(
                 chat_id=chat_id,
                 message_thread_id=thread_id,
-                text="Please select an event to share in this chat.",
+                text=SHARE_EVENT_PROMPT,
             )
 
             token = put_ctx(message.from_user.id, chat_id, sent_message.message_id, thread_id)
@@ -49,6 +52,6 @@ def register_share_handlers(bot):
             bot.edit_message_text(
                 chat_id=chat_id,
                 message_id=sent_message.message_id,
-                text="Select an event to share in this chat.",
+                text=SHARE_EVENT_PROMPT,
                 reply_markup=markup
             )

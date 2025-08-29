@@ -19,7 +19,7 @@ from .event_service import (
 )
 
 # Import from utils
-from utils.message_templates import HELP_MESSAGE
+from utils.message_templates import HELP_MESSAGE, AVAILABILITY_SELECTION
 from utils.web_app import create_web_app_url
 
 logger = logging.getLogger(__name__)
@@ -46,11 +46,10 @@ def ask_availability(chat_id: int, event_id: str, thread_id: int = None):
         # generate event description
         event_description = generate_event_description(event)
 
-        text = f"""❓ **Select Your Availability**
-
-{event_description}
-
-Please select your availability for **{event['event_name']}**:"""
+        text = AVAILABILITY_SELECTION.format(
+            event_description=event_description,
+            event_name=event['event_name']
+        )
 
         bot.send_message(
             chat_id=chat_id,
