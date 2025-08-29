@@ -14,7 +14,7 @@ from .event_service import getEvent, check_ownership, generate_confirmed_event_p
 import uuid
 from telebot import types
 from utils.message_templates import REMINDER_ON_MESSAGE, REMINDER_OFF_MESSAGE
-from utils.date_utils import format_date_for_message, format_time_from_iso, parse_date
+from utils.date_utils import format_date_for_message, format_time_from_iso, parse_date, format_date_month_day, format_time_from_iso_am_pm
 
 EVENT_REMINDER_HOUR_OFFSET = 2
 
@@ -114,7 +114,16 @@ def generate_availability_reminder_message(event_id: str) -> str:
     if not event:
         return ""
     
-    return f"Reminder: Please input your availability for the event {event['event_name']}."
+    # Format dates
+    start_date = parse_date(event['start_date'])
+    end_date = parse_date(event['end_date'])
+    start_date_str = format_date_month_day(start_date)
+    end_date_str = format_date_month_day(end_date)
+    
+    return f"""❓ **Reminder**: Please input your availability for the event
+
+📅 **Event**: **{event['event_name']}**
+⏰ **Date Range**: {start_date_str} - {end_date_str}"""
 
 def generate_event_reminder_message(event_id: str) -> str:
     """Generate a reminder message for an event"""
@@ -129,7 +138,10 @@ def generate_event_reminder_message(event_id: str) -> str:
 
     participants = generate_confirmed_event_participants_list(event_id)
 
-    return f"Reminder: {event['event_name']} is happening soon!\n\nParticipants:\n{participants}"
+    return f"""❗ **Reminder**: **{event['event_name']}** is happening soon!
+
+👥 **Participants**:
+{participants}"""
 
 def generate_daily_reminder_message(event_id: str) -> str:
     """Generate a reminder message for an event"""
@@ -142,12 +154,15 @@ def generate_daily_reminder_message(event_id: str) -> str:
     if not confirmed_event_data:
         return ""
     confirmed_start_time = confirmed_event_data['confirmed_start_time']
-    confirmed_start_time_str = format_date_for_message(parse_date(confirmed_start_time)) + " " + format_time_from_iso(confirmed_start_time)
+    confirmed_start_time_str = format_date_month_day(parse_date(confirmed_start_time)) + " " + format_time_from_iso_am_pm(confirmed_start_time)
     confirmed_end_time = confirmed_event_data['confirmed_end_time']
-    confirmed_end_time_str = format_date_for_message(parse_date(confirmed_end_time)) + " " + format_time_from_iso(confirmed_end_time)
+    confirmed_end_time_str = format_date_month_day(parse_date(confirmed_end_time)) + " " + format_time_from_iso_am_pm(confirmed_end_time)
 
     participants = generate_confirmed_event_participants_list(event_id)
-    return f"Reminder: {event['event_name']} is happening on {confirmed_start_time_str} to {confirmed_end_time_str}!\n\nParticipants:\n{participants}"
+    return f"""❗ **Reminder**: **{event['event_name']}** is happening on {confirmed_start_time_str} to {confirmed_end_time_str}!
+
+👥 **Participants**:
+{participants}"""
 
 def toggle_reminders(call: types.CallbackQuery, event_id: str, tele_id: str):
     """Toggle reminders for an event"""
