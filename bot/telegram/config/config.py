@@ -50,11 +50,14 @@ try:
 except Exception as e:
     logger.error(f"Failed to set commands: {e}")
 
+# Import from utils
+from utils.message_templates import BOT_TEST_MESSAGE
+
 # Add a test handler to verify bot is working
 @bot.message_handler(commands=['test'])
 def test_command(message):
     logger.info(f"Received test command from {message.from_user.username}")
-    bot.reply_to(message, "Bot is working!")
+    bot.reply_to(message, BOT_TEST_MESSAGE)
 
 # States for conversation handling
 class BotStates(StatesGroup):

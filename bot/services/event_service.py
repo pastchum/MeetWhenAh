@@ -254,8 +254,8 @@ def generate_confirmed_event_description(event_id: str) -> str:
     if not event_data:
         return description
     # add event name and description
-    description += f"📅 **Event**: **{event_data['event_name']}**\n"
-    description += f"📝 **Description**: {event_data['event_description']}\n"
+    description += f"📅 <b>Event</b>: <b>{event_data['event_name']}</b>\n"
+    description += f"📝 <b>Description</b>: {event_data['event_description']}\n"
 
     # parse start time
     start_date = parse_date(confirmed_event_data['confirmed_start_time'])
@@ -268,7 +268,7 @@ def generate_confirmed_event_description(event_id: str) -> str:
     end_time_str = format_time_from_iso_am_pm(confirmed_event_data['confirmed_end_time'])
 
     # add start and end time
-    description += f"⏰ **Duration**: {start_date_str} {start_time_str} to {end_date_str} {end_time_str}\n"
+    description += f"⏰ <b>Duration</b>: {start_date_str} {start_time_str} to {end_date_str} {end_time_str}\n"
 
     return description
 
@@ -293,7 +293,7 @@ def generate_event_description(event: dict) -> str:
     
     # Event name
     if "event_name" in event:
-        description += f"📅 **Event**: **{event['event_name']}**\n"
+        description += f"📅 <b>Event</b>: <b>{event['event_name']}</b>\n"
     
     # Event description (truncated to one line)
     if "event_description" in event:
@@ -301,7 +301,7 @@ def generate_event_description(event: dict) -> str:
         # Truncate to one line and add dots if needed
         if len(desc) > 50:
             desc = desc[:47] + "..."
-        description += f"📝 **Description**: {desc}\n"
+        description += f"📝 <b>Description</b>: {desc}\n"
     
     # Date range
     if "start_date" in event and "end_date" in event:
@@ -309,7 +309,7 @@ def generate_event_description(event: dict) -> str:
         end_date = parse_date(event['end_date'])
         start_date_str = format_date_month_day(start_date)
         end_date_str = format_date_month_day(end_date)
-        description += f"⏰ **Date Range**: {start_date_str} - {end_date_str}\n"
+        description += f"📅 <b>Date Range</b>: {start_date_str} - {end_date_str}\n"
     
     return description
 

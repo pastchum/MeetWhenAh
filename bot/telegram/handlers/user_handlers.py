@@ -13,7 +13,12 @@ from services.user_service import setUserSleepPreferences, setUser, updateUserIn
 from services.event_service import check_membership, join_event, leave_event
 
 # Import from utils
-from utils.message_templates import HELP_MESSAGE
+from utils.message_templates import (
+    HELP_MESSAGE, 
+    SLEEP_START_PROMPT, 
+    SLEEP_END_PROMPT, 
+    SLEEP_INVALID_FORMAT
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +35,7 @@ def register_user_handlers(bot):
         markup = types.ForceReply(selective=False)
         msg = bot.send_message(
             message.chat.id,
-            "Please enter your sleep start time in 24-hour format (HHMM):\n"
+            "😴 <b>Sleep Schedule Setup</b>\n\nPlease enter your sleep start time in 24-hour format (HHMM):\n"
             "For example, 2300 for 11:00 PM",
             reply_markup=markup
         )
@@ -95,7 +100,7 @@ def register_user_handlers(bot):
             markup = types.ForceReply(selective=False)
             msg = bot.send_message(
                 message.chat.id,
-                "Invalid format. Please enter time in HHMM format (e.g., 2300 for 11:00 PM):",
+                "❌ <b>Invalid Format</b>\n\nPlease enter time in HHMM format (e.g., 2300 for 11:00 PM):",
                 reply_markup=markup
             )
             bot.register_next_step_handler(msg, process_sleep_start)
@@ -105,7 +110,7 @@ def register_user_handlers(bot):
         markup = types.ForceReply(selective=False)
         msg = bot.send_message(
             message.chat.id,
-            "Now, please enter your sleep end time in 24-hour format (HHMM):\n"
+            "😴 <b>Sleep Schedule Setup</b>\n\nNow, please enter your sleep end time in 24-hour format (HHMM):\n"
             "For example, 0700 for 7:00 AM",
             reply_markup=markup
         )
@@ -119,7 +124,7 @@ def register_user_handlers(bot):
             markup = types.ForceReply(selective=False)
             msg = bot.send_message(
                 message.chat.id,
-                "Invalid format. Please enter time in HHMM format (e.g., 0700 for 7:00 AM):",
+                "❌ <b>Invalid Format</b>\n\nPlease enter time in HHMM format (e.g., 0700 for 7:00 AM):",
                 reply_markup=markup
             )
             bot.register_next_step_handler(msg, process_sleep_end, start_time)
