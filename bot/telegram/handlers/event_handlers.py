@@ -46,6 +46,9 @@ from utils.message_templates import (
 # Keep track of processed message IDs to prevent duplicate processing
 processed_messages = set()
 
+# Import join_messages tracking from user handlers
+from .user_handlers import join_messages
+
 def register_event_handlers(bot):
     """Register all event-related handlers"""
 
@@ -241,7 +244,14 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
         # send availability to event chat
         chat_id, thread_id = get_event_chat(event_id)
         if chat_id:
-            ask_join(chat_id, event_id, thread_id)
+            message_id = ask_join(chat_id, event_id, thread_id)
+            if message_id:
+                # Track this join message for updates
+                join_messages[event_id] = {
+                    'chat_id': chat_id,
+                    'message_id': message_id,
+                    'thread_id': thread_id
+                }
     except Exception as e:
         bot.send_message(chat_id=creator_tele_id, text=f"Error confirming event: {str(e)}")
         return

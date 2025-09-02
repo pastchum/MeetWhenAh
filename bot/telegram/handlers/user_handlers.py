@@ -11,6 +11,7 @@ from best_time_algo.best_time_algo import DEFAULT_SLEEP_HOURS
 # Import from services
 from services.user_service import setUserSleepPreferences, setUser, updateUserInitialised, updateUserCalloutCleared, updateUsername, getUser
 from services.event_service import check_membership, join_event, leave_event
+from services.availability_service import update_join_message
 
 # Import from utils
 from utils.message_templates import (
@@ -19,6 +20,9 @@ from utils.message_templates import (
     SLEEP_END_PROMPT, 
     SLEEP_INVALID_FORMAT
 )
+
+# Track join messages for updating
+join_messages = {}  # {event_id: {chat_id: message_id, thread_id}}
 
 logger = logging.getLogger(__name__)
 
@@ -75,14 +79,24 @@ def register_user_handlers(bot):
                 bot.answer_callback_query(
                     call.id,
                     f"{call.from_user.username} has left the event.",
-                    show_alert=False
+                    show_alert=True
                 )
             else:
                 join_event(event_id, tele_id)
                 bot.answer_callback_query(
                     call.id,
                     f"{call.from_user.username} has joined the event.",
-                    show_alert=False
+                    show_alert=True
+                )
+            
+            # Update the join message if it exists
+            if event_id in join_messages:
+                message_info = join_messages[event_id]
+                update_join_message(
+                    chat_id=message_info['chat_id'],
+                    message_id=message_info['message_id'],
+                    event_id=event_id,
+                    thread_id=message_info.get('thread_id')
                 )
         except Exception as e:
             logger.error(f"Error in join callback handler: {str(e)}")

@@ -1,5 +1,5 @@
 WELCOME_MESSAGE = """
-❓ <b>Welcome to Meet When Ah?!</b>
+👋 <b>Welcome to Meet When Ah❓ </b>
 
 I help you find the best time to meet with your friends. Here's what I can do:
 
@@ -124,6 +124,7 @@ AVAILABILITY_REMINDER = """
 ❓ <b>Reminder</b>: Please input your availability for the event
 
 📅 <b>Event</b>: <b>{event_name}</b>
+
 ⏰ <b>Possible Dates</b>: {start_date_str} - {end_date_str}
 """
 
