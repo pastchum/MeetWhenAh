@@ -1,16 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import User from "../types/User";
+import { atom, useAtom } from "jotai";
 
-export const useUser = (tele_id?: string) => {
-  const [user, setUser] = useState<User | null>(null);
+const userAtom = atom<User | null>(null);
+
+const useUser = (tele_id?: string) => {
+  const [user, setUser] = useAtom(userAtom);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (tele_id) {
+    if (!tele_id) {
+        setLoading(false);
+        return;
+    }
+
         const fetchUser = async () => {
         try {
-            const response = await fetch(`/api/user/get-from-tele-id/${tele_id}`);
+            const response = await fetch(`/api/user/${tele_id}`);
             if (!response.ok) {
             throw new Error("Failed to fetch user");
             }
@@ -23,7 +30,7 @@ export const useUser = (tele_id?: string) => {
             }
         };
         fetchUser();
-    }
+    
   }, [tele_id]);
 
   const updateUser = async (data: Partial<User>) => {
@@ -80,5 +87,14 @@ export const useUser = (tele_id?: string) => {
     }
   };
 
-  return { user, loading, error, updateUser, createUser, deleteUser };
+  const userToReturn = useMemo(() => {
+    if (tele_id && tele_id != user?.tele_id) {
+      return null;
+    }
+    return user;
+  }, [tele_id, user]);
+
+  return { user: userToReturn, loading, error, updateUser, createUser, deleteUser };
 };
+
+export default useUser;

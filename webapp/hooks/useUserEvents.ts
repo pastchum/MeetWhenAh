@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useUser } from "./useUser";
+import { useEffect, useMemo, useState } from "react";
+import useUser from "./useUser";
 import { Event, ConfirmedEvent } from "../types/Event";
 import User from "../types/User";
 
@@ -11,23 +11,13 @@ import User from "../types/User";
  * @returns {Object} - An object containing the user events, confirmed events, unconfirmed events, loading state, error state, and functions to create, delete, and update events
  * 
  */ 
-const useUserEvents = () => {
+const useUserEvents = (tele_id?: string) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [confirmedEvents, setConfirmedEvents] = useState<ConfirmedEvent[]>([]);
   const [unconfirmedEvents, setUnconfirmedEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { user } = useUser();
-      if (user) {
-        setUser(user);
-      }
-    };
-    fetchUser();
-  }, []);
+  const { user } = useUser(tele_id);
 
   useEffect(() => {
     const fetchUserEvents = async () => {
@@ -37,6 +27,7 @@ const useUserEvents = () => {
           throw new Error("Failed to fetch user events");
         }
         const data = await response.json();
+        console.log("data: ", data);
         setEvents(data);
       }
       catch (error) {
@@ -69,7 +60,8 @@ const useUserEvents = () => {
     fetchConfirmedEvents();
 
     // append confirmed event details to confirmed events
-    for (const event of events) {
+    if (Array.isArray(events)) {
+      events.forEach((event, index) => {
       if (confirmedEvents.find((e) => e.event_id === event.event_id)) {
         const e = confirmedEvents.find((e) => e.event_id === event.event_id);
         const eventData = { ...event, ...e };
@@ -79,11 +71,26 @@ const useUserEvents = () => {
             setUnconfirmedEvents([...unconfirmedEvents, event]);
         }
       }
+    })
     }
 
   }, [user, events]);
 
-  return { events, confirmedEvents, unconfirmedEvents, loading, error };
+  const confirmedEventsToShow = useMemo(() => {
+    return confirmedEvents.filter((event) => event.event_id !== null);
+  }, [confirmedEvents]);
+
+  const unconfirmedEventsToShow = useMemo(() => { 
+    return unconfirmedEvents.filter((event) => event.event_id !== null);
+  }, [unconfirmedEvents]);
+
+  return { 
+    events, 
+    confirmedEvents: confirmedEventsToShow, 
+    unconfirmedEvents: unconfirmedEventsToShow, 
+    loading, 
+    error 
+  };
 };
 
 export default useUserEvents;
