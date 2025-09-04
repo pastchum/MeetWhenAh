@@ -3,7 +3,7 @@
 import React from "react";
 import TimeSlot from "./TimeSlot";
 import { format } from "date-fns";
-import { isSlotSelected } from "@/lib/datetime-utils";
+import { isSlotSelected } from "@/utils/datetime-utils";
 
 interface TimeGridProps {
   days: Date[];

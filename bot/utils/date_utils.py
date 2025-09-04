@@ -51,11 +51,36 @@ def format_date_for_message(date: datetime) -> str:
     date_local = date.astimezone(pytz.timezone("Asia/Singapore"))
     return date_local.strftime("%Y-%m-%d")
 
+def format_date_month_day(date: datetime) -> str:
+    """Format a date object to string in "Aug 27" format"""
+    date_local = date.astimezone(pytz.timezone("Asia/Singapore"))
+    return date_local.strftime("%b %d")
+
 def format_time(time: int) -> str:
     """Format a time integer (HHMM) to string (HH:MM)"""
     hours = time // 100
     minutes = time % 100
     return f"{hours:02d}:{minutes:02d}"
+
+def format_time_am_pm(time: int) -> str:
+    """Format a time integer (HHMM) to string (HH:MM AM/PM)"""
+    hours = time // 100
+    minutes = time % 100
+    
+    if hours == 0:
+        period = "AM"
+        display_hours = 12
+    elif hours < 12:
+        period = "AM"
+        display_hours = hours
+    elif hours == 12:
+        period = "PM"
+        display_hours = 12
+    else:
+        period = "PM"
+        display_hours = hours - 12
+    
+    return f"{display_hours}:{minutes:02d} {period}"
 
 def format_time_from_iso(datetime_str: str) -> str:
     """Format a datetime string in ISO format to string in HH:MM format"""
@@ -63,6 +88,13 @@ def format_time_from_iso(datetime_str: str) -> str:
     tz = pytz.timezone("Asia/Singapore")
     date_local = date_utc.astimezone(tz)
     return date_local.strftime("%H:%M")
+
+def format_time_from_iso_am_pm(datetime_str: str) -> str:
+    """Format a datetime string in ISO format to string in HH:MM AM/PM format"""
+    date_utc = parse_date(datetime_str)
+    tz = pytz.timezone("Asia/Singapore")
+    date_local = date_utc.astimezone(tz)
+    return date_local.strftime("%I:%M %p")
 
 def parse_time(time_str: str) -> int:
     """Parse a time string in the form of HH:mm:ss+tz to integer (HHMM)"""

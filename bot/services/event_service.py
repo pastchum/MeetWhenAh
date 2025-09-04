@@ -10,7 +10,7 @@ from .database_service import getEntry, setEntry, updateEntry, getEntries, delet
 from .user_service import getUser
 
 # Import from utils
-from utils.date_utils import format_date_for_message, format_time_from_iso, parse_date, parse_time, format_time
+from utils.date_utils import format_date_for_message, format_time_from_iso, parse_date, parse_time, format_time, format_date_month_day, format_time_from_iso_am_pm
 
 # Import from other
 import uuid
@@ -254,21 +254,21 @@ def generate_confirmed_event_description(event_id: str) -> str:
     if not event_data:
         return description
     # add event name and description
-    description += f"Event Name: {event_data['event_name']}\n"
-    description += f"Event Description: {event_data['event_description']}\n"
+    description += f"📅 <b>Event</b>: <b>{event_data['event_name']}</b>\n"
+    description += f"📝 <b>Description</b>: {event_data['event_description']}\n"
 
     # parse start time
     start_date = parse_date(confirmed_event_data['confirmed_start_time'])
-    start_date_str = format_date_for_message(start_date)
-    start_time_str = format_time_from_iso(confirmed_event_data['confirmed_start_time'])
+    start_date_str = format_date_month_day(start_date)
+    start_time_str = format_time_from_iso_am_pm(confirmed_event_data['confirmed_start_time'])
 
     # parse end time
     end_date = parse_date(confirmed_event_data['confirmed_end_time'])
-    end_date_str = format_date_for_message(end_date)
-    end_time_str = format_time_from_iso(confirmed_event_data['confirmed_end_time'])
+    end_date_str = format_date_month_day(end_date)
+    end_time_str = format_time_from_iso_am_pm(confirmed_event_data['confirmed_end_time'])
 
     # add start and end time
-    description += f"Start Date: {start_date_str} {start_time_str} to End Date: {end_date_str} {end_time_str}\n"
+    description += f"⏰ <b>Duration</b>: {start_date_str} {start_time_str} to {end_date_str} {end_time_str}\n"
 
     return description
 
@@ -290,22 +290,27 @@ def generate_event_description(event: dict) -> str:
     description = ""
     if not event:
         return description
+    
+    # Event name
     if "event_name" in event:
-        description += f"Event Name: {event['event_name']}\n"
+        description += f"📅 <b>Event</b>: <b>{event['event_name']}</b>\n"
+    
+    # Event description (truncated to one line)
     if "event_description" in event:
-        description += f"Event Description: {event['event_description']}\n"
-    if "start_date" in event:
+        desc = event['event_description']
+        # Truncate to one line and add dots if needed
+        if len(desc) > 50:
+            desc = desc[:47] + "..."
+        description += f"📝 <b>Description</b>: {desc}\n"
+    
+    # Date range
+    if "start_date" in event and "end_date" in event:
         start_date = parse_date(event['start_date'])
-        start_date_str = format_date_for_message(start_date)
-        description += f"Start Date: {start_date_str}\n"
-    if "end_date" in event: 
         end_date = parse_date(event['end_date'])
-        end_date_str = format_date_for_message(end_date)
-        description += f"End Date: {end_date_str}\n"
-    if "start_hour" in event and "end_hour" in event:
-        start_hour = format_time(parse_time(event['start_hour']))
-        end_hour = format_time(parse_time(event['end_hour']))
-        description += f"Start Time: {start_hour} to End Time: {end_hour}\n"
+        start_date_str = format_date_month_day(start_date)
+        end_date_str = format_date_month_day(end_date)
+        description += f"📅 <b>Date Range</b>: {start_date_str} - {end_date_str}\n"
+    
     return description
 
 def generate_confirmed_event_markup(event_id: str) -> InlineKeyboardMarkup:

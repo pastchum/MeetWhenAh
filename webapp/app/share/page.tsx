@@ -1,17 +1,16 @@
 "use client";
 import React, { useEffect, useState, useCallback } from "react";
 import { ShareData } from "@/utils/share_service";
-
-interface UserEvent {
-  id: string;
-  name: string;
-}
+import EventCard from "@/components/share/EventCard";
+import { useOverlay } from "@/hooks/useOverlay";
+import { EventData } from "@/utils/event_service";
 
 export default function SharePage() {
+  const { showOverlay } = useOverlay();
   const [token, setToken] = useState<string | null>(null);
   const [tele_id, setTeleId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState<boolean>(false);
-  const [userEvents, setUserEvents] = useState<UserEvent[]>([]);
+  const [userEvents, setUserEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +32,7 @@ export default function SharePage() {
   }, [token]);
 
   const fetchUserEvents = useCallback(
-    async (teleId: string): Promise<UserEvent[]> => {
+    async (teleId: string): Promise<EventData[]> => {
       try {
         const response = await fetch(`/api/user/events/${teleId}`, {
           method: "GET",
@@ -57,7 +56,7 @@ export default function SharePage() {
     []
   );
 
-  const handleEventSelection = async (eventId: string) => {
+  const handleEventShare = async (eventId: string) => {
     if (!token) {
       console.error("No token available for sharing");
       return;
@@ -78,11 +77,48 @@ export default function SharePage() {
       if (response.ok) {
         const result = await response.json();
         console.log("Event shared successfully:", result);
+        
+        // Show success overlay
+        showOverlay((
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] transition-all duration-500">
+            <div className="bg-white rounded-lg p-6 max-w-sm mx-4 text-center minecraft-font shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] transform -translate-y-1 transition-all duration-500">
+              <div className="mb-4">
+                <div className="text-2xl mb-2">🎉</div>
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">Event Shared!</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Your event has been shared to your chat!
+              </p>
+            </div>
+          </div>
+        ), {
+          fadeInDuration: 200,
+          displayDuration: 1300,
+          fadeOutDuration: 200
+        });
       } else {
         console.error("Failed to share event");
+        throw new Error("Failed to share event");
       }
     } catch (error) {
       console.error("Error sharing event:", error);
+      
+      // Show error overlay
+      showOverlay((
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] transition-all duration-500">
+          <div className="bg-red-100 border border-red-400 rounded-lg p-6 max-w-sm mx-4 text-center minecraft-font shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] transform -translate-y-1 transition-all duration-500">
+            <div className="text-2xl mb-2">⚠️</div>
+            <h3 className="text-lg font-bold text-red-800 mb-2">Share Failed</h3>
+            <p className="text-red-600 text-sm mb-4">
+              Failed to share event. Please try again.
+            </p>
+          </div>
+        </div>
+      ), {
+        fadeInDuration: 200,
+        displayDuration: 700,
+        fadeOutDuration: 200
+      });
     }
   };
 
@@ -167,29 +203,12 @@ export default function SharePage() {
             </div>
           ) : (
             userEvents.map((event) => (
-              <div
-                key={event.id}
-                className="bg-[#f8f9fa] rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
-                onClick={() => handleEventSelection(event.id)}
-              >
-                <h3 className="text-lg font-semibold text-gray-800">
-                  {event.name}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Event ID: {event.id}
-                </p>
-                <div className="mt-3 flex space-x-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.location.href = `/confirm?event_id=${event.id}&share_token=${token}`;
-                    }}
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-all duration-150 minecraft-font shadow-[2px_2px_0px_0px_rgba(0,0,0,0.6)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.7)]"
-                  >
-                    Confirm Event
-                  </button>
-                </div>
-              </div>
+              <EventCard
+                key={event.event_id}
+                event={event}
+                token={token}
+                onShare={handleEventShare}
+              />
             ))
           )}
         </div>

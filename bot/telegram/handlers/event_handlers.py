@@ -37,7 +37,11 @@ from services.availability_service import ask_availability, ask_join
 # Import from utils
 from utils.date_utils import daterange, parse_date, format_date_for_message, format_date
 from utils.web_app import create_web_app_url
-from utils.message_templates import WELCOME_MESSAGE
+from utils.message_templates import (
+    WELCOME_MESSAGE, 
+    EVENT_CREATED_SUCCESS, 
+    GROUP_CREATE_INSTRUCTIONS
+)
 
 # Keep track of processed message IDs to prevent duplicate processing
 processed_messages = set()
@@ -92,7 +96,7 @@ def register_event_handlers(bot):
             
             # Parse the web app data
             if not hasattr(message, 'web_app_data') or not message.web_app_data:
-                bot.send_message(message.chat.id, "Invalid web app data received.")
+                bot.send_message(message.chat.id, "❌ <b>Invalid Data</b>\n\nInvalid web app data received.")
                 return
                 
             try:
@@ -104,13 +108,13 @@ def register_event_handlers(bot):
                 elif web_app_number == 1:
                     handle_event_confirmation(message, data)
                 else:
-                    bot.reply_to(message, "Invalid web app data received")
+                    bot.reply_to(message, "❌ <b>Invalid Data</b>\n\nInvalid web app data received")
             
             except json.JSONDecodeError:
-                bot.reply_to(message, "Invalid data format received from web app")
+                bot.reply_to(message, "❌ <b>Invalid Format</b>\n\nInvalid data format received from web app")
                 
         except Exception as e:
-            bot.reply_to(message, f"Error processing web app data: {str(e)}")
+            bot.reply_to(message, f"❌ <b>Processing Error</b>\n\nError processing web app data: {str(e)}")
 
     # Return the bot instance
     return bot
@@ -130,7 +134,7 @@ def handle_event_creation(message, data):
         
         # Validate required fields
         if not all([event_name, event_description, start_date, end_date]):
-            bot.reply_to(message, "Missing required event details")
+            bot.reply_to(message, "❌ <b>Missing Information</b>\n\nMissing required event details")
             return
         
         # Create the event
@@ -144,7 +148,7 @@ def handle_event_creation(message, data):
         )
         
         if not event_id:
-            bot.reply_to(message, "Failed to create event")
+            bot.reply_to(message, "❌ <b>Creation Failed</b>\n\nFailed to create event")
             return
         
         # Create share button
@@ -182,7 +186,7 @@ def handle_event_creation(message, data):
         ask_availability(chat_id=message.chat.id, event_id=event_id, thread_id=None)
         
     except Exception as e:
-        bot.reply_to(message, f"Error creating event: {str(e)}")
+        bot.reply_to(message, f"❌ <b>Creation Error</b>\n\nError creating event: {str(e)}")
 
 def handle_event_confirmation(event_id, best_start_time, best_end_time):
     """Handle event confirmation from web app data"""
