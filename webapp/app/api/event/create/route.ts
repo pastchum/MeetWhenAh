@@ -6,15 +6,16 @@ const eventService = new EventService();
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, start_date, end_date, creator_tele_id } = body;
+    const { token, event_id, event_name, event_details, start, end, creator } = body;
     
-    const eventId = await eventService.createEvent(name, description, start_date, end_date, creator_tele_id);
+    console.log('route: ', body);
+    const eventIdResult = await eventService.createEvent(token, event_id, event_name, event_details, start, end, creator);
     
-    if (eventId) {
+    if (eventIdResult) {
       return NextResponse.json({
         status: 'success',
         message: 'Event created successfully',
-        data: { event_id: eventId }
+        data: { event_id: eventIdResult }
       });
     } else {
       return NextResponse.json({

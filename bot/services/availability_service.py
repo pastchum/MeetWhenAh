@@ -7,6 +7,10 @@ from collections import defaultdict
 # Import bot config
 from telegram.config.config import bot
 
+# Import from events
+from events.events import Event
+from events.confirmed_events import ConfirmedEvent
+
 # Import from services
 from .database_service import getEntry, setEntry, updateEntry
 from .event_service import (
@@ -66,18 +70,16 @@ def ask_join(chat_id: int, event_id: str, thread_id: int = None):
     """Ask user to join an event"""
     try:
         # Get event details
-        event = getEvent(event_id)
+        event = Event.from_database(event_id)
         if not event:
             bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Event not found")
             return
         
         # generate event description
-        event_description = generate_confirmed_event_description(event_id)
+        event_description = event.get_event_details_for_message()
         
         # add join button
-        markup = types.InlineKeyboardMarkup()
-        join_button = types.InlineKeyboardButton(text="Join Event", callback_data=f"join:{event_id}")
-        markup.add(join_button)
+        markup = event.get_event_button()
 
         # send event description
         bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text=event_description, reply_markup=markup)
