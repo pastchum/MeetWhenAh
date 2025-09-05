@@ -328,10 +328,16 @@ class Event:
         markup = InlineKeyboardMarkup()
         # add select availability button
 
-        params = f"dragselector={self.event_id}"
-        miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
+        drag_params = f"dragselector={self.event_id}"
+        drag_miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={drag_params}"
 
-        markup.add(InlineKeyboardButton("Select Availability", url=miniapp_url))
+        markup.add(InlineKeyboardButton("Select Availability", url=drag_miniapp_url))
+
+        confirm_params = f"confirm={self.event_id}"
+        confirm_miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={confirm_params}"
+
+        markup.add(InlineKeyboardButton("Confirm Best Time", url=confirm_miniapp_url))
+
         return markup
 
     """
