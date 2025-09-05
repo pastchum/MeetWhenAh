@@ -20,6 +20,8 @@ export default function Home() {
       }
     }
   }, []);
+
+  // #TODO: add a loading screen that we can use whenever the app is loading
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <h1>You&apos;re not supposed to be here!</h1>
