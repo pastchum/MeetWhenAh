@@ -1,15 +1,12 @@
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# Import from best time algo
-from best_time_algo.best_time_algo import BestTimeAlgo
 
 # Import from services
-from services.database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries, deleteEntry
+from services.database_service import getEntry, setEntry, getEntries, deleteEntry
 
 # Import from utils
-from utils.date_utils import format_date_for_message, format_time_from_iso, parse_date, parse_time, format_time, format_date_month_day, format_time_from_iso_am_pm
+from utils.date_utils import parse_date, format_date_month_day, format_time_from_iso_am_pm
 from utils.overrides_utils import overrides
 
 # Import from other
@@ -70,8 +67,12 @@ class ConfirmedEvent(events.Event):
         self.confirmed_start_time = confirmed_start_time
         self.confirmed_end_time = confirmed_end_time
 
-    def from_event(self, event: events.Event, confirmed_at: str, confirmed_start_time: str, confirmed_end_time: str):
-        return self.__init__(event.event_id,
+    """
+    Create confirmed event in database
+    """
+    @classmethod
+    def from_event(cls, event: events.Event, confirmed_at: str, confirmed_start_time: str, confirmed_end_time: str):
+        confirmed_event = cls(event.event_id,
                              event.event_name,
                              event.event_description,
                              event.event_type,
@@ -90,6 +91,29 @@ class ConfirmedEvent(events.Event):
                              confirmed_at, 
                              confirmed_start_time, 
                              confirmed_end_time)
+        
+        confirmed_event_data = {
+            "event_id": event.event_id,
+            "confirmed_at": confirmed_at,
+            "confirmed_start_time": confirmed_start_time,
+            "confirmed_end_time": confirmed_end_time
+        }
+        success = setEntry("confirmed_events", event.event_id, confirmed_event_data)
+        
+        if not success:
+            raise Exception("Failed to confirm event")
+        
+        return confirmed_event
+    
+    @classmethod
+    def from_database(cls, event_id: str):
+        event = super().from_database(event_id)
+        if not event:
+            return None
+        confirmed_event = getEntry("confirmed_events", "event_id", event_id)
+        if not confirmed_event:
+            return None
+        return ConfirmedEvent.from_event(event, confirmed_event.get("confirmed_at"), confirmed_event.get("confirmed_start_time"), confirmed_event.get("confirmed_end_time"))
 
     """
     field methods
@@ -159,7 +183,7 @@ class ConfirmedEvent(events.Event):
     """
     Display overrides
     """
-    @overrides(events.Event._get_event_details_for_message)
+    @overrides(events.Event)
     def _get_event_details_for_message(self):
             description = ""
 
@@ -182,17 +206,17 @@ class ConfirmedEvent(events.Event):
 
             return description
 
-    @overrides(events.Event._get_event_button)
+    @overrides(events.Event)
     def _get_event_button(self):
         markup = InlineKeyboardMarkup()
         # override to add join event
         markup.add(InlineKeyboardButton("Join Event", callback_data=f"join_event_{self.event_id}"))
         return markup
 
-    @overrides(events.Event.get_event_details_for_message)
+    @overrides(events.Event)
     def get_event_details_for_message(self):
-        return super()._get_event_details_for_message()
+        return self._get_event_details_for_message()
     
-    @overrides(events.Event.get_event_button)
+    @overrides(events.Event)
     def get_event_button(self):
         return self._get_event_button()

@@ -1,7 +1,21 @@
 import PreviousButton from "@/components/datepicker/PreviousButton";
 
-export default function ReviewSubmit({ data, prevComponent }) {
-  const handleSubmit = () => {
+async function createEvent(formData) {
+  const response = await fetch("/api/event/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create event");
+  }
+
+  return response.json();
+}
+
+export default function ReviewSubmit({ data, prevComponent, isOwner }) {
+  const handleSubmit = async () => {
     // Handle form submission logic here
     const formData = {
       ...data,
@@ -9,18 +23,11 @@ export default function ReviewSubmit({ data, prevComponent }) {
       end: data.end?.toISOString() || "",
     };
 
-    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      console.log("Form submitted:", formData);
-      try {
-        tg.sendData(JSON.stringify(formData, null, 4));
-        tg.close();
-      } catch (error) {
-        console.warn("Telegram WebApp error:", error);
-        console.log("Form submitted:", formData);
-      }
-    } else {
-      console.log("Form submitted:", formData);
+    console.log(formData);
+    const result = await createEvent(formData);
+    console.log(result);
+    if (tg) {
+      tg.close();
     }
   };
 
@@ -153,6 +160,7 @@ export default function ReviewSubmit({ data, prevComponent }) {
       <div className="absolute bottom-0 right-0">
         <button
           type="button"
+          disabled={!isOwner}
           onClick={handleSubmit}
           className="inline-flex items-center justify-center gap-x-2 rounded-md bg-[#8c2e2e] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#8c2e2e]/20 hover:bg-[#722525] hover:shadow-md hover:shadow-[#c44545]/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8c2e2e] transition-all duration-150 minecraft-font border-2 border-[#8c2e2e]"
         >

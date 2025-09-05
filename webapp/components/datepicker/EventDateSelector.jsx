@@ -6,63 +6,44 @@ import { useState } from "react";
 export default function EventDateSelector({
   prevComponent,
   nextComponent,
-  initialData = null,
+  data,
+  setData,
 }) {
-  const [newData, setNewData] = useState(() => {
-    if (initialData?.start && initialData?.end) {
-      try {
-        // If initialData has string dates, convert them
-        if (typeof initialData.start === "string") {
-          const startDate = new Date(initialData.start);
-          const endDate = new Date(initialData.end);
-          return {
-            start: startDate,
-            end: endDate,
-          };
-        }
-      } catch (error) {
-        console.warn("Error parsing initial dates:", error);
-      }
-    }
-
-    // Start with null as default
-    return {
-      start: null,
-      end: null,
-    };
-  });
-
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectionMode, setSelectionMode] = useState("start"); // 'start' or 'end'
 
   const handleClear = () => {
-    setNewData({
+    setData((prev) => ({
+      ...prev,
       start: null,
       end: null,
-    });
+    }));
     setSelectionMode("start");
   };
 
   const handleDateSelect = (date) => {
     console.log(date);
     if (selectionMode === "start") {
-      setNewData({
+      setData((prev) => ({
+        ...prev,
         start: date,
-        end: newData.end,
-      });
+        end: data?.end,
+      }));
       setSelectionMode("end");
     } else {
       // If end date is before start date, swap them
-      if (date < newData.start) {
-        setNewData({
+      if (date < data?.start) {
+        setData((prev) => ({
+          ...prev,
           start: date,
-          end: newData.start,
-        });
+          end: data?.start,
+        }));
       } else {
-        setNewData({
-          start: newData.start,
+        setData((prev) => ({
+          ...prev,
+          start: data?.start,
           end: date,
-        });
+        }));
       }
       setSelectionMode("start");
     }
@@ -74,15 +55,17 @@ export default function EventDateSelector({
       console.log(date);
       if (!isNaN(date.getTime())) {
         if (type === "start") {
-          setNewData({
+          setData((prev) => ({
+            ...prev,
             start: date,
-            end: newData.end,
-          });
+            end: data?.end,
+          }));
         } else {
-          setNewData({
-            start: newData.start,
+          setData((prev) => ({
+            ...prev,
+            start: data?.start,
             end: date,
-          });
+          }));
         }
       }
     } catch (error) {
@@ -118,16 +101,16 @@ export default function EventDateSelector({
   };
 
   const isDateInRange = (date) => {
-    if (!newData.start || !newData.end) return false;
-    return date >= newData.start && date <= newData.end;
+    if (!data?.start || !data?.end) return false;
+    return date >= data?.start && date <= data?.end;
   };
 
   const isStartDate = (date) => {
-    return newData.start && date.getTime() === newData.start.getTime();
+    return data?.start && date.getTime() === data?.start.getTime();
   };
 
   const isEndDate = (date) => {
-    return newData.end && date.getTime() === newData.end.getTime();
+    return data?.end && date.getTime() === data?.end.getTime();
   };
 
   const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
@@ -147,9 +130,7 @@ export default function EventDateSelector({
             </label>
             <input
               type="date"
-              value={
-                newData.start ? newData.start.toLocaleDateString("en-CA") : ""
-              }
+              value={data?.start ? data?.start.toLocaleDateString("en-CA") : ""}
               onChange={(e) => handleInputChange("start", e.target.value)}
               className="w-full px-3 py-2 bg-[#1a1a1a] border-2 border-[#8c2e2e] text-white rounded-md focus:border-[#c44545] focus:outline-none minecraft-font"
             />
@@ -160,7 +141,7 @@ export default function EventDateSelector({
             </label>
             <input
               type="date"
-              value={newData.end ? newData.end.toLocaleDateString("en-CA") : ""}
+              value={data?.end ? data?.end.toLocaleDateString("en-CA") : ""}
               onChange={(e) => handleInputChange("end", e.target.value)}
               className="w-full px-3 py-2 bg-[#1a1a1a] border-2 border-[#8c2e2e] text-white rounded-md focus:border-[#c44545] focus:outline-none minecraft-font"
             />
@@ -282,9 +263,9 @@ export default function EventDateSelector({
       </div>
       <div className="absolute bottom-0 right-0">
         <NextButton
-          disabled={!newData?.start || !newData?.end}
-          onClick={() => nextComponent(newData)}
-          newData={newData}
+          disabled={!data?.start || !data?.end || !data?.event_name}
+          onClick={() => nextComponent(data)}
+          newData={data}
         />
       </div>
     </div>

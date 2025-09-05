@@ -12,12 +12,10 @@ from best_time_algo.best_time_algo import BestTimeAlgo
 from services.database_service import getEntry, setEntry, getEntries
 
 # Import from utils
-from utils.date_utils import format_date_for_message, format_time_from_iso, parse_date, parse_time, format_time, format_date_month_day, format_time_from_iso_am_pm
+from utils.date_utils import parse_date, format_date_month_day
 
 # Import from other
 import uuid
-
-import events.confirmed_events as confirmed_events
 
 """
 Event class with methods and fields for handling events
@@ -59,7 +57,7 @@ class Event:
                  max_duration: int, 
                  is_reminders_enabled: bool, 
                  timezone: str):
-        self.event_id = event_id
+        self.event_id = event_id if event_id else str(uuid.uuid4())
         self.event_name = event_name
         self.event_description = event_description
         self.event_type = event_type
@@ -131,11 +129,42 @@ class Event:
     """
     Create event in database
     """
-    def _create_event(self, 
-                 event_name: str, event_description: str, event_type: str, start_date: str, end_date: str, start_hour: str, end_hour: str, creator: str):
-        self.event_id = str(uuid.uuid4())
+    def _create_event( 
+                 event_name: str, 
+                 event_description: str, 
+                 event_type: str, 
+                 start_date: str, 
+                 end_date: str, 
+                 start_hour: str, 
+                 end_hour: str, 
+                 creator: str, 
+                 created_at: str, 
+                 updated_at: str, 
+                 min_participants: int, 
+                 min_duration: int, 
+                 max_duration: int, 
+                 is_reminders_enabled: bool, 
+                 timezone: str, 
+                 event_id: str):
+        event = Event(event_id, 
+            event_name, 
+            event_description, 
+            event_type, 
+            start_date, 
+            end_date, 
+            start_hour, 
+            end_hour, 
+            creator, 
+            created_at, 
+            updated_at, 
+            min_participants, 
+            min_duration, 
+            max_duration, 
+            is_reminders_enabled, 
+            timezone)
+        
         event_data = {
-            "event_id": self.event_id,
+            "event_id": event_id,
             "event_name": event_name,
             "event_description": event_description,
             "event_type": event_type,
@@ -144,35 +173,20 @@ class Event:
             "start_hour": start_hour,
             "end_hour": end_hour,
             "creator": creator,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat()
+            "created_at": created_at,
+            "updated_at": updated_at,
+            "min_participants": min_participants,
+            "min_duration": min_duration,
+            "max_duration": max_duration,
+            "is_reminders_enabled": is_reminders_enabled,
+            "timezone": timezone
         }
 
-        success = setEntry("events", self.event_id, event_data)
+        success = setEntry("events", event_id, event_data)
         if not success:
             return None
 
-        return self
-    
-    """
-    Confirm an event in database
-    """
-    def _confirm_event(self, best_start_time: str, best_end_time: str):
-        now = datetime.now(timezone.utc).isoformat()
-        confirmed_event_data = {
-            "event_id": self.event_id,
-            "confirmed_at": now,
-            "confirmed_start_time": best_start_time,
-            "confirmed_end_time": best_end_time
-        }
-        success = setEntry("confirmed_events", self.event_id, confirmed_event_data)
-        if not success:
-            raise Exception("Failed to confirm event")
-        confirmed_event = confirmed_events.ConfirmedEvent.from_event(self, 
-                                                                     now, 
-                                                                     best_start_time, 
-                                                                     best_end_time)
-        return confirmed_event
+        return event
 
     """
     Get all chats from chat table for given event
@@ -200,21 +214,66 @@ class Event:
     """
     Get event from database
     """
-    def get_event_from_database(self, event_id: str) -> Optional[Dict]:
+    @classmethod
+    def from_database(cls, event_id: str) -> Optional['Event']:
         event = getEntry("events", "event_id", event_id)
-        return event if event else None
+        if not event:
+            return None
+        return cls(
+            event_id=event.get("event_id"),
+            event_name=event.get("event_name"),
+            event_description=event.get("event_description"),
+            event_type=event.get("event_type"),
+            start_date=event.get("start_date"),
+            end_date=event.get("end_date"),
+            start_hour=event.get("start_hour"),
+            end_hour=event.get("end_hour"),
+            creator=event.get("creator"),
+            created_at=event.get("created_at"),
+            updated_at=event.get("updated_at"),
+            min_participants=event.get("min_participants"),
+            min_duration=event.get("min_duration"),
+            max_duration=event.get("max_duration"),
+            is_reminders_enabled=event.get("is_reminders_enabled"),
+            timezone=event.get("timezone")
+        )
     
     """
     Create event in database
     """
-    def create_event(self, event_name: str, event_description: str, event_type: str, start_date: str, end_date: str, start_hour: str, end_hour: str, creator: str):
-        return self._create_event(event_name, event_description, event_type, start_date, end_date, start_hour, end_hour, creator)
-    
-    """
-    Confirm an event
-    """
-    def confirm_event(self, best_start_time: str, best_end_time: str):
-        return self._confirm_event(best_start_time, best_end_time)
+    def create_event(event_name: str, 
+                event_description: str, 
+                event_type: str, 
+                start_date: str, 
+                end_date: str, 
+                start_hour: str, 
+                end_hour: str, 
+                creator: str,
+                min_participants: int = 2,
+                min_duration: int = 2,
+                max_duration: int = 4,
+                is_reminders_enabled: bool = False,
+                timezone: str = "Asia/Singapore",
+                event_id: str = None):
+        created_at = datetime.now(timezone.utc).isoformat()
+        updated_at = datetime.now(timezone.utc).isoformat()
+        event_id_to_use = event_id if event_id else str(uuid.uuid4())
+        return Event._create_event(event_name, 
+                            event_description, 
+                            event_type, 
+                            start_date, 
+                            end_date, 
+                            start_hour, 
+                            end_hour, 
+                            creator,
+                            created_at,
+                            updated_at,
+                            min_participants,
+                            min_duration,
+                            max_duration,
+                            is_reminders_enabled,
+                            timezone,
+                            event_id_to_use)
 
     """
     Get best time for an

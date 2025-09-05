@@ -53,56 +53,26 @@ export class EventService {
    * Create a new event and return its ID
    */
   async createEvent(
+    eventId: string,
     name: string,
     description: string,
     startDate: string,
     endDate: string,
     creatorTeleId: string,
-    autoJoin: boolean = true,
     eventType: string = "general",
     startHour: string = "00:00:00.000000+08:00",
     endHour: string = "23:30:00.000000+08:00"
   ): Promise<string | null> {
     try {
-      // Get creator details
-      const { data: creatorData, error: creatorError } = await supabase
-        .from('users')
-        .select('uuid')
-        .eq('tele_id', creatorTeleId)
-        .single();
-
-      if (creatorError || !creatorData) {
-        console.error('Creator not found:', creatorTeleId);
-        return null;
-      }
-
-      const eventId = crypto.randomUUID();
-      const now = new Date().toISOString();
-      
-      const eventData = {
-        event_id: eventId,
-        event_name: name,
-        event_description: description,
-        event_type: eventType,
-        start_date: new Date(startDate).toISOString(),
-        end_date: new Date(endDate).toISOString(),
-        start_hour: startHour,
-        end_hour: endHour,
-        creator: creatorData.uuid,
-        created_at: now,
-        updated_at: now
-      };
-
-      const { error } = await supabase
-        .from('events')
-        .insert(eventData);
-
-      if (error) {
-        console.error('Error creating event:', error);
-        return null;
-      }
-
-      return eventId;
+      const response = await fetch(process.env.API_URL + '/api/event/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ eventId, name, description, startDate, endDate, creatorTeleId, eventType, startHour, endHour }),
+      });
+      const result = await response.json();
+      return result.data.event_id;
     } catch (error) {
       console.error('Error creating event:', error);
       return null;

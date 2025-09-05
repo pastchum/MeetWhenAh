@@ -2,16 +2,18 @@
 import EventForm from "@/components/datepicker/EventForm";
 import EventDateSelector from "@/components/datepicker/EventDateSelector";
 import ReviewSubmit from "@/components/datepicker/ReviewSubmit";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTelegramViewport } from "@/hooks/useTelegramViewport";
-import { Card, CardBody, CardHeader } from "@nextui-org/react";
+import { Card, CardBody } from "@nextui-org/react";
+import { v4 as uuidv4 } from "uuid";
 
 export default function DatePicker() {
   // Telegram viewport setup
   useTelegramViewport();
 
   const [data, setData] = useState({
-    web_app_number: 0,
+    token: "",
+    event_id: uuidv4(),
     event_name: "",
     event_details: "",
     start: null,
@@ -19,18 +21,19 @@ export default function DatePicker() {
   });
 
   const [currentComponent, setCurrentComponent] = useState(0);
+  const [tokenOwner, setTokenOwner] = useState("");
 
   const nextComponent = (newData) => {
     console.log("next component", newData);
     if (newData) {
-      setData(prevData => ({ ...prevData, ...newData }));
-      setCurrentComponent(prev => prev + 1);
+      setData((prevData) => ({ ...prevData, ...newData }));
+      setCurrentComponent((prev) => prev + 1);
     }
   };
 
   const prevComponent = () => {
     console.log("prev component");
-    setCurrentComponent(prev => prev - 1);
+    setCurrentComponent((prev) => prev - 1);
   };
 
   const [tg, setTg] = useState(null);
@@ -47,24 +50,76 @@ export default function DatePicker() {
         tg.ready();
         tg.expand();
       } catch (error) {
-        console.warn('Telegram WebApp error:', error);
+        console.warn("Telegram WebApp error:", error);
       }
     }
   }, [tg]);
+
+  const [token, setToken] = useState(null);
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const url_token = urlParams.get("token");
+    if (url_token) {
+      setToken(url_token);
+    }
+  }, []);
+
+  useEffect(() => {
+    setData((prevData) => ({ ...prevData, token: token }));
+  }, [token]);
+
+  const fetchCtx = useCallback(async () => {
+    if (!token) return null;
+
+    const response = await fetch(`/api/${token}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    } else {
+      return null;
+    }
+  }, [token]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const ctx = await fetchCtx();
+      if (ctx) {
+        setTokenOwner(ctx.tele_id);
+      }
+    };
+    fetchData();
+  }, [token, fetchCtx, tg]);
+
+  const telegramId = tg?.initDataUnsafe?.user?.id;
+
+  const isOwner = useMemo(() => {
+    if (telegramId == null || tokenOwner == null) return false;
+    return String(tokenOwner).trim() === String(telegramId).trim();
+  }, [telegramId, tokenOwner]);
 
   return (
     <main className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-4">
       <div className="w-full max-w-md mb-6 text-center">
         <h1 className="font-semibold text-3xl">
-          <span className="text-white">MeetWhen</span><span className="text-[#c44545]">?</span>
+          <span className="text-white">MeetWhen</span>
+          <span className="text-[#c44545]">?</span>
         </h1>
       </div>
-      
+
       <div className="w-full max-w-md">
         {currentComponent === 0 && (
           <Card className="bg-[#0a0a0a] border border-white shadow-lg">
             <CardBody className="p-6">
-              <EventForm nextComponent={nextComponent} initialData={data} />
+              <EventForm
+                nextComponent={nextComponent}
+                data={data}
+                setData={setData}
+              />
             </CardBody>
           </Card>
         )}
@@ -74,7 +129,8 @@ export default function DatePicker() {
               <EventDateSelector
                 nextComponent={nextComponent}
                 prevComponent={prevComponent}
-                initialData={data}
+                data={data}
+                setData={setData}
               />
             </CardBody>
           </Card>
@@ -82,7 +138,11 @@ export default function DatePicker() {
         {currentComponent === 2 && (
           <Card className="bg-[#0a0a0a] border border-white shadow-lg">
             <CardBody className="p-6">
-              <ReviewSubmit data={data} prevComponent={prevComponent} />
+              <ReviewSubmit
+                data={data}
+                prevComponent={prevComponent}
+                isOwner={isOwner}
+              />
             </CardBody>
           </Card>
         )}

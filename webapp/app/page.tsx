@@ -8,15 +8,18 @@ export default function Home() {
     const startParam = tg.initDataUnsafe.start_param;
     if (startParam) {
       const params = startParam.split("=");
-      const eventId = params[1];
-      if (params[0] === "share") {
-        window.location.href = `/share?token=${eventId}`;
+      const token = params[1];
+      if (params[0] === "datepicker") {
+        window.location.href = `/datepicker?token=${token}`;
       }
-      if (params[0] === "dragselector" && eventId) {
-        window.location.href = `/dragselector?event_id=${eventId}`;
+      if (params[0] === "share") {
+        window.location.href = `/share?token=${token}`;
+      }
+      if (params[0] === "dragselector" && token) {
+        window.location.href = `/dragselector?event_id=${token}`;
       }
       if (params[0] === "confirm") {
-        window.location.href = `/confirm?event_id=${eventId}`;
+        window.location.href = `/confirm?event_id=${token}`;
       }
     }
   }, []);
