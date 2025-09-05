@@ -21,9 +21,6 @@ from utils.message_templates import (
     SLEEP_INVALID_FORMAT
 )
 
-# Track join messages for updating
-join_messages = {}  # {event_id: {chat_id: message_id, thread_id}}
-
 logger = logging.getLogger(__name__)
 
 def register_user_handlers(bot):
@@ -50,7 +47,6 @@ def register_user_handlers(bot):
     def handle_join_callback(call):
         """Handle join event button clicks"""
         try:
-            logger.info(f"Join callback data: {call}")
             event_id = call.data.split(":")[1]
             tele_id = call.from_user.id
             user_data = getUser(tele_id)
@@ -89,15 +85,16 @@ def register_user_handlers(bot):
                     show_alert=True
                 )
             
-            # Update the join message if it exists
-            if event_id in join_messages:
-                message_info = join_messages[event_id]
-                update_join_message(
-                    chat_id=message_info['chat_id'],
-                    message_id=message_info['message_id'],
-                    event_id=event_id,
-                    thread_id=message_info.get('thread_id')
-                )
+            # Update the join message
+            message_id = call.message.message_id
+            chat_id = call.message.chat.id
+            thread_id = call.message.message_thread_id
+            update_join_message(
+                chat_id=chat_id,
+                message_id=message_id,
+                event_id=event_id,
+                thread_id=thread_id
+            )
         except Exception as e:
             logger.error(f"Error in join callback handler: {str(e)}")
             bot.answer_callback_query(

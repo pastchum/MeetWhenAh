@@ -71,25 +71,26 @@ def ask_join(chat_id: int, event_id: str, thread_id: int = None):
     """Ask user to join an event"""
     try:
         # Get event details
-        event = Event.from_database(event_id)
+        event = ConfirmedEvent.from_database(event_id)
         if not event:
             bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Event not found")
             return None
         
         # generate event description with truncated description
-        event_description = generate_event_description(event)
-        
-        # get participants list
-        participants_list = generate_confirmed_event_participants_list(event_id)
+        event_description = event.get_event_details_for_message()
         
         # create full message with participants
-        participant_count = len(participants_list.split('\n')) if participants_list else 0
-        full_message = f"{event_description}\n\n👥 <b>Participants ({participant_count})</b>:\n{participants_list if participants_list else 'No participants yet'}"
+        rows = event.get_all_users_for_event() or []
+        participant_count = len(rows)
+        participants_formatted = "\n".join(
+            f"• {row.get('user_uuid')} {row.get('emoji_icon', '')}".strip()
+            for row in rows
+        ) or "No participants yet"
+
+        full_message = f"{event_description}\n\n👥 <b>Participants ({participant_count})</b>:\n{participants_formatted}"
         
         # add join button
-        markup = types.InlineKeyboardMarkup()
-        join_button = types.InlineKeyboardButton(text="Join Event", callback_data=f"join:{event_id}")
-        markup.add(join_button)
+        markup = event.get_event_button()
 
         # send event description and return message ID
         sent_message = bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text=full_message, reply_markup=markup)
@@ -103,32 +104,31 @@ def update_join_message(chat_id: int, message_id: int, event_id: str, thread_id:
     """Update the join message with current participant list"""
     try:
         # Get event details
-        event = getEvent(event_id)
+        event = ConfirmedEvent.from_database(event_id)
         if not event:
             return False
         
         # generate event description with truncated description
-        event_description = generate_event_description(event)
-        
-        # get participants list
-        participants_list = generate_confirmed_event_participants_list(event_id)
+        event_description = event.get_event_details_for_message()
         
         # create full message with participants
-        participant_count = len(participants_list.split('\n')) if participants_list else 0
-        full_message = f"{event_description}\n\n👥 <b>Participants ({participant_count})</b>:\n{participants_list if participants_list else 'No participants yet'}"
+        rows = event.get_all_users_for_event() or []
+        participant_count = len(rows)
+        participants_formatted = "\n".join(
+            f"• @{row.get('tele_user')} {row.get('emoji_icon', '')}".strip()
+            for row in rows
+        ) or "No participants yet"
+
+        full_message = f"{event_description}\n\n👥 <b>Participants ({participant_count})</b>:\n{participants_formatted}"
         
-        # add join button
-        markup = types.InlineKeyboardMarkup()
-        join_button = types.InlineKeyboardButton(text="Join Event", callback_data=f"join:{event_id}")
-        markup.add(join_button)
+        markup = event.get_event_button()
 
         # update the existing message
         bot.edit_message_text(
             chat_id=chat_id,
             message_id=message_id,
             text=full_message,
-            reply_markup=markup,
-            message_thread_id=thread_id
+            reply_markup=markup
         )
         return True
     except Exception as e:
@@ -150,7 +150,7 @@ def format_availability_summary(event_id: str, username: str) -> str:
         return "No availability data found"
     
     # Format the summary
-    summary = f"Your availability for {event['name']}:\n\n"
+    summary = f"Your availability for {event['event_name']}:\n\n"
     
     # Group availability by date
     by_date = defaultdict(list)

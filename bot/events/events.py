@@ -182,7 +182,7 @@ class Event:
             "timezone": timezone
         }
 
-        success = await setEntry("events", event_id, event_data)
+        success = setEntry("events", event_id, event_data)
         if not success:
             return None
 
