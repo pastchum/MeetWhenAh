@@ -55,7 +55,16 @@ export default function DatePicker() {
   return (
     <main className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-4">
       <div className="w-full max-w-md mb-6 text-center">
-        <h1 className="font-semibold text-3xl">
+        <h1 
+          className="font-semibold text-3xl cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => {
+            // Get token from URL and pass it back to dashboard
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const dashboardUrl = token ? `/dashboard?token=${token}` : '/dashboard';
+            window.location.href = dashboardUrl;
+          }}
+        >
           <span className="text-white">MeetWhen</span><span className="text-[#c44545]">?</span>
         </h1>
       </div>

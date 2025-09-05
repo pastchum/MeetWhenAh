@@ -392,7 +392,16 @@ export default function DragSelectorPage() {
       {/* Fixed Header Section */}
       <div className="flex-shrink-0 p-4 bg-dark-secondary border-b border-border-primary">
         {eventDetails.event_name && (
-          <div className="text-2xl font-bold text-center text-white">
+          <div 
+            className="text-2xl font-bold text-center text-white cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => {
+              // Get token from URL and pass it back to dashboard
+              const urlParams = new URLSearchParams(window.location.search);
+              const token = urlParams.get('token');
+              const dashboardUrl = token ? `/dashboard?token=${token}` : '/dashboard';
+              window.location.href = dashboardUrl;
+            }}
+          >
             {eventDetails.event_name}
           </div>
         )}
