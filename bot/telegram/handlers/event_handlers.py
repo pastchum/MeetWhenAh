@@ -67,9 +67,11 @@ def register_event_handlers(bot):
                 print("Username changed, updating in DB.")
                 updateUsername(message.from_user.id, message.from_user.username)
 
+        bot_message = bot.reply_to(message, WELCOME_MESSAGE)
+
         chat_id = message.chat.id
         thread_id = getattr(message, "message_thread_id", None)
-        message_id = message.message_id
+        message_id = bot_message.message_id
         token = put_ctx(message.from_user.id, chat_id, message_id, thread_id)
 
         params = f"datepicker={token}"
@@ -80,8 +82,14 @@ def register_event_handlers(bot):
         mini_app_button = types.InlineKeyboardButton(text="Create Event", url=mini_app_url)
         markup.add(mini_app_button)
 
-        # Send the same message for both private and group chats
-        bot.reply_to(message, WELCOME_MESSAGE, reply_markup=markup)
+        # Edit the same message for both private and group chats
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message_id,
+            text=WELCOME_MESSAGE,
+            reply_markup=markup
+        )
+        return
 
 def handle_event_creation(message, data):
     """Handle event creation from web app data"""

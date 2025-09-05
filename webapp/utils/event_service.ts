@@ -53,25 +53,29 @@ export class EventService {
    * Create a new event and return its ID
    */
   async createEvent(
-    eventId: string,
-    name: string,
-    description: string,
-    startDate: string,
-    endDate: string,
-    creatorTeleId: string,
-    eventType: string = "general",
-    startHour: string = "00:00:00.000000+08:00",
-    endHour: string = "23:30:00.000000+08:00"
+    token: string,
+    event_id: string,
+    event_name: string,
+    event_details: string,
+    start: string,
+    end: string,
+    creator: string,
+    event_type: string = "general",
+    start_hour: string = "00:00:00.000000+08:00",
+    end_hour: string = "23:30:00.000000+08:00"
   ): Promise<string | null> {
     try {
+      const body = { token, event_id, event_name, event_details, start, end, creator, event_type, start_hour, end_hour }
+      console.log('service: ', body);
       const response = await fetch(process.env.API_URL + '/api/event/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ eventId, name, description, startDate, endDate, creatorTeleId, eventType, startHour, endHour }),
+        body: JSON.stringify(body),
       });
       const result = await response.json();
+      console.log('service: ', result);
       return result.data.event_id;
     } catch (error) {
       console.error('Error creating event:', error);

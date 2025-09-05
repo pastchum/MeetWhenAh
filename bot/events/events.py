@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone as tz
 from typing import Dict, List, Optional, Tuple
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -129,7 +129,7 @@ class Event:
     """
     Create event in database
     """
-    def _create_event( 
+    async def _create_event( 
                  event_name: str, 
                  event_description: str, 
                  event_type: str, 
@@ -241,7 +241,8 @@ class Event:
     """
     Create event in database
     """
-    def create_event(event_name: str, 
+    @classmethod
+    def create_event(cls, event_name: str, 
                 event_description: str, 
                 event_type: str, 
                 start_date: str, 
@@ -255,15 +256,15 @@ class Event:
                 is_reminders_enabled: bool = False,
                 timezone: str = "Asia/Singapore",
                 event_id: str = None):
-        created_at = datetime.now(timezone.utc).isoformat()
-        updated_at = datetime.now(timezone.utc).isoformat()
+        created_at = datetime.now(tz.utc).isoformat()
+        updated_at = datetime.now(tz.utc).isoformat()
         event_id_to_use = event_id if event_id else str(uuid.uuid4())
         return Event._create_event(event_name, 
                             event_description, 
                             event_type, 
                             start_date, 
                             end_date, 
-                            start_hour, 
+                            start_hour,
                             end_hour, 
                             creator,
                             created_at,

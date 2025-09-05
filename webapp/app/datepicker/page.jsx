@@ -18,6 +18,7 @@ export default function DatePicker() {
     event_details: "",
     start: null,
     end: null,
+    creator: "",
   });
 
   const [currentComponent, setCurrentComponent] = useState(0);
@@ -55,6 +56,15 @@ export default function DatePicker() {
     }
   }, [tg]);
 
+  useEffect(() => {
+    if (tg) {
+      setData((prevData) => ({
+        ...prevData,
+        creator: tg.initDataUnsafe.user.id,
+      }));
+    }
+  }, [tg]);
+
   const [token, setToken] = useState(null);
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -87,6 +97,7 @@ export default function DatePicker() {
 
   useEffect(() => {
     const fetchData = async () => {
+      console.log(token);
       const ctx = await fetchCtx();
       if (ctx) {
         setTokenOwner(ctx.tele_id);

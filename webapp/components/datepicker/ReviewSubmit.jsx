@@ -23,9 +23,7 @@ export default function ReviewSubmit({ data, prevComponent, isOwner }) {
       end: data.end?.toISOString() || "",
     };
 
-    console.log(formData);
     const result = await createEvent(formData);
-    console.log(result);
     if (tg) {
       tg.close();
     }
