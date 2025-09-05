@@ -187,11 +187,20 @@ export default function SharePage() {
   }
 
   return (
-    <div className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-6">
-      <div className="w-full max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6 text-center text-white">
-          Your Events
+    <div className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-4">
+      <div className="w-full max-w-md mb-6 text-center">
+        <h1 
+          className="font-semibold text-3xl cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => window.location.href = `/dashboard${token ? `?token=${token}` : ''}`}
+        >
+          <span className="text-white">MeetWhen</span><span className="text-[#c44545]">?</span>
         </h1>
+      </div>
+      
+      <div className="w-full max-w-2xl">
+        <h2 className="text-2xl font-bold mb-6 text-center text-white">
+          Your Events
+        </h2>
 
         <div className="space-y-4">
           {userEvents.length === 0 ? (

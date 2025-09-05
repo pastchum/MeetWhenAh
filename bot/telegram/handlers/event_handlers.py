@@ -5,9 +5,12 @@ import uuid
 import telebot
 from telebot import types
 import os
+import logging
 
 # Import from config
 from ..config.config import bot
+
+logger = logging.getLogger(__name__)
 
 # Import from best time algo
 from best_time_algo.best_time_algo import BestTimeAlgo
@@ -106,6 +109,12 @@ def register_event_handlers(bot):
             try:
                 data = json.loads(message.web_app_data.data)
                 web_app_number = data.get('web_app_number')
+                
+                # Log webapp data received
+                logger.info(f"Received webapp data: {data}")
+                print(f"Received webapp data: {data}")
+                logger.info(f"Web app number: {web_app_number}")
+                print(f"Web app number: {web_app_number}")
                 
                 if web_app_number == 0:  # Event creation
                     handle_event_creation(message, data)
