@@ -5,8 +5,8 @@ const shareService = new ShareService();
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  console.log('token', token);
   const ctx = await shareService.get_ctx(token);
+  console.log('ctx', ctx);
   if (ctx) {
     return NextResponse.json(ctx);
   } else {
