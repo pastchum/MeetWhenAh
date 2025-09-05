@@ -17,6 +17,10 @@ logger = logging.getLogger(__name__)
 
 EXPIRY_TIME = 60 * 15 # 15 minutes
 
+def get_chat(event_id: str, chat_id: int) -> dict:
+    """Get a chat for an event"""
+    return supabase.table("event_chats").select("*").eq("event_id", event_id).eq("chat_id", chat_id).execute()
+
 def set_chat(event_id: str, chat_id: int, thread_id: int = None) -> bool:
     """Set a chat for an event"""
     print("Setting chat for event", event_id, chat_id, thread_id)
@@ -70,12 +74,16 @@ def handle_share_event(event_id: str, user_id: str, chat_id: str, message_id: st
     else:
         ask_availability(chat_id, event_id, thread_id)
 
-    success = set_chat(event_id, chat_id, thread_id)
+    # cehck if chat exists
+    if not get_chat(event_id, chat_id):
+        set_chat(event_id, chat_id, thread_id)
+        success = True
+    else:
+        success = True
 
     try: 
         # delete share message
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="Event shared successfully!")
-        bot.delete_message(chat_id=chat_id, message_id=message_id)
     except Exception as e:
         logger.error(f"Error in handle_share_event: {str(e)}")
         bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Failed to handle share event. Please try again later.")

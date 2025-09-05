@@ -103,3 +103,26 @@ begin
   returning t.*;
 end;
 $$;
+
+-- Get all members (users) of an event
+create or replace function public.get_event_members(p_event_id uuid)
+returns table (
+  user_uuid uuid,
+  tele_id   varchar,
+  tele_user varchar
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    m.user_uuid,
+    u.tele_id,
+    u.tele_user
+  from membership m
+  join users u
+    on u.uuid = m.user_uuid
+  where m.event_id = p_event_id
+  order by m.joined_at asc;
+$$;

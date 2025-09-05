@@ -24,6 +24,7 @@ from services.user_service import (
     updateUsername,
     getUserByUuid
 )
+from services.share_service import put_ctx
 from services.event_service import (
     getEvent,
     create_event, 
@@ -49,44 +50,33 @@ from utils.message_templates import (
 # Keep track of processed message IDs to prevent duplicate processing
 processed_messages = set()
 
+
 def register_event_handlers(bot):
     """Register all event-related handlers"""
 
     @bot.message_handler(commands=['create'])
     def send_welcome(message):
-        if message.chat.type == 'private':
-            tele_id = str(message.from_user.id)
-            db_result = getUser(tele_id)
-            if db_result is None:
-                print("User not found in DB, creating new entry.", message.from_user.id)
-                username = str(message.from_user.username)
-                setUser(tele_id, username)
-            else:
-                if not db_result["initialised"]:
-                    updateUserInitialised(tele_id)
-                    updateUserCalloutCleared(tele_id)
-                if db_result["tele_user"] != str(message.from_user.username):
-                    print("Username changed, updating in DB.")
-                    updateUsername(message.from_user.id, message.from_user.username)
-
-            # Create web app URL for datepicker
-            web_app_url = create_web_app_url(
-                path='/datepicker',
-                web_app_number=0  # 0 for create event
-            )
-            
-            markup = types.ReplyKeyboardMarkup(row_width=1)
-            web_app_info = types.WebAppInfo(url=web_app_url)
-            web_app_button = types.KeyboardButton(text="Create Event", web_app=web_app_info)
-            markup.add(web_app_button)
-
-            bot.reply_to(message, WELCOME_MESSAGE, reply_markup=markup)
+        tele_id = str(message.from_user.id)
+        db_result = getUser(tele_id)
+        if db_result is None:
+            # User doesn't exist, create them
+            print("User not found in DB, creating new entry.", message.from_user.id)
+            username = str(message.from_user.username)
+            setUser(message.from_user.id, username)
         else:
-            # In group chat, provide instructions to message the bot privately
-            welcome_text = "To create an event, please message me privately!"
-            markup = None
-            bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
+            if not db_result["initialised"]:
+                updateUserInitialised(tele_id)
+                updateUserCalloutCleared(tele_id)
+            if db_result["tele_user"] != str(message.from_user.username):
+                print("Username changed, updating in DB.")
+                updateUsername(message.from_user.id, message.from_user.username)
 
+        bot_message = bot.reply_to(message, WELCOME_MESSAGE)
+
+        chat_id = message.chat.id
+        thread_id = getattr(message, "message_thread_id", None)
+        message_id = bot_message.message_id
+        token = put_ctx(message.from_user.id, chat_id, message_id, thread_id)
 
     @bot.message_handler(content_types=['web_app_data'])
     def handle_webapp_data(message):
@@ -129,8 +119,22 @@ def register_event_handlers(bot):
         except Exception as e:
             bot.reply_to(message, f"❌ <b>Processing Error</b>\n\nError processing web app data: {str(e)}")
 
-    # Return the bot instance
-    return bot
+        params = f"datepicker={token}"
+        # Create web app URL for datepicker
+        mini_app_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
+        
+        markup = types.InlineKeyboardMarkup()
+        mini_app_button = types.InlineKeyboardButton(text="Create Event", url=mini_app_url)
+        markup.add(mini_app_button)
+
+        # Edit the same message for both private and group chats
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message_id,
+            text=WELCOME_MESSAGE,
+            reply_markup=markup
+        )
+        return
 
 def handle_event_creation(message, data):
     """Handle event creation from web app data"""
@@ -168,12 +172,11 @@ def handle_event_creation(message, data):
         markup = types.InlineKeyboardMarkup()
         
         # Add confirm button
-        params = f"event_id={event_id}"
-        webapp_url = f"{os.getenv('WEBAPP_URL')}/confirm?{params}"
-        web_app_info = types.WebAppInfo(url=webapp_url)
+        params = f"confirm={event_id}"
+        mini_app_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
         confirm_button = types.InlineKeyboardButton(
             text="Confirm Best Time",
-            web_app=web_app_info
+            url=mini_app_url
         )
         markup.add(confirm_button)
 
@@ -182,7 +185,13 @@ def handle_event_creation(message, data):
         generated_description = generate_event_description(event)
 
         # Send confirmation message
-        success_message = EVENT_CREATED_SUCCESS.format(event_description=generated_description)
+        if message.chat.type == 'private':
+            success_message = f"Event created successfully!\n\n{generated_description}\n\nShare this event with others using the /share command in your group chats! \n\nConfirm the event here when you're ready!"
+        else:
+            # In group chat, mention who created the event
+            username = message.from_user.username or message.from_user.first_name
+            success_message = f"@{username} made an event!\n\n{generated_description}\n\nShare this event with others using the /share command in your group chats! \n\nConfirm the event here when you're ready!"
+        
         bot.reply_to(
             message,
             success_message,
@@ -251,6 +260,7 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
         chat_id, thread_id = get_event_chat(event_id)
         if chat_id:
             ask_join(chat_id, event_id, thread_id)
+
     except Exception as e:
         bot.send_message(chat_id=creator_tele_id, text=f"Error confirming event: {str(e)}")
         return

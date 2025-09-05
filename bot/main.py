@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 from telegram_bot import initialise_bot
 from server import app
 
+"""
+Script to run both the Telegram bot and the FastAPI server concurrently.
+"""
+
 def run_server():
     # Get port from environment or default to 8000
     port = int(os.getenv("PORT", 8000))

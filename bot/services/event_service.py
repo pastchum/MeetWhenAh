@@ -309,7 +309,7 @@ def generate_event_description(event: dict) -> str:
         end_date = parse_date(event['end_date'])
         start_date_str = format_date_month_day(start_date)
         end_date_str = format_date_month_day(end_date)
-        description += f"📅 <b>Date Range</b>: {start_date_str} - {end_date_str}\n"
+        description += f"⏰ <b>Date Range</b>: {start_date_str} - {end_date_str}\n"
     
     return description
 
