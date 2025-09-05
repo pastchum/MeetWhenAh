@@ -33,27 +33,19 @@ def ask_availability(chat_id: int, event_id: str, thread_id: int = None):
     """Ask user to provide availability for an event"""
     try:
         # Get event details
-        event = getEvent(event_id)
+        event = Event.from_database(event_id)
         if not event:
             bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Event not found")
             return
-        
-        params = f"dragselector={event_id}"
-        miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
-
-        markup = types.InlineKeyboardMarkup()
-        miniapp_btn = types.InlineKeyboardButton(
-            text="Select Availability",
-            url=miniapp_url
-        )
-        markup.add(miniapp_btn)
+            
+        markup = event.get_event_button()
 
         # generate event description
-        event_description = generate_event_description(event)
+        event_description = event.get_event_details_for_message()
 
         text = AVAILABILITY_SELECTION.format(
             event_description=event_description,
-            event_name=event['event_name']
+            event_name=event.get_event_name()
         )
 
         bot.send_message(
