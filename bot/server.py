@@ -68,12 +68,8 @@ async def telegram_webhook(request: Request):
         
         # Process the update
         bot.process_new_updates([update])
-        
-        return JSONResponse(status_code=200)
-        
     except Exception as e:
         print(f"Error processing webhook update: {e}")
-        return JSONResponse(status_code=500)
 
 # Health check endpoint
 @app.get("/webhook/health")
