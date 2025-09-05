@@ -17,9 +17,10 @@ from .event_service import (
     getEvent, 
     getUserAvailability, 
     updateUserAvailability, 
-    getConfirmedEvent, 
+ getConfirmedEvent, 
     generate_confirmed_event_description,
-    generate_event_description
+    generate_event_description,
+    generate_confirmed_event_participants_list
 )
 
 # Import from utils
@@ -70,22 +71,69 @@ def ask_join(chat_id: int, event_id: str, thread_id: int = None):
     """Ask user to join an event"""
     try:
         # Get event details
-        event = Event.from_database(event_id)
+        event = ConfirmedEvent.from_database(event_id)
         if not event:
             bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Event not found")
-            return
+            return None
         
-        # generate event description
+        # generate event description with truncated description
         event_description = event.get_event_details_for_message()
+        
+        # create full message with participants
+        rows = event.get_all_users_for_event() or []
+        participant_count = len(rows)
+        participants_formatted = "\n".join(
+            f"• {row.get('user_uuid')} {row.get('emoji_icon', '')}".strip()
+            for row in rows
+        ) or "No participants yet"
+
+        full_message = f"{event_description}\n\n👥 <b>Participants ({participant_count})</b>:\n{participants_formatted}"
         
         # add join button
         markup = event.get_event_button()
 
-        # send event description
-        bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text=event_description, reply_markup=markup)
+        # send event description and return message ID
+        sent_message = bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text=full_message, reply_markup=markup)
+        return sent_message.message_id
     except Exception as e:
         logger.error(f"Error in ask_join: {str(e)}")
         bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Failed to ask user to join event. Please try again later.")
+        return None
+
+def update_join_message(chat_id: int, message_id: int, event_id: str, thread_id: int = None):
+    """Update the join message with current participant list"""
+    try:
+        # Get event details
+        event = ConfirmedEvent.from_database(event_id)
+        if not event:
+            return False
+        
+        # generate event description with truncated description
+        event_description = event.get_event_details_for_message()
+        
+        # create full message with participants
+        rows = event.get_all_users_for_event() or []
+        participant_count = len(rows)
+        participants_formatted = "\n".join(
+            f"• @{row.get('tele_user')} {row.get('emoji_icon', '')}".strip()
+            for row in rows
+        ) or "No participants yet"
+
+        full_message = f"{event_description}\n\n👥 <b>Participants ({participant_count})</b>:\n{participants_formatted}"
+        
+        markup = event.get_event_button()
+
+        # update the existing message
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message_id,
+            text=full_message,
+            reply_markup=markup
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Error updating join message: {str(e)}")
+        return False
 
 def format_availability_summary(event_id: str, username: str) -> str:
     """Format a summary of a user's availability for an event"""
@@ -102,7 +150,7 @@ def format_availability_summary(event_id: str, username: str) -> str:
         return "No availability data found"
     
     # Format the summary
-    summary = f"Your availability for {event['name']}:\n\n"
+    summary = f"Your availability for {event['event_name']}:\n\n"
     
     # Group availability by date
     by_date = defaultdict(list)

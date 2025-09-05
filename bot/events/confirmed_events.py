@@ -3,7 +3,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 # Import from services
-from services.database_service import getEntry, setEntry, getEntries, deleteEntry
+from services.database_service import getEntry, setEntry, getEntries, deleteEntry, supabase
 
 # Import from utils
 from utils.date_utils import parse_date, format_date_month_day, format_time_from_iso_am_pm
@@ -12,7 +12,7 @@ from utils.overrides_utils import overrides
 # Import from other
 import uuid
 
-import events.events as events
+from events.events import Event
 
 """
 Class for confirmed events, inherits from Event class
@@ -26,7 +26,7 @@ Database Scehema for reference
   confirmed_end_time TIMESTAMPTZ,
 """
 
-class ConfirmedEvent(events.Event):
+class ConfirmedEvent(Event):
     def __init__(self, 
                  event_id: str, 
                  event_name: str, 
@@ -39,14 +39,14 @@ class ConfirmedEvent(events.Event):
                  creator: str, 
                  created_at: str, 
                  updated_at: str, 
-                 min_participants: int, 
-                 min_duration: int, 
-                 max_duration: int, 
-                 is_reminders_enabled: bool, 
-                 timezone: str, 
-                 confirmed_at: str, 
                  confirmed_start_time: str, 
-                 confirmed_end_time: str):
+                 confirmed_end_time: str,
+                 confirmed_at: str, 
+                 min_participants: int = 2, 
+                 min_duration: int = 2, 
+                 max_duration: int = 4, 
+                 is_reminders_enabled: bool = True, 
+                 timezone: str = "Asia/Singapore", ):
         super().__init__(event_id, 
                          event_name, 
                          event_description, 
@@ -71,43 +71,45 @@ class ConfirmedEvent(events.Event):
     Create confirmed event in database
     """
     @classmethod
-    def from_event(cls, event: events.Event, confirmed_at: str, confirmed_start_time: str, confirmed_end_time: str):
-        confirmed_event = cls(event.event_id,
-                             event.event_name,
-                             event.event_description,
-                             event.event_type,
-                             event.start_date,
-                             event.end_date,
-                             event.start_hour, 
-                             event.end_hour, 
-                             event.creator, 
-                             event.created_at, 
-                             event.updated_at, 
-                             event.min_participants, 
-                             event.min_duration, 
-                             event.max_duration, 
-                             event.is_reminders_enabled, 
-                             event.timezone, 
-                             confirmed_at, 
-                             confirmed_start_time, 
-                             confirmed_end_time)
+    def from_event(cls, event: Event, confirmed_at: str, confirmed_start_time: str, confirmed_end_time: str):
+        confirmed_event = cls(event_id = event.event_id,
+                             event_name = event.event_name,
+                             event_description = event.event_description,
+                             event_type = event.event_type,
+                             start_date = event.start_date,
+                             end_date = event.end_date,
+                             start_hour = event.start_hour, 
+                             end_hour = event.end_hour, 
+                             creator = event.creator, 
+                             created_at = event.created_at, 
+                             updated_at = event.updated_at, 
+                             min_participants = event.min_participants, 
+                             min_duration = event.min_duration, 
+                             max_duration = event.max_duration, 
+                             is_reminders_enabled = event.is_reminders_enabled, 
+                             timezone = event.timezone, 
+                             confirmed_at = confirmed_at, 
+                             confirmed_start_time = confirmed_start_time, 
+                             confirmed_end_time = confirmed_end_time)
         
         confirmed_event_data = {
             "event_id": event.event_id,
-            "confirmed_at": confirmed_at,
-            "confirmed_start_time": confirmed_start_time,
-            "confirmed_end_time": confirmed_end_time
+            "confirmed_at": confirmed_event.confirmed_at,
+            "confirmed_start_time": confirmed_event.confirmed_start_time,
+            "confirmed_end_time": confirmed_event.confirmed_end_time
         }
-        success = setEntry("confirmed_events", event.event_id, confirmed_event_data)
+        isConfirmed = getEntry("confirmed_events", "event_id", event.event_id)
+        if not isConfirmed:
+            isConfirmed = setEntry("confirmed_events", event.event_id, confirmed_event_data)
         
-        if not success:
+        if not isConfirmed:
             raise Exception("Failed to confirm event")
         
         return confirmed_event
     
     @classmethod
     def from_database(cls, event_id: str):
-        event = super().from_database(event_id)
+        event = Event.from_database(event_id)
         if not event:
             return None
         confirmed_event = getEntry("confirmed_events", "event_id", event_id)
@@ -159,7 +161,8 @@ class ConfirmedEvent(events.Event):
     Get all users from membership table for given event
     """
     def _get_all_users_for_event(self):
-        return getEntries("membership", "event_id", self.event_id)
+        response = supabase.rpc("get_event_members", { "p_event_id": self.event_id }).execute()
+        return response.data
 
     """
     Add user to event
@@ -183,7 +186,7 @@ class ConfirmedEvent(events.Event):
     """
     Display overrides
     """
-    @overrides(events.Event)
+    @overrides(Event)
     def _get_event_details_for_message(self):
             description = ""
 
@@ -206,17 +209,17 @@ class ConfirmedEvent(events.Event):
 
             return description
 
-    @overrides(events.Event)
+    @overrides(Event)
     def _get_event_button(self):
         markup = InlineKeyboardMarkup()
         # override to add join event
-        markup.add(InlineKeyboardButton("Join Event", callback_data=f"join_event_{self.event_id}"))
+        markup.add(InlineKeyboardButton("Join Event", callback_data=f"join:{self.event_id}"))
         return markup
 
-    @overrides(events.Event)
+    @overrides(Event)
     def get_event_details_for_message(self):
         return self._get_event_details_for_message()
     
-    @overrides(events.Event)
+    @overrides(Event)
     def get_event_button(self):
         return self._get_event_button()
