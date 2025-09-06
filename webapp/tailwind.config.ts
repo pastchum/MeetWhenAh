@@ -16,28 +16,13 @@ const config: Config = {
   			'minecraft': ['Minecraft', 'monospace'],
   		},
   		colors: {
-			selection: {
-				primary: 'rgba(200, 80, 80, 0.8)',
-				border: 'rgba(200, 80, 80, 0.9)',
-				hover: 'rgba(220, 100, 100, 0.9)',
-				active: 'rgba(180, 70, 70, 0.9)'
-			},
-			text: {
-				primary: '#ffffff',
-				secondary: '#d1d5db',
-				tertiary: '#9ca3af',
-				disabled: '#6b7280'
-			},
-			'dark': {
-				primary: '#000000',
-				secondary: '#0a0a0a',
-				tertiary: '#1a1a1a'
-			},
-			'border': {
-				primary: '#ffffff',
-				secondary: '#374151'
-			}
-		},
+  			selection: {
+  				primary: 'rgba(200, 80, 80, 0.8)',
+  				border: 'rgba(200, 80, 80, 0.9)',
+  				hover: 'rgba(220, 100, 100, 0.9)',
+  				active: 'rgba(180, 70, 70, 0.9)'
+  			}
+  		},
   		boxShadow: {
   			'custom-inset': 'inset 0 0 0 2px rgba(210, 58, 58, 0.5)',
   			'maroon-glow': '0 0 20px rgba(210, 58, 58, 0.3)'

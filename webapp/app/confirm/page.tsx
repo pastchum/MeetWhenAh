@@ -348,16 +348,7 @@ export default function ConfirmPage() {
         <Card className="bg-[#0a0a0a] border border-[#8c2e2e] rounded-lg shadow-lg mb-6">
           <CardHeader className="pb-2">
             <div className="w-full">
-              <h1 
-                className="text-3xl font-bold mb-2 text-white cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => {
-                  // Get token from URL and pass it back to dashboard
-                  const urlParams = new URLSearchParams(window.location.search);
-                  const token = urlParams.get('token');
-                  const dashboardUrl = token ? `/dashboard?token=${token}` : '/dashboard';
-                  window.location.href = dashboardUrl;
-                }}
-              >
+              <h1 className="text-3xl font-bold mb-2 text-white">
                 {eventDetails.event_name}
               </h1>
               <p className="text-[#e5e5e5] text-lg">
