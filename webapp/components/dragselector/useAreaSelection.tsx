@@ -2,6 +2,70 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
+// Helper function to get time slot info from DOM element
+function getTimeSlotFromElement(element: HTMLElement): TimeSlotInfo | null {
+  // Look for box element with the expected ID format
+  const boxElement = element.closest('[id^="box-"]');
+  if (!boxElement) return null;
+
+  const id = boxElement.id;
+  const match = id.match(/^box-(.+)-(\d{4})$/);
+  if (!match) return null;
+
+  const [, dateStr, time] = match;
+  // Convert ISO date string to local date format
+  const date = new Date(dateStr);
+  const localDateStr = date.toLocaleDateString("en-GB");
+
+  return {
+    date: localDateStr,
+    time,
+    element: boxElement as HTMLElement,
+  };
+}
+
+// Helper function to get all time slots in rectangular selection
+function getRectangularSelection(
+  startSlot: TimeSlotInfo,
+  endSlot: TimeSlotInfo,
+  container: HTMLElement
+): TimeSlotInfo[] {
+  const selectedSlots: TimeSlotInfo[] = [];
+
+  // Get all box elements in the container
+  const allBoxes = container.querySelectorAll('[id^="box-"]');
+
+  // Parse start and end times as numbers for comparison
+  const startTime = parseInt(startSlot.time);
+  const endTime = parseInt(endSlot.time);
+  const minTime = Math.min(startTime, endTime);
+  const maxTime = Math.max(startTime, endTime);
+
+  // Parse start and end dates for comparison
+  const startDate = new Date(startSlot.date.split("/").reverse().join("-"));
+  const endDate = new Date(endSlot.date.split("/").reverse().join("-"));
+  const minDate = new Date(Math.min(startDate.getTime(), endDate.getTime()));
+  const maxDate = new Date(Math.max(startDate.getTime(), endDate.getTime()));
+
+  allBoxes.forEach((box) => {
+    const slotInfo = getTimeSlotFromElement(box as HTMLElement);
+    if (!slotInfo) return;
+
+    const slotTime = parseInt(slotInfo.time);
+    const slotDate = new Date(slotInfo.date.split("/").reverse().join("-"));
+
+    // Check if this slot falls within the rectangular selection
+    const isInTimeRange = slotTime >= minTime && slotTime <= maxTime;
+    const isInDateRange = slotDate >= minDate && slotDate <= maxDate;
+
+    if (isInTimeRange && isInDateRange) {
+      selectedSlots.push(slotInfo);
+    }
+  });
+
+  return selectedSlots;
+}
+
 interface Coordinates {
   x: number;
   y: number;
@@ -10,6 +74,12 @@ interface Coordinates {
 interface DrawnArea {
   start: undefined | Coordinates;
   end: undefined | Coordinates;
+}
+
+interface TimeSlotInfo {
+  date: string;
+  time: string;
+  element: HTMLElement;
 }
 
 interface useAreaSelectionProps {
@@ -41,6 +111,11 @@ export default function useAreaSelection({
   const [lastTouchPosition, setLastTouchPosition] =
     useState<Coordinates | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [startSlot, setStartSlot] = useState<TimeSlotInfo | null>(null);
+  const [endSlot, setEndSlot] = useState<TimeSlotInfo | null>(null);
+  const [rectangularSelection, setRectangularSelection] = useState<
+    TimeSlotInfo[]
+  >([]);
 
   // Clean up function to remove all listeners
   const cleanupListeners = useCallback((): void => {
@@ -149,6 +224,31 @@ export default function useAreaSelection({
         return newArea;
       });
 
+      // Update end slot and rectangular selection
+      if (container.current) {
+        const elementUnderMouse = document.elementFromPoint(
+          pageX,
+          pageY
+        ) as HTMLElement;
+        if (elementUnderMouse) {
+          const endSlotInfo = getTimeSlotFromElement(elementUnderMouse);
+          if (endSlotInfo && startSlot) {
+            setEndSlot(endSlotInfo);
+            const rectangularSlots = getRectangularSelection(
+              startSlot,
+              endSlotInfo,
+              container.current
+            );
+            setRectangularSelection(rectangularSlots);
+            console.log("[RECTANGULAR] Selection updated:", {
+              startSlot,
+              endSlot: endSlotInfo,
+              selectedCount: rectangularSlots.length,
+            });
+          }
+        }
+      }
+
       // Prevent default
       e.preventDefault();
       e.stopPropagation();
@@ -156,7 +256,7 @@ export default function useAreaSelection({
 
     moveListenerRef.current = moveHandler;
     return moveHandler;
-  }, [isDragging, drawArea, boxRef]);
+  }, [isDragging, drawArea, boxRef, container, startSlot]);
 
   const handlePointerUp = useCallback(
     (e: MouseEvent | TouchEvent) => {
@@ -171,6 +271,13 @@ export default function useAreaSelection({
       setIsDragging(false);
       setDrawArea({ start: undefined, end: undefined });
       setLastTouchPosition(null);
+
+      // Clear rectangular selection states after a delay to allow Box components to process
+      setTimeout(() => {
+        setStartSlot(null);
+        setEndSlot(null);
+        setRectangularSelection([]);
+      }, 100);
 
       if (boxRef.current) {
         boxRef.current.style.width = "0";
@@ -229,6 +336,12 @@ export default function useAreaSelection({
       mouseDownRef.current = true;
       setMouseDown(true);
       setIsDragging(false);
+
+      // Get the time slot info from the target element
+      const startSlotInfo = getTimeSlotFromElement(e.target as HTMLElement);
+      setStartSlot(startSlotInfo);
+      setEndSlot(startSlotInfo); // Initialize end slot to start slot
+      setRectangularSelection(startSlotInfo ? [startSlotInfo] : []);
 
       // Set initial draw area
       const initialDrawArea = {
@@ -314,5 +427,11 @@ export default function useAreaSelection({
     }
   }, [drawArea, isDragging, boxRef]);
 
-  return selection;
+  return {
+    selection,
+    rectangularSelection,
+    startSlot,
+    endSlot,
+    isDragging,
+  };
 }

@@ -38,15 +38,20 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
   // Selected slots: Set<ISO datetime string>
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set());
 
-  // Drag state
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOperation, setDragOperation] = useState<"select" | "deselect">(
-    "select"
-  );
-  const [lastSlot, setLastSlot] = useState<{
+  // Tap selection state
+  const [tapStartSlot, setTapStartSlot] = useState<{
     day: string;
     time: number;
   } | null>(null);
+  const [tapEndSlot, setTapEndSlot] = useState<{
+    day: string;
+    time: number;
+  } | null>(null);
+  const [previewSelection, setPreviewSelection] = useState<Set<string>>(
+    new Set()
+  );
+  const [isInTapMode, setIsInTapMode] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<"add" | "remove">("add");
 
   // Loading state
   const [isLoading, setIsLoading] = useState(false);
@@ -60,6 +65,49 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
 
   // Container ref for position calculations
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to calculate rectangular selection between two points
+  const calculateRectangularSelection = useCallback(
+    (
+      startDay: string,
+      startTime: number,
+      endDay: string,
+      endTime: number
+    ): Set<string> => {
+      const selection = new Set<string>();
+
+      // Parse dates for comparison
+      const startDate = new Date(startDay + "T00:00:00");
+      const endDate = new Date(endDay + "T00:00:00");
+
+      // Determine bounds
+      const minDate = new Date(
+        Math.min(startDate.getTime(), endDate.getTime())
+      );
+      const maxDate = new Date(
+        Math.max(startDate.getTime(), endDate.getTime())
+      );
+      const minTime = Math.min(startTime, endTime);
+      const maxTime = Math.max(startTime, endTime);
+
+      // Get all days within the date range
+      const currentDate = new Date(minDate);
+      while (currentDate <= maxDate) {
+        const dayKey = format(currentDate, "yyyy-MM-dd");
+
+        // Add all time slots within the time range for this day
+        for (let time = minTime; time <= maxTime; time += 30) {
+          const utcDatetime = getUtcDatetime(dayKey, time);
+          selection.add(utcDatetime);
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      return selection;
+    },
+    []
+  );
 
   // Throttle backend updates
   const [pendingSync, setPendingSync] = useState(false);
@@ -139,30 +187,13 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
       // Convert our data format to backend format
       const availabilityData: AvailabilityData[] = [];
 
-      // Group consecutive time slots into blocks
+      // Save each 30-minute slot individually
       const sortedSlots = Array.from(selectedSlots).sort();
 
-      for (let i = 0; i < sortedSlots.length; i++) {
-        const startTime = sortedSlots[i];
-        let endTime = startTime;
-
-        // Find consecutive slots (30-minute intervals)
-        while (i + 1 < sortedSlots.length) {
-          const currentDate = new Date(startTime);
-          const nextDate = new Date(sortedSlots[i + 1]);
-          const timeDiff = nextDate.getTime() - currentDate.getTime();
-
-          // If next slot is exactly 30 minutes after current, it's consecutive
-          if (timeDiff === 30 * 60 * 1000) {
-            endTime = sortedSlots[i + 1];
-            i++;
-          } else {
-            break;
-          }
-        }
-
-        // Add 30 minutes to end time to make it exclusive
-        const endDateTime = new Date(endTime);
+      sortedSlots.forEach((startTime) => {
+        // Each slot is exactly 30 minutes
+        const startDateTime = new Date(startTime);
+        const endDateTime = new Date(startDateTime);
         endDateTime.setMinutes(endDateTime.getMinutes() + 30);
 
         const data: AvailabilityData = {
@@ -172,7 +203,20 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
           end_time: endDateTime.toISOString(),
         };
         availabilityData.push(data);
-      }
+      });
+      console.log("Syncing availability data:", {
+        totalSlots: availabilityData.length,
+        slots: availabilityData.map((slot) => ({
+          start: slot.start_time,
+          end: slot.end_time,
+          duration:
+            (new Date(slot.end_time).getTime() -
+              new Date(slot.start_time).getTime()) /
+              (1000 * 60) +
+            " minutes",
+        })),
+      });
+
       updateUserAvailabilityToAPI(tele_id, eventId, availabilityData);
 
       console.log("Availability synced with backend");
@@ -327,42 +371,116 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
     [timeSlots, endDate, selectedSlots]
   );
 
-  // Handle drag start
-  const handleDragStart = useCallback(
-    (day: string, time: number, isSelected: boolean) => {
-      console.log("[WeekCalendar] Drag start:", { day, time, isSelected });
-      setIsDragging(true);
-      setDragOperation(isSelected ? "deselect" : "select");
-      setLastSlot({ day, time });
-
-      // Update initial selection
-      updateSelection(day, time, isSelected ? "deselect" : "select");
-    },
-    [updateSelection]
-  );
-
-  // Handle drag over time slot
-  const handleDragOver = useCallback(
+  // Handle tap selection
+  const handleTapSelect = useCallback(
     (day: string, time: number) => {
-      if (!isDragging || !lastSlot) return;
+      console.log("[WeekCalendar] Tap select:", {
+        day,
+        time,
+        tapStartSlot,
+        tapEndSlot,
+      });
 
-      // If we moved to a new slot
-      if (day !== lastSlot.day || time !== lastSlot.time) {
-        updateSelection(day, time, dragOperation);
-        setLastSlot({ day, time });
+      if (!tapStartSlot) {
+        // First tap - set start point
+        setTapStartSlot({ day, time });
+        setIsInTapMode(true);
+        setPreviewSelection(new Set([getUtcDatetime(day, time)]));
+        console.log("[WeekCalendar] Set tap start:", { day, time });
+      } else if (!tapEndSlot) {
+        // Second tap - set end point and complete selection
+        setTapEndSlot({ day, time });
+
+        // Calculate rectangular selection
+        const rectangularSelection = calculateRectangularSelection(
+          tapStartSlot.day,
+          tapStartSlot.time,
+          day,
+          time
+        );
+
+        console.log("[WeekCalendar] Rectangular selection calculated:", {
+          startSlot: tapStartSlot,
+          endSlot: { day, time },
+          selectionMode,
+          selectionSize: rectangularSelection.size,
+          selectionDetails: Array.from(rectangularSelection).map((slot) => {
+            const { day: slotDay, time: slotTime } = getLocalDayAndTime(slot);
+            return { day: slotDay, time: slotTime, utc: slot };
+          }),
+        });
+
+        // Apply the selection based on mode
+        setSelectedSlots((prev) => {
+          const newSet = new Set(prev);
+          if (selectionMode === "add") {
+            rectangularSelection.forEach((slot) => newSet.add(slot));
+          } else {
+            rectangularSelection.forEach((slot) => newSet.delete(slot));
+          }
+          return newSet;
+        });
+
+        // Clear tap mode
+        setTapStartSlot(null);
+        setTapEndSlot(null);
+        setPreviewSelection(new Set());
+        setIsInTapMode(false);
+
+        // Mark for syncing to backend
+        setPendingSync(true);
+      } else {
+        // Already have both points, reset and start over
+        setTapStartSlot({ day, time });
+        setTapEndSlot(null);
+        setPreviewSelection(new Set([getUtcDatetime(day, time)]));
+        console.log("[WeekCalendar] Reset and set new tap start:", {
+          day,
+          time,
+        });
       }
     },
-    [isDragging, lastSlot, dragOperation, updateSelection]
+    [tapStartSlot, tapEndSlot, calculateRectangularSelection, selectionMode]
   );
 
-  // Handle drag end
-  const handleDragEnd = useCallback(() => {
-    setIsDragging(false);
-    setLastSlot(null);
+  // Handle tap preview (when hovering after first tap)
+  const handleTapPreview = useCallback(
+    (day: string, time: number) => {
+      if (!tapStartSlot || tapEndSlot) return;
 
-    // Mark for syncing to backend
-    setPendingSync(true);
+      // Calculate and show preview selection
+      const rectangularSelection = calculateRectangularSelection(
+        tapStartSlot.day,
+        tapStartSlot.time,
+        day,
+        time
+      );
+
+      console.log("[WeekCalendar] Preview selection:", {
+        from: tapStartSlot,
+        to: { day, time },
+        previewSize: rectangularSelection.size,
+      });
+
+      setPreviewSelection(rectangularSelection);
+    },
+    [tapStartSlot, tapEndSlot, calculateRectangularSelection]
+  );
+
+  // Handle clearing tap mode
+  const handleClearTapMode = useCallback(() => {
+    setTapStartSlot(null);
+    setTapEndSlot(null);
+    setPreviewSelection(new Set());
+    setIsInTapMode(false);
   }, []);
+
+  // Handle toggling selection mode
+  const handleToggleSelectionMode = useCallback(() => {
+    setSelectionMode((prev) => (prev === "add" ? "remove" : "add"));
+    // Clear tap mode when changing modes
+    handleClearTapMode();
+  }, [handleClearTapMode]);
 
   // Handle tap to toggle individual slot
   const handleTapToToggle = useCallback((day: string, time: number) => {
@@ -394,36 +512,19 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
     onSelectionChange?.(selectedSlots);
   }, [selectedSlots, onSelectionChange]);
 
-  // Prevent text selection during dragging
+  // Handle escape key to clear tap mode
   useEffect(() => {
-    const preventDefault = (e: Event) => {
-      if (isDragging) {
-        e.preventDefault();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isInTapMode) {
+        handleClearTapMode();
       }
     };
 
-    document.addEventListener("selectstart", preventDefault);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("selectstart", preventDefault);
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isDragging]);
-
-  // Handle drag end when mouse is released anywhere in the document
-  useEffect(() => {
-    const handleMouseUp = () => {
-      if (isDragging) {
-        handleDragEnd();
-      }
-    };
-
-    document.addEventListener("mouseup", handleMouseUp);
-    document.addEventListener("touchend", handleMouseUp);
-
-    return () => {
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.removeEventListener("touchend", handleMouseUp);
-    };
-  }, [isDragging, handleDragEnd]);
+  }, [isInTapMode, handleClearTapMode]);
 
   return (
     <div
@@ -453,6 +554,23 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
         </div>
       </div>
 
+      {/* Selection mode toggle button */}
+      <div className="flex justify-end p-2 border-b border-border-primary bg-dark-secondary">
+        <button
+          onClick={handleToggleSelectionMode}
+          className={`
+            px-3 py-1 rounded text-sm font-medium transition-colors
+            ${
+              selectionMode === "add"
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-red-600 hover:bg-red-700 text-white"
+            }
+          `}
+        >
+          {selectionMode === "add" ? "➕ Adding" : "➖ Removing"}
+        </button>
+      </div>
+
       {/* Calendar body */}
       <div className="flex flex-1">
         {/* Time labels column */}
@@ -463,12 +581,15 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
           days={days}
           timeSlots={timeSlots}
           selectedSlots={selectedSlots}
-          isDragging={isDragging}
+          previewSelection={previewSelection}
+          tapStartSlot={tapStartSlot}
+          isInTapMode={isInTapMode}
+          selectionMode={selectionMode}
           endDate={endDate}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
+          onTapSelect={handleTapSelect}
+          onTapPreview={handleTapPreview}
           onTapToToggle={handleTapToToggle}
+          onClearTapMode={handleClearTapMode}
         />
       </div>
     </div>
