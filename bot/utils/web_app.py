@@ -1,8 +1,5 @@
 import os
 from urllib.parse import urlencode
-import logging
-
-logger = logging.getLogger(__name__)
 
 def create_web_app_url(path: str, web_app_number: int = 1, **params) -> str:
     """
@@ -19,12 +16,6 @@ def create_web_app_url(path: str, web_app_number: int = 1, **params) -> str:
     # Get the base URL from environment variable or use default
     base_url = os.getenv('WEBAPP_URL', 'https://meet-when-ah.vercel.app')
     
-    # Log the environment variable
-    logger.info(f"WEBAPP_URL environment variable: {os.getenv('WEBAPP_URL')}")
-    print(f"WEBAPP_URL environment variable: {os.getenv('WEBAPP_URL')}")
-    logger.info(f"Using base_url: {base_url}")
-    print(f"Using base_url: {base_url}")
-    
     # Remove leading slash if present to avoid double slashes
     if path.startswith('/'):
         path = path[1:]
@@ -39,9 +30,5 @@ def create_web_app_url(path: str, web_app_number: int = 1, **params) -> str:
     url = f"{base_url}/{path}"
     if query_string:
         url = f"{url}?{query_string}"
-    
-    # Log the final URL
-    logger.info(f"Generated WebApp URL: {url}")
-    print(f"Generated WebApp URL: {url}")
     
     return url 
