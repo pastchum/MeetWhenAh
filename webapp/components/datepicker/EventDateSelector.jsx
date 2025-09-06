@@ -3,6 +3,14 @@ import NextButton from "@/components/datepicker/NextButton";
 import PreviousButton from "@/components/datepicker/PreviousButton";
 import { useState } from "react";
 import { DatePicker, DateInput, DateSegment } from "react-aria-components";
+import {
+  CalendarDate,
+  parseDate,
+  today,
+  getLocalTimeZone,
+  fromDate,
+  toCalendarDate,
+} from "@internationalized/date";
 
 export default function EventDateSelector({
   prevComponent,
@@ -12,6 +20,29 @@ export default function EventDateSelector({
 }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectionMode, setSelectionMode] = useState("start"); // 'start' or 'end'
+
+  // Helper functions to convert between JS Date and CalendarDate
+  const dateToCalendarDate = (date) => {
+    if (!date) return null;
+    const jsDate = new Date(date);
+    if (isNaN(jsDate.getTime())) return null;
+
+    // Convert to local timezone using @internationalized/date utilities
+    const zonedDateTime = fromDate(jsDate, getLocalTimeZone());
+    return toCalendarDate(zonedDateTime);
+  };
+
+  const calendarDateToDate = (calendarDate) => {
+    if (!calendarDate) return null;
+    // Create date in local timezone - CalendarDate doesn't have timezone info,
+    // so we create a local Date object
+    const localDate = new Date(
+      calendarDate.year,
+      calendarDate.month - 1,
+      calendarDate.day
+    );
+    return localDate;
+  };
 
   const handleClear = () => {
     setData((prev) => ({
@@ -129,12 +160,24 @@ export default function EventDateSelector({
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Start Date
             </label>
-            <DatePicker>
+            <DatePicker
+              value={dateToCalendarDate(data?.start)}
+              onChange={(calendarDate) => {
+                const jsDate = calendarDateToDate(calendarDate);
+                setData((prev) => ({
+                  ...prev,
+                  start: jsDate,
+                  end: data?.end,
+                }));
+                setSelectionMode("end");
+              }}
+            >
               <DateInput>
                 {(segment) => (
                   <DateSegment
                     segment={segment}
-                    className="px-0.5 tabular-nums outline-none rounded-sm focus:bg-rose-600 focus:text-white caret-transparent placeholder-shown:text-gray-500 text-gray-800"
+                    className="px-0.5 tabular-nums outline-none rounded-sm focus:bg-rose-600 focus:text-white caret-transparent placeholder-shown:text-gray-200 text-gray-50
+                    0"
                   />
                 )}
               </DateInput>
@@ -144,12 +187,32 @@ export default function EventDateSelector({
             <label className="block text-sm font-medium text-slate-300 mb-2">
               End Date
             </label>
-            <DatePicker>
+            <DatePicker
+              value={dateToCalendarDate(data?.end)}
+              onChange={(calendarDate) => {
+                const jsDate = calendarDateToDate(calendarDate);
+                // If end date is before start date, swap them
+                if (data?.start && jsDate < data?.start) {
+                  setData((prev) => ({
+                    ...prev,
+                    start: jsDate,
+                    end: data?.start,
+                  }));
+                } else {
+                  setData((prev) => ({
+                    ...prev,
+                    start: data?.start,
+                    end: jsDate,
+                  }));
+                }
+                setSelectionMode("start");
+              }}
+            >
               <DateInput>
                 {(segment) => (
                   <DateSegment
                     segment={segment}
-                    className="px-0.5 tabular-nums outline-none rounded-sm focus:bg-rose-600 focus:text-gray caret-transparent placeholder-shown:text-gray-500 text-gray-800"
+                    className="px-0.5 tabular-nums outline-none rounded-sm focus:bg-rose-600 focus:text-gray caret-transparent placeholder-shown:text-gray-200 text-gray-50"
                   />
                 )}
               </DateInput>
@@ -158,14 +221,14 @@ export default function EventDateSelector({
         </div>
 
         {/* Inline Calendar */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 bg-zinc-800 text-white">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-4">
             <Button
               size="sm"
               variant="light"
               onPress={goToPreviousMonth}
-              className="text-white hover:bg-slate-50 min-w-0 w-8 h-8 p-1 bg-slate-50 border border-slate-200 hover:border-rose-600 rounded-sm"
+              className="text-white hover:bg-slate-50 min-w-0 w-8 h-8 p-1 bg-red-800 border border-slate-200 hover:border-rose-600 rounded-sm"
             >
               ←
             </Button>
@@ -176,7 +239,7 @@ export default function EventDateSelector({
               size="sm"
               variant="light"
               onPress={goToNextMonth}
-              className="text-white hover:bg-slate-50 min-w-0 w-8 h-8 p-1 bg-slate-50 border border-slate-200 hover:border-rose-600 rounded-sm"
+              className="text-white hover:bg-slate-50 min-w-0 w-8 h-8 p-1 bg-red-800 border border-slate-200 hover:border-rose-600 rounded-sm"
             >
               →
             </Button>
