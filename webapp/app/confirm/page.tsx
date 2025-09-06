@@ -344,6 +344,12 @@ export default function ConfirmPage() {
 
   return (
     <main className="minecraft-font bg-black min-h-screen p-4">
+      <div className="w-full max-w-md mb-6 text-center">
+        <h1 className="font-semibold text-3xl">
+          <span className="text-white">MeetWhenAh</span>
+          <span className="text-[#c44545]">?</span>
+        </h1>
+      </div>
       <div className="max-w-7xl mx-auto">
         <Card className="bg-[#0a0a0a] border border-[#8c2e2e] rounded-lg shadow-lg mb-6">
           <CardHeader className="pb-2">
