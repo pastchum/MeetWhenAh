@@ -117,7 +117,7 @@ export default function DatePicker() {
     <main className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-4">
       <div className="w-full max-w-md mb-6 text-center">
         <h1 className="font-semibold text-3xl">
-          <span className="text-white">MeetWhen</span>
+          <span className="text-white">MeetWhenAh</span>
           <span className="text-[#c44545]">?</span>
         </h1>
       </div>
