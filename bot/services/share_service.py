@@ -74,19 +74,16 @@ def handle_share_event(event_id: str, user_id: str, chat_id: str, message_id: st
     else:
         ask_availability(chat_id, event_id, thread_id)
 
-    # cehck if chat exists
-    if not get_chat(event_id, chat_id):
-        set_chat(event_id, chat_id, thread_id)
-        success = True
-    else:
-        success = True
-
     try: 
-        # delete share message
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text="Event shared successfully!")
+    # cehck if chat exists
+        if not get_chat(event_id, chat_id):
+            set_chat(event_id, chat_id, thread_id)
+            success = True
+        else:
+            success = True
+
+        return True
     except Exception as e:
         logger.error(f"Error in handle_share_event: {str(e)}")
         bot.send_message(chat_id=chat_id, message_thread_id=thread_id, text="Failed to handle share event. Please try again later.")
         return False
-
-    return success
