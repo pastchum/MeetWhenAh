@@ -1,7 +1,32 @@
 import { useState, useEffect } from "react";
-import DatePicker from "react-datepicker";
 import { CalendarDaysIcon, ClockIcon } from "@heroicons/react/24/outline";
-import "react-datepicker/dist/react-datepicker.css";
+import {
+  DatePicker,
+  Label,
+  Group,
+  DateInput,
+  Button,
+  Popover,
+  Dialog,
+  Calendar,
+  CalendarGrid,
+  CalendarCell,
+  CalendarGridHeader,
+  CalendarGridBody,
+  CalendarHeaderCell,
+  Heading,
+  DateSegment,
+  TimeField,
+} from "react-aria-components";
+import {
+  CalendarDate,
+  CalendarDateTime,
+  parseDate,
+  parseDateTime,
+  today,
+  getLocalTimeZone,
+  Time,
+} from "@internationalized/date";
 
 interface ConfirmDatePickerProps {
   startDate?: any;
@@ -23,33 +48,46 @@ export default function ConfirmDatePicker({
   showTimeSelect = true,
   isRange = true,
 }: ConfirmDatePickerProps) {
-  const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(
-    startDate ? new Date(startDate) : null
+  const [selectedStartDate, setSelectedStartDate] =
+    useState<CalendarDate | null>(
+      startDate
+        ? parseDate(new Date(startDate).toISOString().split("T")[0])
+        : null
+    );
+  const [selectedEndDate, setSelectedEndDate] = useState<CalendarDate | null>(
+    endDate ? parseDate(new Date(endDate).toISOString().split("T")[0]) : null
   );
-  const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(
-    endDate ? new Date(endDate) : null
+  const [selectedStartTime, setSelectedStartTime] = useState<Time | null>(
+    startDate
+      ? new Time(
+          new Date(startDate).getHours(),
+          new Date(startDate).getMinutes()
+        )
+      : null
   );
-  const [selectedStartTime, setSelectedStartTime] = useState<Date | null>(
-    startDate ? new Date(startDate) : null
-  );
-  const [selectedEndTime, setSelectedEndTime] = useState<Date | null>(
-    endDate ? new Date(endDate) : null
+  const [selectedEndTime, setSelectedEndTime] = useState<Time | null>(
+    endDate
+      ? new Time(new Date(endDate).getHours(), new Date(endDate).getMinutes())
+      : null
   );
 
-  // Combine date and time into full datetime
+  // Convert CalendarDate and Time to Date
   const combineDateTime = (
-    date: Date | null,
-    time: Date | null
+    date: CalendarDate | null,
+    time: Time | null
   ): Date | null => {
     if (!date) return null;
-    if (!time) return date;
+    if (!time) {
+      return new Date(date.year, date.month - 1, date.day);
+    }
 
-    const combined = new Date(date);
-    combined.setHours(time.getHours());
-    combined.setMinutes(time.getMinutes());
-    combined.setSeconds(0);
-    combined.setMilliseconds(0);
-    return combined;
+    return new Date(
+      date.year,
+      date.month - 1,
+      date.day,
+      time.hour,
+      time.minute
+    );
   };
 
   // Update parent component when dates/times change
@@ -74,19 +112,19 @@ export default function ConfirmDatePicker({
     onDateChange,
   ]);
 
-  const handleStartDateChange = (date: Date | null) => {
+  const handleStartDateChange = (date: CalendarDate | null) => {
     setSelectedStartDate(date);
   };
 
-  const handleEndDateChange = (date: Date | null) => {
+  const handleEndDateChange = (date: CalendarDate | null) => {
     setSelectedEndDate(date);
   };
 
-  const handleStartTimeChange = (time: Date | null) => {
+  const handleStartTimeChange = (time: Time | null) => {
     setSelectedStartTime(time);
   };
 
-  const handleEndTimeChange = (time: Date | null) => {
+  const handleEndTimeChange = (time: Time | null) => {
     setSelectedEndTime(time);
   };
 
@@ -95,86 +133,188 @@ export default function ConfirmDatePicker({
       <div className="grid grid-cols-2 gap-4 text-gray-700">
         {/* Start Date */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-300">
+          <Label className="block text-sm font-medium text-slate-300">
             Start Date
-          </label>
+          </Label>
           <div className="relative">
             <DatePicker
-              selected={selectedStartDate}
+              value={selectedStartDate}
               onChange={handleStartDateChange}
-              dateFormat="MMM d, yyyy"
-              placeholderText="Select start date"
-              className="w-full px-3 py-2 pl-10 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              popperClassName="react-datepicker-popper"
-              calendarClassName="shadow-lg border border-gray-200 rounded-lg"
-            />
-            <CalendarDaysIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            >
+              <Group className="flex">
+                <DateInput className="w-full px-3 py-2 pl-10 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                  {(segment) => (
+                    <DateSegment
+                      segment={segment}
+                      className="px-0.5 tabular-nums outline-none rounded-sm focus:bg-red-600 focus:text-slate-500 caret-transparent placeholder-shown:text-gray-500 text-gray-800"
+                    />
+                  )}
+                </DateInput>
+                <Button className="ml-1 p-1 rounded outline-none focus:ring-2 focus:ring-red-500">
+                  <CalendarDaysIcon className="w-4 h-4 text-gray-400" />
+                </Button>
+              </Group>
+              <Popover
+                placement="top"
+                className="bg-slate-50 border border-slate-200 rounded-lg shadow-lg z-[999999] p-4"
+              >
+                <Dialog>
+                  <Calendar>
+                    <header className="flex items-center gap-1 pb-4 px-1 text-slate-500 w-full">
+                      <Heading className="flex-1 font-semibold text-2xl ml-2 text-slate-700" />
+                      <Button
+                        slot="previous"
+                        className="w-9 h-9 outline-none cursor-default bg-transparent text-slate-500 border-0 flex items-center justify-center rounded-full hover:bg-slate-50 focus:ring-2 focus:ring-red-500"
+                      >
+                        ◀
+                      </Button>
+                      <Button
+                        slot="next"
+                        className="w-9 h-9 outline-none cursor-default bg-transparent text-slate-500 border-0 flex items-center justify-center rounded-full hover:bg-slate-50 focus:ring-2 focus:ring-red-500"
+                      >
+                        ▶
+                      </Button>
+                    </header>
+                    <CalendarGrid className="border-spacing-1 border-separate">
+                      <CalendarGridHeader>
+                        {(day) => (
+                          <CalendarHeaderCell className="text-xs text-slate-500 font-semibold">
+                            {day}
+                          </CalendarHeaderCell>
+                        )}
+                      </CalendarGridHeader>
+                      <CalendarGridBody>
+                        {(date) => (
+                          <CalendarCell
+                            date={date}
+                            className="w-9 h-9 outline-none cursor-default rounded-full flex items-center justify-center text-slate-800 outside-month:text-slate-500 hover:bg-slate-50 pressed:bg-slate-100 selected:bg-red-600 selected:text-slate-500 focus:ring-2 focus:ring-red-500"
+                          />
+                        )}
+                      </CalendarGridBody>
+                    </CalendarGrid>
+                  </Calendar>
+                </Dialog>
+              </Popover>
+            </DatePicker>
+            <CalendarDaysIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
 
         {/* Start Time */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-300">
+          <Label className="block text-sm font-medium text-slate-300">
             Start Time
-          </label>
+          </Label>
           <div className="relative">
-            <DatePicker
-              selected={selectedStartTime}
+            <TimeField
+              value={selectedStartTime}
               onChange={handleStartTimeChange}
-              showTimeSelect
-              showTimeSelectOnly
-              timeIntervals={15}
-              timeCaption="Time"
-              dateFormat="h:mm aa"
-              placeholderText="Select start time"
-              className="w-full px-3 py-2 pl-10 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              popperClassName="react-datepicker-popper"
-              calendarClassName="shadow-lg border border-gray-200 rounded-lg"
-            />
-            <ClockIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              className="w-full"
+            >
+              <DateInput className="w-full px-3 py-2 pl-10 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                {(segment) => (
+                  <DateSegment
+                    segment={segment}
+                    className="px-0.5 tabular-nums outline-none rounded-sm focus:bg-red-600 focus:text-slate-500 caret-transparent placeholder-shown:text-gray-500 text-gray-800"
+                  />
+                )}
+              </DateInput>
+            </TimeField>
+            <ClockIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
 
         {/* End Date */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-300">
+          <Label className="block text-sm font-medium text-slate-300">
             End Date
-          </label>
+          </Label>
           <div className="relative">
             <DatePicker
-              selected={selectedEndDate}
+              value={selectedEndDate}
               onChange={handleEndDateChange}
-              dateFormat="MMM d, yyyy"
-              placeholderText="Select end date"
-              minDate={selectedStartDate || undefined} // Prevent selecting end date before start date
-              className="w-full px-3 py-2 pl-10 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              popperClassName="react-datepicker-popper"
-              calendarClassName="shadow-lg border border-gray-200 rounded-lg"
-            />
-            <CalendarDaysIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              minValue={selectedStartDate || undefined}
+            >
+              <Group className="flex">
+                <DateInput className="w-full px-3 py-2 pl-10 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                  {(segment) => (
+                    <DateSegment
+                      segment={segment}
+                      className="px-0.5 tabular-nums outline-none rounded-sm focus:bg-red-600 focus:text-slate-500 caret-transparent placeholder-shown:text-gray-500 text-gray-800"
+                    />
+                  )}
+                </DateInput>
+                <Button className="ml-1 p-1 rounded outline-none focus:ring-2 focus:ring-red-500">
+                  <CalendarDaysIcon className="w-4 h-4 text-gray-400" />
+                </Button>
+              </Group>
+              <Popover
+                placement="top"
+                className="bg-slate-50 border border-slate-200 rounded-lg shadow-lg z-[999999] p-4"
+              >
+                <Dialog>
+                  <Calendar>
+                    <header className="flex items-center gap-1 pb-4 px-1 w-full text-slate-800">
+                      <Heading className="flex-1 font-semibold text-2xl ml-2" />
+                      <Button
+                        slot="previous"
+                        className="w-9 h-9 outline-none cursor-default bg-transparent text-gray-600 border-0 flex items-center justify-center rounded-full hover:bg-gray-100 focus:ring-2 focus:ring-red-500"
+                      >
+                        ◀
+                      </Button>
+                      <Button
+                        slot="next"
+                        className="w-9 h-9 outline-none cursor-default bg-transparent text-gray-600 border-0 flex items-center justify-center rounded-full hover:bg-gray-100 focus:ring-2 focus:ring-red-500"
+                      >
+                        ▶
+                      </Button>
+                    </header>
+                    <CalendarGrid className="border-spacing-1 border-separate">
+                      <CalendarGridHeader>
+                        {(day) => (
+                          <CalendarHeaderCell className="text-xs text-slate-800 outside-month:text-gray-300 font-semibold">
+                            {day}
+                          </CalendarHeaderCell>
+                        )}
+                      </CalendarGridHeader>
+                      <CalendarGridBody>
+                        {(date) => (
+                          <CalendarCell
+                            date={date}
+                            className="w-9 h-9 outline-none cursor-default rounded-full flex items-center justify-center text-slate-800 outside-month:text-gray-300 hover:bg-gray-100 pressed:bg-gray-200 selected:bg-red-600 selected:text-slate-500 focus:ring-2 focus:ring-red-500"
+                          />
+                        )}
+                      </CalendarGridBody>
+                    </CalendarGrid>
+                  </Calendar>
+                </Dialog>
+              </Popover>
+            </DatePicker>
+            <CalendarDaysIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
 
         {/* End Time */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-300">
+          <Label className="block text-sm font-medium text-slate-300">
             End Time
-          </label>
+          </Label>
           <div className="relative">
-            <DatePicker
-              selected={selectedEndTime}
+            <TimeField
+              value={selectedEndTime}
               onChange={handleEndTimeChange}
-              showTimeSelect
-              showTimeSelectOnly
-              timeIntervals={15}
-              timeCaption="Time"
-              dateFormat="h:mm aa"
-              placeholderText="Select end time"
-              className="w-full px-3 py-2 pl-10 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              popperClassName="react-datepicker-popper"
-              calendarClassName="shadow-lg border border-gray-200 rounded-lg"
-            />
-            <ClockIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              className="w-full"
+            >
+              <DateInput className="w-full px-3 py-2 pl-10 text-sm bg-slate-50 border border-slate-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                {(segment) => (
+                  <DateSegment
+                    segment={segment}
+                    className="px-0.5 tabular-nums outline-none rounded-sm focus:bg-red-600 focus:text-slate-500 caret-transparent placeholder-shown:text-gray-500 text-gray-800"
+                  />
+                )}
+              </DateInput>
+            </TimeField>
+            <ClockIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
       </div>
@@ -207,61 +347,6 @@ export default function ConfirmDatePicker({
           </div>
         </div>
       )}
-
-      {/* Custom styles for the datepicker */}
-      <style jsx global>{`
-        .react-datepicker-popper {
-          z-index: 9999 !important;
-        }
-
-        .react-datepicker {
-          font-family: inherit;
-          border: 1px solid #e5e7eb;
-          border-radius: 0.5rem;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-            0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-
-        .react-datepicker__header {
-          background-color: #f9fafb;
-          border-bottom: 1px solid #e5e7eb;
-          border-radius: 0.5rem 0.5rem 0 0;
-        }
-
-        .react-datepicker__current-month {
-          color: #374151;
-          font-weight: 600;
-        }
-
-        .react-datepicker__day {
-          color: #374151;
-          border-radius: 0.375rem;
-          margin: 0.125rem;
-        }
-
-        .react-datepicker__day:hover {
-          background-color: #dbeafe;
-          color: #1d4ed8;
-        }
-
-        .react-datepicker__day--selected {
-          background-color: #3b82f6;
-          color: white;
-        }
-
-        .react-datepicker__time-container {
-          border-left: 1px solid #e5e7eb;
-        }
-
-        .react-datepicker__time-list-item:hover {
-          background-color: #dbeafe;
-        }
-
-        .react-datepicker__time-list-item--selected {
-          background-color: #3b82f6;
-          color: white;
-        }
-      `}</style>
     </div>
   );
 }
