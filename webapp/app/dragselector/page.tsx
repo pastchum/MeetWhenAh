@@ -12,7 +12,7 @@ import {
   addUserToDatabase,
 } from "@/routes/user_routes";
 import { useTelegramViewport } from "@/hooks/useTelegramViewport";
-import { Button } from "@nextui-org/react";
+import { Button, Spinner, Card, CardBody } from "@nextui-org/react";
 import { getLocalDayAndTime } from "@/utils/datetime-utils";
 
 // Interface for aggregated time periods
@@ -49,28 +49,17 @@ export default function DragSelectorPage() {
   const [teleId, setTeleId] = useState<string>("");
   const [username, setUsername] = useState<string>(""); // Default username
   const [userUuid, setUserUuid] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
   const [eventId, setEventId] = useState<string>("");
   const [isShowInstructions, setIsShowInstructions] = useState<boolean>(true);
 
   // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
-    console.log("[DragSelector] Initial setup useEffect triggered");
-
     const urlParams = new URLSearchParams(window.location.search);
-    console.log(
-      "[DragSelector] URL params:",
-      Object.fromEntries(urlParams.entries())
-    );
 
     if (window.Telegram.WebApp.initDataUnsafe.user) {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
-      console.log("[DragSelector] Telegram user found:", {
-        id: telegramId,
-        username: window.Telegram.WebApp.initDataUnsafe.user.username,
-      });
       setTeleId(telegramId.toString());
-    } else {
-      console.log("[DragSelector] No Telegram user data found");
     }
 
     // disable vertical swipes
@@ -104,14 +93,11 @@ export default function DragSelectorPage() {
       if (!eventId) return;
       const eventDetails = await fetchEventFromAPI(eventId);
       if (eventDetails) {
-        console.log(eventDetails);
         setEventDetails(eventDetails);
         setStartDate(new Date(eventDetails.start_date));
         setEndDate(new Date(eventDetails.end_date));
         // Calculate event duration in days
         const eventStart = new Date(eventDetails.start_date);
-        console.log("eventStart", eventDetails.start_date);
-        console.log("eventStart", eventStart);
         const eventEnd = new Date(eventDetails.end_date);
         const totalDays = Math.ceil(
           (eventEnd.getTime() - eventStart.getTime()) / (1000 * 3600 * 24) + 1
@@ -146,10 +132,6 @@ export default function DragSelectorPage() {
       console.log("[DragSelector] User data response:", userData);
 
       if (userData) {
-        console.log("[DragSelector] Setting user data:", {
-          uuid: userData.uuid,
-          username: userData.tele_user,
-        });
         setUserUuid(userData.uuid);
         setUsername(userData.tele_user);
       } else {
@@ -192,17 +174,7 @@ export default function DragSelectorPage() {
 
   // get user availability
   useEffect(() => {
-    console.log("[DragSelector] Availability useEffect triggered:", {
-      userUuid,
-      username,
-      teleId,
-      eventId,
-    });
-
     if (!userUuid || !username || !teleId || !eventId) {
-      console.log(
-        "[DragSelector] Missing required data for availability fetch"
-      );
       return;
     }
 
@@ -211,7 +183,6 @@ export default function DragSelectorPage() {
         teleId.toString(),
         eventId
       );
-      console.log("[DragSelector] Availability response:", availability);
       if (availability) {
         // Convert availability blocks to ISO datetime strings
         const newSelectionData = new Set<string>();
@@ -222,7 +193,6 @@ export default function DragSelectorPage() {
             const endDate = new Date(block.end_time);
 
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-              console.error("Invalid date in availability block:", block);
               return;
             }
 
@@ -239,7 +209,7 @@ export default function DragSelectorPage() {
               currentTime.setMinutes(currentTime.getMinutes() + 30);
             }
           } catch (error) {
-            console.error("Error processing availability block:", block, error);
+            // Skip invalid blocks
           }
         });
 
@@ -248,6 +218,46 @@ export default function DragSelectorPage() {
     };
     fetchUserAvailability();
   }, [userUuid, eventId, teleId, username]);
+
+  // Initialize dragselector data
+  useEffect(() => {
+    const initializeDragSelector = async () => {
+      try {
+        // Wait for all critical data to be ready
+        await Promise.all([
+          // Wait for DOM to be ready
+          new Promise(resolve => {
+            if (document.readyState === 'complete') {
+              resolve(true);
+            } else {
+              window.addEventListener('load', () => resolve(true));
+            }
+          }),
+          // Wait for fonts to load
+          new Promise(resolve => {
+            if (document.fonts) {
+              document.fonts.ready.then(() => resolve(true));
+            } else {
+              setTimeout(() => resolve(true), 100);
+            }
+          })
+        ]);
+
+        // Small delay to ensure smooth rendering
+        setTimeout(() => {
+          setLoading(false);
+        }, 300);
+      } catch (error) {
+        console.error('DragSelector initialization error:', error);
+        // Show dragselector anyway after timeout
+        setTimeout(() => {
+          setLoading(false);
+        }, 1000);
+      }
+    };
+
+    initializeDragSelector();
+  }, []);
 
   // Navigate to the event's start date
   const navigateToEventStart = () => {
@@ -390,9 +400,28 @@ export default function DragSelectorPage() {
     );
   };
 
+  // Loading state with smooth transitions
+  if (loading) {
+    return (
+      <div className="transition-opacity duration-500 opacity-100">
+        <main className="minecraft-font bg-black min-h-screen flex items-center justify-center p-4">
+          <Card className="bg-dark-secondary border border-border-primary shadow-lg">
+            <CardBody className="flex items-center justify-center p-8">
+              <Spinner size="lg" color="primary" />
+              <p className="text-text-primary mt-4 text-center">Loading Availability...</p>
+              <p className="text-text-tertiary mt-2 text-sm text-center">
+                Setting up your availability selector
+              </p>
+            </CardBody>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="flex flex-col w-full"
+      className="flex flex-col w-full transition-opacity duration-500 opacity-100"
       style={{
         height: `${viewport.totalHeight}px`,
         transform: "translateZ(0)", // Create new stacking context
@@ -401,7 +430,16 @@ export default function DragSelectorPage() {
       {/* Fixed Header Section */}
       <div className="flex-shrink-0 p-4 bg-dark-secondary border-b border-border-primary">
         {eventDetails.event_name && (
-          <div className="text-2xl font-bold text-center text-white">
+          <div 
+            className="text-2xl font-bold text-center text-white cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => {
+              // Get token from URL and pass it back to dashboard
+              const urlParams = new URLSearchParams(window.location.search);
+              const token = urlParams.get('token');
+              const dashboardUrl = token ? `/dashboard?token=${token}` : '/dashboard';
+              window.location.href = dashboardUrl;
+            }}
+          >
             {eventDetails.event_name}
           </div>
         )}

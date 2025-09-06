@@ -5,9 +5,12 @@ import uuid
 import telebot
 from telebot import types
 import os
+import logging
 
 # Import from config
 from ..config.config import bot
+
+logger = logging.getLogger(__name__)
 
 # Import from best time algo
 from best_time_algo.best_time_algo import BestTimeAlgo
@@ -74,6 +77,47 @@ def register_event_handlers(bot):
         thread_id = getattr(message, "message_thread_id", None)
         message_id = bot_message.message_id
         token = put_ctx(message.from_user.id, chat_id, message_id, thread_id)
+
+    @bot.message_handler(content_types=['web_app_data'])
+    def handle_webapp_data(message):
+        """Handle data received from the web app"""
+        try:
+            # Check if we've already processed this message
+            if message.message_id in processed_messages:
+                return
+            processed_messages.add(message.message_id)
+            
+            # Keep set size manageable
+            if len(processed_messages) > 1000:
+                processed_messages.clear()
+            
+            # Parse the web app data
+            if not hasattr(message, 'web_app_data') or not message.web_app_data:
+                bot.send_message(message.chat.id, "❌ <b>Invalid Data</b>\n\nInvalid web app data received.")
+                return
+                
+            try:
+                data = json.loads(message.web_app_data.data)
+                web_app_number = data.get('web_app_number')
+                
+                # Log webapp data received
+                logger.info(f"Received webapp data: {data}")
+                print(f"Received webapp data: {data}")
+                logger.info(f"Web app number: {web_app_number}")
+                print(f"Web app number: {web_app_number}")
+                
+                if web_app_number == 0:  # Event creation
+                    handle_event_creation(message, data)
+                elif web_app_number == 1:
+                    handle_event_confirmation(message, data)
+                else:
+                    bot.reply_to(message, "❌ <b>Invalid Data</b>\n\nInvalid web app data received")
+            
+            except json.JSONDecodeError:
+                bot.reply_to(message, "❌ <b>Invalid Format</b>\n\nInvalid data format received from web app")
+                
+        except Exception as e:
+            bot.reply_to(message, f"❌ <b>Processing Error</b>\n\nError processing web app data: {str(e)}")
 
         params = f"datepicker={token}"
         # Create web app URL for datepicker

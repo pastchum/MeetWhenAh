@@ -4,6 +4,7 @@ import { ShareData } from "@/utils/share_service";
 import EventCard from "@/components/share/EventCard";
 import { useOverlay } from "@/hooks/useOverlay";
 import { EventData } from "@/utils/event_service";
+import { Spinner, Card, CardBody } from "@nextui-org/react";
 
 export default function SharePage() {
   const { showOverlay } = useOverlay();
@@ -76,7 +77,6 @@ export default function SharePage() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Event shared successfully:", result);
         
         // Show success overlay
         showOverlay((
@@ -153,7 +153,6 @@ export default function SharePage() {
         if (ctx) {
           setIsOwner(ctx.tele_id === tele_id);
         } else {
-          console.log("Failed to fetch ctx");
         }
 
         // Fetch user events
@@ -170,10 +169,21 @@ export default function SharePage() {
     fetchData();
   }, [token, tele_id, fetchCtx, fetchUserEvents]);
 
+  // Loading state with smooth transitions
   if (loading) {
     return (
-      <div className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-center">
-        <div className="text-white text-lg">Loading...</div>
+      <div className="transition-opacity duration-500 opacity-100">
+        <main className="minecraft-font bg-black min-h-screen flex items-center justify-center p-4">
+          <Card className="bg-dark-secondary border border-border-primary shadow-lg">
+            <CardBody className="flex items-center justify-center p-8">
+              <Spinner size="lg" color="primary" />
+              <p className="text-text-primary mt-4 text-center">Loading Events...</p>
+              <p className="text-text-tertiary mt-2 text-sm text-center">
+                Getting your events ready
+              </p>
+            </CardBody>
+          </Card>
+        </main>
       </div>
     );
   }
@@ -187,11 +197,20 @@ export default function SharePage() {
   }
 
   return (
-    <div className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-6">
-      <div className="w-full max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6 text-center text-white">
-          Your Events
+    <div className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-4 transition-opacity duration-500 opacity-100">
+      <div className="w-full max-w-md mb-6 text-center">
+        <h1 
+          className="font-semibold text-3xl cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => window.location.href = `/dashboard${token ? `?token=${token}` : ''}`}
+        >
+          <span className="text-white">MeetWhen</span><span className="text-[#c44545]">?</span>
         </h1>
+      </div>
+      
+      <div className="w-full max-w-2xl">
+        <h2 className="text-2xl font-bold mb-6 text-center text-white">
+          Your Events
+        </h2>
 
         <div className="space-y-4">
           {userEvents.length === 0 ? (
