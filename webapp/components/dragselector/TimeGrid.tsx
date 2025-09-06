@@ -9,24 +9,30 @@ interface TimeGridProps {
   days: Date[];
   timeSlots: number[];
   selectedSlots: Set<string>;
-  isDragging: boolean;
+  previewSelection: Set<string>;
+  tapStartSlot: { day: string; time: number } | null;
+  isInTapMode: boolean;
+  selectionMode: "add" | "remove";
   endDate?: Date;
-  onDragStart: (day: string, time: number, isSelected: boolean) => void;
-  onDragOver: (day: string, time: number) => void;
-  onDragEnd: () => void;
+  onTapSelect: (day: string, time: number) => void;
+  onTapPreview: (day: string, time: number) => void;
   onTapToToggle?: (day: string, time: number) => void;
+  onClearTapMode: () => void;
 }
 
 const TimeGrid: React.FC<TimeGridProps> = ({
   days,
   timeSlots,
   selectedSlots,
-  isDragging,
+  previewSelection,
+  tapStartSlot,
+  isInTapMode,
+  selectionMode,
   endDate,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
+  onTapSelect,
+  onTapPreview,
   onTapToToggle,
+  onClearTapMode,
 }) => {
   // Format date to YYYY-MM-DD for using as a key
   const formatDayKey = (date: Date): string => {
@@ -35,19 +41,21 @@ const TimeGrid: React.FC<TimeGridProps> = ({
 
   // Check if a slot is selected using unified utility function
   const checkSlotSelected = (dayKey: string, time: number): boolean => {
-    const isSelected = isSlotSelected(dayKey, time, selectedSlots);
+    return isSlotSelected(dayKey, time, selectedSlots);
+  };
 
-    // Only log for first few slots or when selected
-    // if (time < 180 || isSelected) {
-    //   console.log('[TimeGrid] isSlotSelected check:', {
-    //     dayKey,
-    //     time,
-    //     isSelected,
-    //     selectedSlotsSize: selectedSlots.size
-    //   });
-    // }
+  // Check if a slot is in the preview selection
+  const checkSlotInPreview = (dayKey: string, time: number): boolean => {
+    return isSlotSelected(dayKey, time, previewSelection);
+  };
 
-    return isSelected;
+  // Check if a slot is the tap start slot
+  const checkIsTapStart = (dayKey: string, time: number): boolean => {
+    return (
+      tapStartSlot !== null &&
+      tapStartSlot.day === dayKey &&
+      tapStartSlot.time === time
+    );
   };
 
   // Determine if time is at an hour mark
@@ -74,32 +82,27 @@ const TimeGrid: React.FC<TimeGridProps> = ({
           >
             {timeSlots.map((time, timeIdx) => {
               const slotIsSelected = checkSlotSelected(dayKey, time);
-              
-              // Only log for first few slots or when selected
-              // if (time < 180 || slotIsSelected) {
-              //   console.log('[TimeGrid] Rendering TimeSlot:', {
-              //     dayKey,
-              //     time,
-              //     slotIsSelected,
-              //     timeIdx
-              //   });
-              // }
-              
+              const slotInPreview = checkSlotInPreview(dayKey, time);
+              const isTapStart = checkIsTapStart(dayKey, time);
+
               return (
                 <TimeSlot
                   key={timeIdx}
                   day={dayKey}
                   time={time}
                   isSelected={slotIsSelected}
+                  isInPreview={slotInPreview}
+                  isTapStart={isTapStart}
+                  isInTapMode={isInTapMode}
+                  selectionMode={selectionMode}
                   isEvenHour={isEvenHour(time)}
                   isHalfHour={isHalfHour(time)}
                   isLastRow={timeIdx === timeSlots.length - 1}
-                  isDragging={isDragging}
                   endDate={endDate}
-                  onDragStart={onDragStart}
-                  onDragOver={onDragOver}
-                  onDragEnd={onDragEnd}
+                  onTapSelect={onTapSelect}
+                  onTapPreview={onTapPreview}
                   onTapToToggle={onTapToToggle}
+                  onClearTapMode={onClearTapMode}
                 />
               );
             })}
