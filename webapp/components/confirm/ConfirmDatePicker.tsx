@@ -151,7 +151,7 @@ export default function ConfirmDatePicker({
                   )}
                 </DateInput>
                 <Button className="ml-1 p-1 rounded outline-none focus:ring-2 focus:ring-red-500">
-                  <CalendarDaysIcon className="w-4 h-4 text-gray-400" />
+                  <CalendarDaysIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                 </Button>
               </Group>
               <Popover
@@ -196,7 +196,6 @@ export default function ConfirmDatePicker({
                 </Dialog>
               </Popover>
             </DatePicker>
-            <CalendarDaysIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
 
@@ -245,7 +244,7 @@ export default function ConfirmDatePicker({
                   )}
                 </DateInput>
                 <Button className="ml-1 p-1 rounded outline-none focus:ring-2 focus:ring-red-500">
-                  <CalendarDaysIcon className="w-4 h-4 text-gray-400" />
+                  <CalendarDaysIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                 </Button>
               </Group>
               <Popover
@@ -290,7 +289,6 @@ export default function ConfirmDatePicker({
                 </Dialog>
               </Popover>
             </DatePicker>
-            <CalendarDaysIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
 
