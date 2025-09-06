@@ -82,6 +82,12 @@ def handle_share_event(event_id: str, user_id: str, chat_id: str, message_id: st
         else:
             success = True
 
+        # delete share message
+        try: 
+            bot.delete_message(chat_id=chat_id, message_id=message_id)
+        except Exception as e:
+            logger.error(f"Error in delete share message: {str(e)}")
+        
         return True
     except Exception as e:
         logger.error(f"Error in handle_share_event: {str(e)}")
