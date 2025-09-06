@@ -1,5 +1,5 @@
 import os
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 def create_web_app_url(path: str, web_app_number: int = 1, **params) -> str:
     """
@@ -30,5 +30,16 @@ def create_web_app_url(path: str, web_app_number: int = 1, **params) -> str:
     url = f"{base_url}/{path}"
     if query_string:
         url = f"{url}?{query_string}"
+    
+    # Validate the URL format
+    try:
+        parsed = urlparse(url)
+        if not parsed.scheme or not parsed.netloc:
+            raise ValueError("Invalid URL format")
+    except Exception as e:
+        # Fallback to a simple URL if validation fails
+        url = f"https://meet-when-ah.vercel.app/{path}"
+        if query_string:
+            url = f"{url}?{query_string}"
     
     return url 
