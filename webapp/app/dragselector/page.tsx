@@ -50,6 +50,7 @@ export default function DragSelectorPage() {
   const [username, setUsername] = useState<string>(""); // Default username
   const [userUuid, setUserUuid] = useState<string>("");
   const [eventId, setEventId] = useState<string>("");
+  const [isShowInstructions, setIsShowInstructions] = useState<boolean>(true);
 
   // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
@@ -442,16 +443,33 @@ export default function DragSelectorPage() {
       </div>
 
       {/* Fixed Instructions */}
-      <div className="flex-shrink-0 px-4 pb-4">
-        <div className="flex items-center">
-          <span className="text-sm px-3 py-1 bg-dark-tertiary rounded shadow-sm text-text-secondary border border-border-primary">
-            Click on a day header to select the entire day. Click any time slot
-            to start rectangular selection, then click another slot to select
-            everything in between. Use the toggle button to switch between
-            adding (green) and removing (red) modes.
-          </span>
+      {!isShowInstructions && (
+        <div
+          className="flex-shrink-0 px-4 pb-4"
+          onClick={() => setIsShowInstructions(true)}
+        >
+          <div className="flex items-center">
+            <span className="text-sm px-3 py-1 bg-dark-tertiary rounded shadow-sm text-text-secondary border border-border-primary">
+              Show instructions
+            </span>
+          </div>
         </div>
-      </div>
+      )}
+      {isShowInstructions && (
+        <div
+          className="flex-shrink-0 px-4 pb-4"
+          onClick={() => setIsShowInstructions(false)}
+        >
+          <div className="flex items-center">
+            <span className="text-sm px-3 py-1 bg-dark-tertiary rounded shadow-sm text-text-secondary border border-border-primary">
+              Click on a day header to select the entire day. Click any time
+              slot to start rectangular selection, then click another slot to
+              select everything in between. Use the toggle button to switch
+              between adding (green) and removing (red) modes.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Scrollable WeekCalendar */}
       <div className="flex-1 px-4 overflow-hidden">
@@ -472,11 +490,11 @@ export default function DragSelectorPage() {
       </div>
 
       {/* Fixed Selected Times Section */}
-      <div className="flex-shrink-0 p-4 bg-dark-secondary border-t border-border-primary">
-        <h2 className="text-xl font-semibold mb-2 text-white">
+      <div className="flex-shrink-0 p-3 bg-dark-secondary border-t border-border-primary">
+        <h3 className="text-xl font-semibold mb-2 text-white">
           Selected Times
-        </h2>
-        <div className="bg-dark-tertiary p-4 rounded text-text-secondary h-32 overflow-y-auto border border-border-primary">
+        </h3>
+        <div className="bg-dark-tertiary p-3 rounded text-text-secondary h-24 overflow-y-auto border border-border-primary">
           {selectionData.size > 0 ? (
             formatSelectionSummary()
           ) : (
