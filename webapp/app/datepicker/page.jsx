@@ -26,7 +26,6 @@ export default function DatePicker() {
   const [loading, setLoading] = useState(true);
 
   const nextComponent = (newData) => {
-    console.log("next component", newData);
     if (newData) {
       setData((prevData) => ({ ...prevData, ...newData }));
       setCurrentComponent((prev) => prev + 1);
@@ -34,7 +33,6 @@ export default function DatePicker() {
   };
 
   const prevComponent = () => {
-    console.log("prev component");
     setCurrentComponent((prev) => prev - 1);
   };
 
@@ -98,7 +96,6 @@ export default function DatePicker() {
 
   useEffect(() => {
     const fetchData = async () => {
-      console.log(token);
       const ctx = await fetchCtx();
       if (ctx) {
         setTokenOwner(ctx.tele_id);

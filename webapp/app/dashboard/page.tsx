@@ -100,7 +100,6 @@ export default function Dashboard() {
     if (urlToken) {
       // Use existing token from URL
       setToken(urlToken);
-      console.log('[Dashboard] Using existing token from URL:', urlToken);
     } else {
       // Generate new token and update URL
       const newToken = crypto.randomUUID();
@@ -111,7 +110,6 @@ export default function Dashboard() {
       newUrl.searchParams.set('token', newToken);
       window.history.replaceState({}, '', newUrl.toString());
       
-      console.log('[Dashboard] Generated new token and updated URL:', newToken);
     }
   }, []);
 
@@ -173,29 +171,17 @@ export default function Dashboard() {
 
   // Fetch user UUID from tele_id
   useEffect(() => {
-    console.log('[Dashboard] User UUID useEffect triggered:', { teleId });
-    
     if (!teleId) {
-      console.log('[Dashboard] No teleId available');
       return;
     }
     
     const fetchUserUuidFromTeleId = async () => {
-      console.log('[Dashboard] Fetching user data for teleId:', teleId.toString());
-      
       const userData = await fetchUserDataFromId(teleId.toString());
-      console.log('[Dashboard] User data response:', userData);
       
       if (userData) {
         setUserUuid(userData.uuid);
         setUsername(userData.tele_user);
-        console.log('[Dashboard] Set user data:', {
-          uuid: userData.uuid,
-          username: userData.tele_user,
-          teleId: userData.tele_id
-        });
       } else {
-        console.log('[Dashboard] No user data found, creating new user');
         // Create new user if not found
         const newUserData = {
           tele_id: teleId,
@@ -208,7 +194,6 @@ export default function Dashboard() {
             setUserUuid(newUser.uuid);
             setUsername(newUser.tele_user);
             setTeleId(newUser.tele_id);
-            console.log('[Dashboard] Created new user:', newUser);
           }
         } catch (error) {
           console.error('[Dashboard] Error creating user:', error);
@@ -220,74 +205,34 @@ export default function Dashboard() {
   }, [teleId, username]);
 
   const handleActionClick = (route: string) => {
-    console.log(`🎯 Dashboard action clicked: ${route}`, {
-      timestamp: new Date().toISOString(),
-      hasTelegramContext,
-      user: tg?.initDataUnsafe?.user,
-      platform: tg?.platform,
-      teleId,
-      username,
-      userUuid,
-      currentUrl: window.location.href,
-      targetRoute: route
-    });
-    
     // Add token to route (token should always exist)
     let targetRoute = route;
     if (token) {
       targetRoute = route.includes('?') ? `${route}&token=${token}` : `${route}?token=${token}`;
     }
     
-    console.log(`🌐 Navigating to: ${targetRoute}`);
-    
     // Simple navigation - let destination page handle loading
     window.location.href = targetRoute;
   };
 
   const handleShareClick = () => {
-    console.log('🎯 Dashboard share action clicked', {
-      timestamp: new Date().toISOString(),
-      hasTelegramContext,
-      user: tg?.initDataUnsafe?.user,
-      platform: tg?.platform,
-      teleId,
-      username,
-      userUuid,
-      currentUrl: window.location.href
-    });
-    
     if (!hasTelegramContext) {
-      console.warn('⚠️ Share clicked without Telegram context');
       alert("Share functionality requires being accessed from a chat. Please open the bot from a chat.");
       return;
     }
     
     if (!token) {
-      console.warn('⚠️ No token available for sharing');
       alert("Share functionality requires being accessed from a chat. Please open the bot from a chat.");
       return;
     }
     
     const shareUrl = `/share?token=${token}`;
-    console.log(`🌐 Share: Navigating to ${shareUrl}`);
     
     // Simple navigation - let destination page handle loading
     window.location.href = shareUrl;
   };
 
   const handleEventAction = (eventId: string, action: string) => {
-    console.log(`🎯 Dashboard event action clicked: ${action}`, {
-      timestamp: new Date().toISOString(),
-      eventId,
-      action,
-      hasTelegramContext,
-      user: tg?.initDataUnsafe?.user,
-      platform: tg?.platform,
-      teleId,
-      username,
-      userUuid
-    });
-    
     if (action === "confirm") {
       window.location.href = `/confirm?event_id=${eventId}`;
     } else if (action === "availability") {
@@ -352,7 +297,6 @@ export default function Dashboard() {
               iconBgColor="bg-blue-500/20"
               iconColor="text-blue-400"
               onClick={() => {
-                console.log('📱 Create Event ActionCard clicked - calling handleActionClick("/datepicker")');
                 handleActionClick('/datepicker');
               }}
             />
@@ -363,7 +307,6 @@ export default function Dashboard() {
               iconBgColor="bg-purple-500/20"
               iconColor="text-purple-400"
               onClick={() => {
-                console.log('📱 Share Event ActionCard clicked - calling handleShareClick()');
                 handleShareClick();
               }}
             />

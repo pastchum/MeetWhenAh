@@ -77,7 +77,6 @@ export default function SharePage() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Event shared successfully:", result);
         
         // Show success overlay
         showOverlay((
@@ -154,7 +153,6 @@ export default function SharePage() {
         if (ctx) {
           setIsOwner(ctx.tele_id === tele_id);
         } else {
-          console.log("Failed to fetch ctx");
         }
 
         // Fetch user events

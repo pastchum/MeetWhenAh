@@ -54,23 +54,11 @@ export default function DragSelectorPage() {
 
   // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
-    console.log("[DragSelector] Initial setup useEffect triggered");
-
     const urlParams = new URLSearchParams(window.location.search);
-    console.log(
-      "[DragSelector] URL params:",
-      Object.fromEntries(urlParams.entries())
-    );
 
     if (window.Telegram.WebApp.initDataUnsafe.user) {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
-      console.log("[DragSelector] Telegram user found:", {
-        id: telegramId,
-        username: window.Telegram.WebApp.initDataUnsafe.user.username,
-      });
       setTeleId(telegramId.toString());
-    } else {
-      console.log("[DragSelector] No Telegram user data found");
     }
 
     // disable vertical swipes
@@ -104,14 +92,11 @@ export default function DragSelectorPage() {
       if (!eventId) return;
       const eventDetails = await fetchEventFromAPI(eventId);
       if (eventDetails) {
-        console.log(eventDetails);
         setEventDetails(eventDetails);
         setStartDate(new Date(eventDetails.start_date));
         setEndDate(new Date(eventDetails.end_date));
         // Calculate event duration in days
         const eventStart = new Date(eventDetails.start_date);
-        console.log("eventStart", eventDetails.start_date);
-        console.log("eventStart", eventStart);
         const eventEnd = new Date(eventDetails.end_date);
         const totalDays = Math.ceil(
           (eventEnd.getTime() - eventStart.getTime()) / (1000 * 3600 * 24) + 1
@@ -146,10 +131,6 @@ export default function DragSelectorPage() {
       console.log("[DragSelector] User data response:", userData);
 
       if (userData) {
-        console.log("[DragSelector] Setting user data:", {
-          uuid: userData.uuid,
-          username: userData.tele_user,
-        });
         setUserUuid(userData.uuid);
         setUsername(userData.tele_user);
       } else {
@@ -192,17 +173,7 @@ export default function DragSelectorPage() {
 
   // get user availability
   useEffect(() => {
-    console.log("[DragSelector] Availability useEffect triggered:", {
-      userUuid,
-      username,
-      teleId,
-      eventId,
-    });
-
     if (!userUuid || !username || !teleId || !eventId) {
-      console.log(
-        "[DragSelector] Missing required data for availability fetch"
-      );
       return;
     }
 
@@ -211,7 +182,6 @@ export default function DragSelectorPage() {
         teleId.toString(),
         eventId
       );
-      console.log("[DragSelector] Availability response:", availability);
       if (availability) {
         // Convert availability blocks to ISO datetime strings
         const newSelectionData = new Set<string>();
@@ -222,7 +192,6 @@ export default function DragSelectorPage() {
             const endDate = new Date(block.end_time);
 
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-              console.error("Invalid date in availability block:", block);
               return;
             }
 
@@ -239,7 +208,7 @@ export default function DragSelectorPage() {
               currentTime.setMinutes(currentTime.getMinutes() + 30);
             }
           } catch (error) {
-            console.error("Error processing availability block:", block, error);
+            // Skip invalid blocks
           }
         });
 
