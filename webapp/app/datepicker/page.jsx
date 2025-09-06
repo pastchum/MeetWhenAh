@@ -4,7 +4,7 @@ import EventDateSelector from "@/components/datepicker/EventDateSelector";
 import ReviewSubmit from "@/components/datepicker/ReviewSubmit";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTelegramViewport } from "@/hooks/useTelegramViewport";
-import { Card, CardBody } from "@nextui-org/react";
+import { Card, CardBody, Spinner } from "@nextui-org/react";
 import { v4 as uuidv4 } from "uuid";
 
 export default function DatePicker() {
@@ -23,6 +23,7 @@ export default function DatePicker() {
 
   const [currentComponent, setCurrentComponent] = useState(0);
   const [tokenOwner, setTokenOwner] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const nextComponent = (newData) => {
     console.log("next component", newData);
@@ -113,8 +114,67 @@ export default function DatePicker() {
     return String(tokenOwner).trim() === String(telegramId).trim();
   }, [telegramId, tokenOwner]);
 
+  // Initialize datepicker data
+  useEffect(() => {
+    const initializeDatepicker = async () => {
+      try {
+        // Wait for all critical data to be ready
+        await Promise.all([
+          // Wait for DOM to be ready
+          new Promise(resolve => {
+            if (document.readyState === 'complete') {
+              resolve(true);
+            } else {
+              window.addEventListener('load', () => resolve(true));
+            }
+          }),
+          // Wait for fonts to load
+          new Promise(resolve => {
+            if (document.fonts) {
+              document.fonts.ready.then(() => resolve(true));
+            } else {
+              setTimeout(() => resolve(true), 100);
+            }
+          })
+        ]);
+
+        // Small delay to ensure smooth rendering
+        setTimeout(() => {
+          setLoading(false);
+        }, 300);
+      } catch (error) {
+        console.error('Datepicker initialization error:', error);
+        // Show datepicker anyway after timeout
+        setTimeout(() => {
+          setLoading(false);
+        }, 1000);
+      }
+    };
+
+    initializeDatepicker();
+  }, []);
+
+  // Loading state with smooth transitions
+  if (loading) {
+    return (
+      <div className="transition-opacity duration-500 opacity-100">
+        <main className="minecraft-font bg-black min-h-screen flex items-center justify-center p-4">
+          <Card className="bg-dark-secondary border border-border-primary shadow-lg">
+            <CardBody className="flex items-center justify-center p-8">
+              <Spinner size="lg" color="primary" />
+              <p className="text-text-primary mt-4 text-center">Loading Event Creator...</p>
+              <p className="text-text-tertiary mt-2 text-sm text-center">
+                Setting up your event creation tools
+              </p>
+            </CardBody>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <main className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-4">
+    <main className="minecraft-font bg-black min-h-screen flex flex-col items-center justify-start p-4 transition-opacity duration-500 opacity-100">
       <div className="w-full max-w-md mb-6 text-center">
         <h1 
           className="font-semibold text-3xl cursor-pointer hover:opacity-80 transition-opacity"

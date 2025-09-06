@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Button, Spinner } from "@nextui-org/react";
+import { Button, Spinner, Card, CardBody } from "@nextui-org/react";
 import { 
   CalendarDaysIcon, 
   UserPlusIcon, 
@@ -9,7 +9,6 @@ import {
   ArrowRightIcon
 } from "@heroicons/react/24/outline";
 import { useTelegramViewport } from "@/hooks/useTelegramViewport";
-import { useOverlay } from "@/hooks/useOverlay";
 import { fetchUserDataFromId, addUserToDatabase } from "@/routes/user_routes";
 import { useRouter } from "next/navigation";
 import ActionCard from "@/components/dashboard/ActionCard";
@@ -41,8 +40,7 @@ const mockEvents = [
 export default function Dashboard() {
   // Get viewport dimensions from Telegram Web App
   const viewport = useTelegramViewport();
-  const { showOverlay } = useOverlay();
-  const [isPageReady, setIsPageReady] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Token management
   const [token, setToken] = useState<string | null>(null);
@@ -54,61 +52,45 @@ export default function Dashboard() {
   const [username, setUsername] = useState<string>("");
   const [userUuid, setUserUuid] = useState<string>("");
 
-  // Show initial page loading overlay
+  // Initialize dashboard data
   useEffect(() => {
-    showOverlay(
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-[9999]">
-        <div className="bg-dark-secondary p-6 rounded-lg border border-border-primary">
-          <div className="flex flex-col items-center">
-            <Spinner size="lg" color="primary" />
-            <p className="text-text-primary mt-4 text-center">Loading Dashboard...</p>
-            <p className="text-text-tertiary mt-2 text-sm text-center">
-              Getting everything ready for you
-            </p>
-          </div>
-        </div>
-      </div>,
-      {
-        fadeInDuration: 200,
-        displayDuration: 999999999, // Keep showing until we hide it
-        fadeOutDuration: 400
-      }
-    );
-  }, [showOverlay]);
+    const initializeDashboard = async () => {
+      try {
+        // Wait for all critical data to be ready
+        await Promise.all([
+          // Wait for DOM to be ready
+          new Promise(resolve => {
+            if (document.readyState === 'complete') {
+              resolve(true);
+            } else {
+              window.addEventListener('load', () => resolve(true));
+            }
+          }),
+          // Wait for fonts to load
+          new Promise(resolve => {
+            if (document.fonts) {
+              document.fonts.ready.then(() => resolve(true));
+            } else {
+              setTimeout(() => resolve(true), 100);
+            }
+          })
+        ]);
 
-  // Check when page is ready (DOM loaded + basic setup complete)
-  useEffect(() => {
-    const checkPageReady = () => {
-      // Wait for DOM to be fully loaded and a short delay for React to finish rendering
-      if (document.readyState === 'complete') {
+        // Small delay to ensure smooth rendering
         setTimeout(() => {
-          setIsPageReady(true);
-        }, 500); // Small delay to ensure smooth rendering
+          setLoading(false);
+        }, 300);
+      } catch (error) {
+        console.error('Dashboard initialization error:', error);
+        // Show dashboard anyway after timeout
+        setTimeout(() => {
+          setLoading(false);
+        }, 1000);
       }
     };
 
-    if (document.readyState === 'complete') {
-      checkPageReady();
-    } else {
-      window.addEventListener('load', checkPageReady);
-      return () => window.removeEventListener('load', checkPageReady);
-    }
+    initializeDashboard();
   }, []);
-
-  // Hide overlay when page is ready
-  useEffect(() => {
-    if (isPageReady) {
-      // Hide overlay with a transparent one
-      showOverlay(
-        <div className="fixed inset-0 bg-transparent pointer-events-none z-[9999]"></div>,
-        {
-          fadeInDuration: 0,
-          displayDuration: 0,
-          fadeOutDuration: 400
-        }
-      );
-    }
-  }, [isPageReady, showOverlay]);
 
   // Token initialization - ensure dashboard always has a token
   useEffect(() => {
@@ -235,7 +217,7 @@ export default function Dashboard() {
     };
     
     fetchUserUuidFromTeleId();
-  }, [teleId]);
+  }, [teleId, username]);
 
   const handleActionClick = (route: string) => {
     console.log(`🎯 Dashboard action clicked: ${route}`, {
@@ -318,16 +300,35 @@ export default function Dashboard() {
     return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${hour}:00`;
   };
 
+  // Loading state with smooth transitions
+  if (loading) {
+    return (
+      <div className="transition-opacity duration-500 opacity-100">
+        <main className="minecraft-font bg-black min-h-screen flex items-center justify-center p-4">
+          <Card className="bg-dark-secondary border border-border-primary shadow-lg">
+            <CardBody className="flex items-center justify-center p-8">
+              <Spinner size="lg" color="primary" />
+              <p className="text-text-primary mt-4 text-center">Loading Dashboard...</p>
+              <p className="text-text-tertiary mt-2 text-sm text-center">
+                Getting everything ready for you
+              </p>
+            </CardBody>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div 
-      className="flex flex-col w-full bg-black min-h-screen"
+      className="flex flex-col w-full bg-black min-h-screen transition-opacity duration-500 opacity-100"
       style={{ 
         height: `${viewport.totalHeight}px`,
         transform: 'translateZ(0)'
       }}
     >
       {/* Fixed Header Section */}
-      <div className="flex-shrink-0 p-4 bg-dark-secondary border-b border-border-primary">
+      <div className="flex-shrink-0 p-4 bg-dark-secondary">
         <div className="text-center">
           <h1 className="font-semibold text-3xl mb-2">
             <span className="text-text-primary">MeetWhen</span><span className="text-[#c44545]">?</span>

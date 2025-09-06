@@ -86,7 +86,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       e.preventDefault();
       onDragStart(day, time, isSelected);
     },
-    [day, time, isSelected, onDragStart, readOnly]
+    [day, time, isSelected, onDragStart]
   );
 
   // Handle mouse/touch move

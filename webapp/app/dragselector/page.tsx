@@ -12,7 +12,7 @@ import {
   addUserToDatabase,
 } from "@/routes/user_routes";
 import { useTelegramViewport } from "@/hooks/useTelegramViewport";
-import { Button } from "@nextui-org/react";
+import { Button, Spinner, Card, CardBody } from "@nextui-org/react";
 import { getLocalDayAndTime } from "@/utils/datetime-utils";
 
 // Interface for aggregated time periods
@@ -49,6 +49,7 @@ export default function DragSelectorPage() {
   const [teleId, setTeleId] = useState<string>("");
   const [username, setUsername] = useState<string>(""); // Default username
   const [userUuid, setUserUuid] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
   const [eventId, setEventId] = useState<string>("");
 
   // Parse URL parameters and get user data from username or telegram id
@@ -248,6 +249,46 @@ export default function DragSelectorPage() {
     fetchUserAvailability();
   }, [userUuid, eventId, teleId, username]);
 
+  // Initialize dragselector data
+  useEffect(() => {
+    const initializeDragSelector = async () => {
+      try {
+        // Wait for all critical data to be ready
+        await Promise.all([
+          // Wait for DOM to be ready
+          new Promise(resolve => {
+            if (document.readyState === 'complete') {
+              resolve(true);
+            } else {
+              window.addEventListener('load', () => resolve(true));
+            }
+          }),
+          // Wait for fonts to load
+          new Promise(resolve => {
+            if (document.fonts) {
+              document.fonts.ready.then(() => resolve(true));
+            } else {
+              setTimeout(() => resolve(true), 100);
+            }
+          })
+        ]);
+
+        // Small delay to ensure smooth rendering
+        setTimeout(() => {
+          setLoading(false);
+        }, 300);
+      } catch (error) {
+        console.error('DragSelector initialization error:', error);
+        // Show dragselector anyway after timeout
+        setTimeout(() => {
+          setLoading(false);
+        }, 1000);
+      }
+    };
+
+    initializeDragSelector();
+  }, []);
+
   // Navigate to the event's start date
   const navigateToEventStart = () => {
     if (eventDetails.start_date) {
@@ -389,9 +430,28 @@ export default function DragSelectorPage() {
     );
   };
 
+  // Loading state with smooth transitions
+  if (loading) {
+    return (
+      <div className="transition-opacity duration-500 opacity-100">
+        <main className="minecraft-font bg-black min-h-screen flex items-center justify-center p-4">
+          <Card className="bg-dark-secondary border border-border-primary shadow-lg">
+            <CardBody className="flex items-center justify-center p-8">
+              <Spinner size="lg" color="primary" />
+              <p className="text-text-primary mt-4 text-center">Loading Availability...</p>
+              <p className="text-text-tertiary mt-2 text-sm text-center">
+                Setting up your availability selector
+              </p>
+            </CardBody>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="flex flex-col w-full"
+      className="flex flex-col w-full transition-opacity duration-500 opacity-100"
       style={{
         height: `${viewport.totalHeight}px`,
         transform: "translateZ(0)", // Create new stacking context
