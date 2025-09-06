@@ -24,7 +24,7 @@ interface TimePeriod {
 export default function DragSelectorPage() {
   // Get viewport dimensions from Telegram Web App
   const viewport = useTelegramViewport();
-  
+
   const [eventDetails, setEventDetails] = useState<EventData>({
     event_id: "",
     event_name: "",
@@ -53,22 +53,25 @@ export default function DragSelectorPage() {
 
   // Parse URL parameters and get user data from username or telegram id
   useEffect(() => {
-    console.log('[DragSelector] Initial setup useEffect triggered');
-    
+    console.log("[DragSelector] Initial setup useEffect triggered");
+
     const urlParams = new URLSearchParams(window.location.search);
-    console.log('[DragSelector] URL params:', Object.fromEntries(urlParams.entries()));
+    console.log(
+      "[DragSelector] URL params:",
+      Object.fromEntries(urlParams.entries())
+    );
 
     if (window.Telegram.WebApp.initDataUnsafe.user) {
       const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
-      console.log('[DragSelector] Telegram user found:', {
+      console.log("[DragSelector] Telegram user found:", {
         id: telegramId,
-        username: window.Telegram.WebApp.initDataUnsafe.user.username
+        username: window.Telegram.WebApp.initDataUnsafe.user.username,
       });
       setTeleId(telegramId.toString());
     } else {
-      console.log('[DragSelector] No Telegram user data found');
+      console.log("[DragSelector] No Telegram user data found");
     }
-    
+
     // disable vertical swipes
     if (window.Telegram.WebApp) {
       window.Telegram.WebApp.disableVerticalSwipes();
@@ -77,20 +80,20 @@ export default function DragSelectorPage() {
     // Set event_id from URL parameters
     const urlEventId = urlParams.get("event_id");
     if (urlEventId) {
-      console.log('[DragSelector] Setting eventId from URL:', urlEventId);
+      console.log("[DragSelector] Setting eventId from URL:", urlEventId);
       setEventId(urlEventId);
     } else {
-      console.log('[DragSelector] No eventId in URL');
+      console.log("[DragSelector] No eventId in URL");
     }
 
     // Try to get username from URL or use a default
     const urlUsername = urlParams.get("username");
     if (urlUsername) {
-      console.log('[DragSelector] Setting username from URL:', urlUsername);
+      console.log("[DragSelector] Setting username from URL:", urlUsername);
       setUsername(urlUsername);
       fetchUserUuidFromUsername(urlUsername);
     } else {
-      console.log('[DragSelector] No username in URL');
+      console.log("[DragSelector] No username in URL");
     }
   }, []);
 
@@ -125,23 +128,26 @@ export default function DragSelectorPage() {
 
   // get user uuid from telegram id
   useEffect(() => {
-    console.log('[DragSelector] User UUID useEffect triggered:', { teleId });
-    
+    console.log("[DragSelector] User UUID useEffect triggered:", { teleId });
+
     if (!teleId) {
-      console.log('[DragSelector] No teleId available');
+      console.log("[DragSelector] No teleId available");
       return;
     }
-    
+
     const fetchUserUuidFromTeleId = async () => {
-      console.log('[DragSelector] Fetching user data for teleId:', teleId.toString());
-      
+      console.log(
+        "[DragSelector] Fetching user data for teleId:",
+        teleId.toString()
+      );
+
       const userData = await fetchUserDataFromId(teleId.toString());
-      console.log('[DragSelector] User data response:', userData);
-      
+      console.log("[DragSelector] User data response:", userData);
+
       if (userData) {
-        console.log('[DragSelector] Setting user data:', {
+        console.log("[DragSelector] Setting user data:", {
           uuid: userData.uuid,
-          username: userData.tele_user
+          username: userData.tele_user,
         });
         setUserUuid(userData.uuid);
         setUsername(userData.tele_user);
@@ -185,24 +191,26 @@ export default function DragSelectorPage() {
 
   // get user availability
   useEffect(() => {
-    console.log('[DragSelector] Availability useEffect triggered:', {
+    console.log("[DragSelector] Availability useEffect triggered:", {
       userUuid,
       username,
       teleId,
-      eventId
+      eventId,
     });
-    
+
     if (!userUuid || !username || !teleId || !eventId) {
-      console.log('[DragSelector] Missing required data for availability fetch');
+      console.log(
+        "[DragSelector] Missing required data for availability fetch"
+      );
       return;
     }
-    
+
     const fetchUserAvailability = async () => {
       const availability = await fetchUserAvailabilityFromAPI(
         teleId.toString(),
         eventId
       );
-      console.log('[DragSelector] Availability response:', availability);
+      console.log("[DragSelector] Availability response:", availability);
       if (availability) {
         // Convert availability blocks to ISO datetime strings
         const newSelectionData = new Set<string>();
@@ -284,7 +292,7 @@ export default function DragSelectorPage() {
     return `${hours.toString().padStart(2, "0")}:${mins
       .toString()
       .padStart(2, "0")}`;
-    };
+  };
 
   // Aggregate consecutive time slots into periods
   const aggregateTimePeriods = (timeSet: Set<number>): TimePeriod[] => {
@@ -382,11 +390,11 @@ export default function DragSelectorPage() {
   };
 
   return (
-    <div 
+    <div
       className="flex flex-col w-full"
-      style={{ 
+      style={{
         height: `${viewport.totalHeight}px`,
-        transform: 'translateZ(0)' // Create new stacking context
+        transform: "translateZ(0)", // Create new stacking context
       }}
     >
       {/* Fixed Header Section */}
@@ -442,21 +450,23 @@ export default function DragSelectorPage() {
         </div>
       </div>
 
-            {/* Fixed Instructions */}
+      {/* Fixed Instructions */}
       <div className="flex-shrink-0 px-4 pb-4">
         <div className="flex items-center">
           <span className="text-sm px-3 py-1 bg-dark-tertiary rounded shadow-sm text-text-secondary border border-border-primary">
-            Click on a day header to select the entire day, or drag across time
-            slots to select specific periods.
+            Click on a day header to select the entire day. Click any time slot
+            to start rectangular selection, then click another slot to select
+            everything in between. Use the toggle button to switch between
+            adding (green) and removing (red) modes.
           </span>
         </div>
       </div>
 
       {/* Scrollable WeekCalendar */}
       <div className="flex-1 px-4 overflow-hidden">
-        <div 
+        <div
           className="bg-dark-secondary rounded-lg shadow-md h-full overflow-y-auto border border-border-primary"
-          style={{ transform: 'translateZ(0)' }}
+          style={{ transform: "translateZ(0)" }}
         >
           <WeekCalendar
             startDate={startDate}
@@ -472,7 +482,9 @@ export default function DragSelectorPage() {
 
       {/* Fixed Selected Times Section */}
       <div className="flex-shrink-0 p-4 bg-dark-secondary border-t border-border-primary">
-        <h2 className="text-xl font-semibold mb-2 text-white">Selected Times</h2>
+        <h2 className="text-xl font-semibold mb-2 text-white">
+          Selected Times
+        </h2>
         <div className="bg-dark-tertiary p-4 rounded text-text-secondary h-32 overflow-y-auto border border-border-primary">
           {selectionData.size > 0 ? (
             formatSelectionSummary()

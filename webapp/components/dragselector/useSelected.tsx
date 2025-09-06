@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import CustomDateTimeSet from "@/components/dragselector/CustomDateTimeSet";
-import { DateTime } from "./DragSelector";
+import { DateTime } from "./CustomDateTimeSet";
 
 function isWithinSelectionBox(a: DOMRect, b: DOMRect) {
   return !(
