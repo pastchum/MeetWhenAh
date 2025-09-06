@@ -1,11 +1,8 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { Spinner, Card, CardBody } from "@nextui-org/react";
+import { useEffect } from "react";
 
 export default function Home() {
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const tg = window.Telegram.WebApp;
     const startParam = tg.initDataUnsafe.start_param;
@@ -24,73 +21,12 @@ export default function Home() {
       if (params[0] === "confirm") {
         window.location.href = `/confirm?event_id=${token}`;
       }
-    } else {
-      // No start param, show the page after loading
-      setTimeout(() => setLoading(false), 1000);
     }
   }, []);
 
-  // Initialize page data
-  useEffect(() => {
-    const initializePage = async () => {
-      try {
-        // Wait for all critical data to be ready
-        await Promise.all([
-          // Wait for DOM to be ready
-          new Promise(resolve => {
-            if (document.readyState === 'complete') {
-              resolve(true);
-            } else {
-              window.addEventListener('load', () => resolve(true));
-            }
-          }),
-          // Wait for fonts to load
-          new Promise(resolve => {
-            if (document.fonts) {
-              document.fonts.ready.then(() => resolve(true));
-            } else {
-              setTimeout(() => resolve(true), 100);
-            }
-          })
-        ]);
-
-        // Small delay to ensure smooth rendering
-        setTimeout(() => {
-          setLoading(false);
-        }, 300);
-      } catch (error) {
-        console.error('Page initialization error:', error);
-        // Show page anyway after timeout
-        setTimeout(() => {
-          setLoading(false);
-        }, 1000);
-      }
-    };
-
-    initializePage();
-  }, []);
-
-  // Loading state with smooth transitions
-  if (loading) {
-    return (
-      <div className="transition-opacity duration-500 opacity-100">
-        <main className="minecraft-font bg-black min-h-screen flex items-center justify-center p-4">
-          <Card className="bg-dark-secondary border border-border-primary shadow-lg">
-            <CardBody className="flex items-center justify-center p-8">
-              <Spinner size="lg" color="primary" />
-              <p className="text-text-primary mt-4 text-center">Loading MeetWhen...</p>
-              <p className="text-text-tertiary mt-2 text-sm text-center">
-                Preparing your experience
-              </p>
-            </CardBody>
-          </Card>
-        </main>
-      </div>
-    );
-  }
-
+  // #TODO: add a loading screen that we can use whenever the app is loading
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24 transition-opacity duration-500 opacity-100">
+    <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <h1>You&apos;re not supposed to be here!</h1>
     </main>
   );
