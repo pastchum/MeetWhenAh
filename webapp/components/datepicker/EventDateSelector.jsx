@@ -2,6 +2,7 @@ import { Button } from "@nextui-org/react";
 import NextButton from "@/components/datepicker/NextButton";
 import PreviousButton from "@/components/datepicker/PreviousButton";
 import { useState } from "react";
+import { DatePicker, DateInput, DateSegment } from "react-aria-components";
 
 export default function EventDateSelector({
   prevComponent,
@@ -125,49 +126,57 @@ export default function EventDateSelector({
         {/* Date Input Fields */}
         <div className="space-y-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-[#c44545] mb-2">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
               Start Date
             </label>
-            <input
-              type="date"
-              value={data?.start ? data?.start.toLocaleDateString("en-CA") : ""}
-              onChange={(e) => handleInputChange("start", e.target.value)}
-              className="w-full px-3 py-2 bg-[#1a1a1a] border-2 border-[#8c2e2e] text-white rounded-md focus:border-[#c44545] focus:outline-none minecraft-font"
-            />
+            <DatePicker>
+              <DateInput>
+                {(segment) => (
+                  <DateSegment
+                    segment={segment}
+                    className="px-0.5 tabular-nums outline-none rounded-sm focus:bg-rose-600 focus:text-white caret-transparent placeholder-shown:text-gray-500 text-gray-800"
+                  />
+                )}
+              </DateInput>
+            </DatePicker>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#c44545] mb-2">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
               End Date
             </label>
-            <input
-              type="date"
-              value={data?.end ? data?.end.toLocaleDateString("en-CA") : ""}
-              onChange={(e) => handleInputChange("end", e.target.value)}
-              className="w-full px-3 py-2 bg-[#1a1a1a] border-2 border-[#8c2e2e] text-white rounded-md focus:border-[#c44545] focus:outline-none minecraft-font"
-            />
+            <DatePicker>
+              <DateInput>
+                {(segment) => (
+                  <DateSegment
+                    segment={segment}
+                    className="px-0.5 tabular-nums outline-none rounded-sm focus:bg-rose-600 focus:text-gray caret-transparent placeholder-shown:text-gray-500 text-gray-800"
+                  />
+                )}
+              </DateInput>
+            </DatePicker>
           </div>
         </div>
 
         {/* Inline Calendar */}
-        <div className="bg-[#2a2a2a] rounded-lg p-4 border border-[#8c2e2e]">
+        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-4">
             <Button
               size="sm"
               variant="light"
               onPress={goToPreviousMonth}
-              className="text-white hover:bg-[#8c2e2e] min-w-0 w-8 h-8 p-1 bg-[#1a1a1a] border border-[#8c2e2e] hover:border-[#c44545] rounded-sm"
+              className="text-white hover:bg-slate-50 min-w-0 w-8 h-8 p-1 bg-slate-50 border border-slate-200 hover:border-rose-600 rounded-sm"
             >
               ←
             </Button>
-            <h3 className="text-white font-semibold minecraft-font">
+            <h3 className="text-slate-50 font-semibold minecraft-font">
               {monthName}
             </h3>
             <Button
               size="sm"
               variant="light"
               onPress={goToNextMonth}
-              className="text-white hover:bg-[#8c2e2e] min-w-0 w-8 h-8 p-1 bg-[#1a1a1a] border border-[#8c2e2e] hover:border-[#c44545] rounded-sm"
+              className="text-white hover:bg-slate-50 min-w-0 w-8 h-8 p-1 bg-slate-50 border border-slate-200 hover:border-rose-600 rounded-sm"
             >
               →
             </Button>
@@ -178,7 +187,7 @@ export default function EventDateSelector({
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
               <div
                 key={day}
-                className="text-center text-xs font-medium text-[#a0a0a0] py-1"
+                className="text-center text-xs font-medium text-slate-500 py-1"
               >
                 {day}
               </div>

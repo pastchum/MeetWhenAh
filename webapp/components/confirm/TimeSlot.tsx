@@ -37,9 +37,6 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 }) => {
   const slotRef = useRef<HTMLDivElement>(null);
 
-  // Check if this slot is disabled (date is after end date)
-  const isDisabled = endDate ? new Date(day) > endDate : false;
-
   // Format time for display (HH:MM)
   const formatTimeLabel = (): string => {
     const hours = Math.floor(time / 60);
@@ -51,7 +48,6 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 
   // Get background color based on availability count (maroon heat map)
   const getBackgroundColor = (): string => {
-    if (isDisabled) return "bg-[#1a1a1a]";
     if (isSelected && !readOnly) return "bg-[#8c2e2e] hover:bg-[#722525]";
 
     if (totalParticipants === 0) return "bg-[#0a0a0a] hover:bg-[#1a1a1a]";
@@ -68,7 +64,6 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 
   // Get text color based on selection and availability
   const getTextColor = (): string => {
-    if (isDisabled) return "text-[#666666]";
     if (isSelected && !readOnly) return "text-white";
 
     if (totalParticipants === 0) return "text-[#a0a0a0]";
@@ -81,7 +76,6 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 
   // Get cursor style
   const getCursorStyle = (): string => {
-    if (isDisabled) return "cursor-not-allowed";
     if (readOnly) return "cursor-default";
     return "cursor-pointer";
   };
@@ -89,19 +83,18 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   // Handle mouse/touch down
   const handlePointerDown = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
-      if (isDisabled || readOnly) return;
       e.preventDefault();
       onDragStart(day, time, isSelected);
     },
-    [day, time, isSelected, onDragStart, isDisabled, readOnly]
+    [day, time, isSelected, onDragStart, readOnly]
   );
 
   // Handle mouse/touch move
   const handlePointerMove = useCallback(() => {
-    if (isDragging && !isDisabled && !readOnly) {
+    if (isDragging && !readOnly) {
       onDragOver(day, time);
     }
-  }, [day, time, isDragging, onDragOver, isDisabled, readOnly]);
+  }, [day, time, isDragging, onDragOver, readOnly]);
 
   // Handle mouse/touch up
   const handlePointerUp = useCallback(() => {
