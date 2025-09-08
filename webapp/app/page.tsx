@@ -18,6 +18,9 @@ export default function Home() {
       if (params[0] === "share") {
         window.location.href = `/share?token=${token}`;
       }
+      if (params[0] === "dashboard") {
+        window.location.href = `/dashboard?token=${token}`;
+      }
       if (params[0] === "dragselector" && token) {
         window.location.href = `/dragselector?event_id=${token}`;
       }
@@ -46,7 +49,7 @@ export default function Home() {
           }),
           // Wait for fonts to load
           new Promise(resolve => {
-            if (document.fonts) {
+            if (document.fonts) { 
               document.fonts.ready.then(() => resolve(true));
             } else {
               setTimeout(() => resolve(true), 100);
@@ -78,7 +81,7 @@ export default function Home() {
           <Card className="bg-dark-secondary border border-border-primary shadow-lg">
             <CardBody className="flex items-center justify-center p-8">
               <Spinner size="lg" color="primary" />
-              <p className="text-text-primary mt-4 text-center">Loading MeetWhen...</p>
+              <p className="text-text-primary mt-4 text-center">Loading MeetWhenAh...</p>
               <p className="text-text-tertiary mt-2 text-sm text-center">
                 Preparing your experience
               </p>

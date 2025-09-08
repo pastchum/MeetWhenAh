@@ -2,7 +2,6 @@ import telebot
 from telebot import types
 from datetime import datetime, time, timezone
 from tzlocal import get_localzone
-import logging
 
 # Import from services
 from services.database_service import getEntry, setEntry, updateEntry
@@ -22,8 +21,6 @@ from utils.message_templates import WELCOME_MESSAGE, HELP_MESSAGE
 # Import from other
 from urllib.parse import urlencode
 import uuid
-
-logger = logging.getLogger(__name__)
 
 def register_welcome_handlers(bot):
     """Register all command-related handlers"""

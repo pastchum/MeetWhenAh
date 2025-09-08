@@ -4,8 +4,6 @@ import uvicorn
 from dotenv import load_dotenv
 import os
 import json
-import logging
-from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -31,10 +29,6 @@ from telegram.config.config import bot
 
 # Initialize FastAPI app
 app = FastAPI(title="MeetWhenAh API")
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # cors
 app.add_middleware(
@@ -189,39 +183,6 @@ async def get_best_time(request: Request):
     best_time = get_event_best_time(event_id)
     print("best_time", best_time)
     return JSONResponse(status_code=200, content=jsonable_encoder({"data": best_time}))
-
-@app.post("/api/dashboard/log")
-async def log_dashboard_access(request: Request):
-    """Log dashboard access for analytics and debugging"""
-    try:
-        data = await request.json()
-        
-        # Get client IP and user agent
-        client_ip = request.client.host
-        user_agent = request.headers.get("user-agent", "unknown")
-        
-        # Enhanced logging data
-        log_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "event_type": "dashboard_access",
-            "client_ip": client_ip,
-            "user_agent": user_agent,
-            "telegram_data": data,
-            "server_logged_at": datetime.now().isoformat()
-        }
-        
-        # Log to console (this will appear in your server logs)
-        logger.info(f"📊 Dashboard Access Logged: {json.dumps(log_entry, indent=2)}")
-        print(f"📊 Dashboard Access Logged: {json.dumps(log_entry, indent=2)}")
-        
-        # You can also store this in a database or send to analytics service here
-        
-        return {"success": True, "message": "Dashboard access logged successfully"}
-        
-    except Exception as e:
-        logger.error(f"❌ Error logging dashboard access: {e}")
-        print(f"❌ Error logging dashboard access: {e}")
-        return {"success": False, "error": str(e)}
 
 @app.post("/api/reminders")
 async def send_reminders(api_key: str = Header(...)):
