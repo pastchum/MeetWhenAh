@@ -13,6 +13,7 @@ from services.database_service import getEntry, setEntry, getEntries
 
 # Import from utils
 from utils.date_utils import parse_date, format_date_month_day
+from utils.mini_app_url import get_mini_app_url
 
 # Import from other
 import uuid
@@ -329,12 +330,12 @@ class Event:
         # add select availability button
 
         drag_params = f"dragselector={self.event_id}"
-        drag_miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={drag_params}"
+        drag_miniapp_url = get_mini_app_url("dragselector", event_id=self.event_id)
 
         markup.add(InlineKeyboardButton("Select Availability", url=drag_miniapp_url))
 
         confirm_params = f"confirm={self.event_id}"
-        confirm_miniapp_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={confirm_params}"
+        confirm_miniapp_url = get_mini_app_url("confirm", event_id=self.event_id)
 
         markup.add(InlineKeyboardButton("Confirm Best Time", url=confirm_miniapp_url))
 

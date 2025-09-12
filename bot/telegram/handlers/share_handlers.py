@@ -10,6 +10,7 @@ from services.share_service import put_ctx
 
 # Import from utils
 from utils.message_templates import SHARE_EVENT_PROMPT
+from utils.mini_app_url import get_mini_app_url
 
 # Import from other
 import uuid
@@ -18,9 +19,14 @@ logger = logging.getLogger(__name__)
 
 PAGE_SIZE = 10
 
-bot_username = bot.get_me().username
+def get_bot_username():
+    """Get bot username lazily to avoid network calls during import"""
+    try:
+        return bot.get_me().username
+    except Exception:
+        return "test_bot"  # Fallback for testing
 
-print(f"Bot username: {bot_username}")
+print(f"Bot username: {get_bot_username()}")
 
 def register_share_handlers(bot):
     """Register all share handlers"""
@@ -40,7 +46,7 @@ def register_share_handlers(bot):
             token = put_ctx(message.from_user.id, chat_id, sent_message.message_id, thread_id)
 
             params = f"share={token}"
-            miniapp_url = f"https://t.me/{bot_username}/meetwhenah?startapp={params}"
+            miniapp_url = get_mini_app_url("share", token=token)
 
             markup = types.InlineKeyboardMarkup()
             markup.add(

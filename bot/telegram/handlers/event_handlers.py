@@ -38,6 +38,7 @@ from services.availability_service import ask_availability, ask_join
 # Import from utils
 from utils.date_utils import daterange, parse_date, format_date_for_message, format_date
 from utils.web_app import create_web_app_url
+from utils.mini_app_url import get_mini_app_url
 from utils.message_templates import (
     WELCOME_MESSAGE, 
     EVENT_CREATED_SUCCESS, 
@@ -77,7 +78,7 @@ def register_event_handlers(bot):
 
         params = f"datepicker={token}"
         # Create web app URL for datepicker
-        mini_app_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
+        mini_app_url = get_mini_app_url("datepicker", token=token)
         
         markup = types.InlineKeyboardMarkup()
         mini_app_button = types.InlineKeyboardButton(text="Create Event", url=mini_app_url)
@@ -129,7 +130,7 @@ def handle_event_creation(message, data):
         
         # Add confirm button
         params = f"confirm={event_id}"
-        mini_app_url = f"https://t.me/{bot.get_me().username}/meetwhenah?startapp={params}"
+        mini_app_url = get_mini_app_url("confirm", event_id=event_id)
         confirm_button = types.InlineKeyboardButton(
             text="Confirm Best Time",
             url=mini_app_url
