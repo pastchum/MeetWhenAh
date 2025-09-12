@@ -75,7 +75,7 @@ def ask_join(chat_id: int, event_id: str, thread_id: int = None):
         rows = event.get_all_users_for_event() or []
         participant_count = len(rows)
         participants_formatted = "\n".join(
-            f"• {row.get('user_uuid')} {row.get('emoji_icon', '')}".strip()
+            f"• {row.get('tele_user')} {row.get('emoji_icon', '')}".strip()
             for row in rows
         ) or "No participants yet"
 
