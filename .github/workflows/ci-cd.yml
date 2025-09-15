@@ -46,15 +46,17 @@ jobs:
         env:
           ENVIRONMENT: staging
           BOT_USERNAME: meeting_the_stage_bot
-          TOKEN: ${{ secrets.STAGING_BOT_TOKEN }}
-          WEBAPP_URL: https://meet-when-ah.vercel.app
+          WEBAPP_URL: https://meet-when-ah-git-staging.vercel.app
         run: |
           echo "🚀 Deploying to staging environment..."
           echo "Environment: $ENVIRONMENT"
           echo "Bot: $BOT_USERNAME"
-          echo "Webapp: $WEBAPP_URL"
+          echo "Webapp: $WEBAPP_URL (Vercel Preview)"
+          echo "📱 Bot API: Coolify staging project"
+          echo "🌐 Webapp: Vercel preview deployment"
           curl -X POST "${{ secrets.COOLIFY_STAGING_WEBHOOK }}"
 
+  # Production deployment: Coolify handles bot deployment, Vercel handles webapp main
   deploy-production:
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -68,11 +70,12 @@ jobs:
         env:
           ENVIRONMENT: production
           BOT_USERNAME: MeetWhenAhBot
-          TOKEN: ${{ secrets.PRODUCTION_BOT_TOKEN }}
           WEBAPP_URL: https://meet-when-ah.vercel.app
         run: |
           echo "🚀 Deploying to production environment..."
           echo "Environment: $ENVIRONMENT"
           echo "Bot: $BOT_USERNAME"
-          echo "Webapp: $WEBAPP_URL"
+          echo "Webapp: $WEBAPP_URL (Vercel Main)"
+          echo "📱 Bot API: Coolify production project"
+          echo "🌐 Webapp: Vercel main deployment"
           curl -X POST "${{ secrets.COOLIFY_PRODUCTION_WEBHOOK }}"

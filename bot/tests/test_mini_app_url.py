@@ -178,11 +178,21 @@ class TestWebappURL:
     def test_default_webapp_url(self):
         """Test default webapp URL when not specified"""
         os.environ.update({
-            'ENVIRONMENT': 'staging'
+            'ENVIRONMENT': 'production'
         })
         
         url = get_webapp_url("dashboard")
         expected = "https://meet-when-ah.vercel.app/dashboard"
+        assert url == expected
+    
+    def test_staging_webapp_url(self):
+        """Test staging webapp URL uses Vercel preview"""
+        os.environ.update({
+            'ENVIRONMENT': 'staging'
+        })
+        
+        url = get_webapp_url("dashboard")
+        expected = "https://meet-when-ah-git-staging.vercel.app/dashboard"
         assert url == expected
     
     def test_dashboard_webapp_url_with_token(self):

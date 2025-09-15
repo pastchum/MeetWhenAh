@@ -12,7 +12,7 @@ The bot supports three environments with different configurations:
 
 ## Environment Files
 
-### Development Environment (.env.development)
+### Development Environment (.env)
 
 ```bash
 # Development Environment Configuration
@@ -31,9 +31,9 @@ LOCALHOST_PORT=3000
 SUPABASE_URL=your_supabase_url_here
 SUPABASE_KEY=your_supabase_key_here
 
-# Webhook Configuration
-USE_WEBHOOK=true
-WEBHOOK_URL=https://your-domain.com/webhook
+# Webhook Configuration (Local Development)
+USE_WEBHOOK=false
+# WEBHOOK_URL not needed for local development (uses polling)
 
 # Optional: Additional Development Settings
 DEBUG=true
@@ -50,17 +50,17 @@ ENVIRONMENT=staging
 BOT_USERNAME=meeting_the_stage_bot
 TOKEN=your_staging_bot_token_here
 
-# Webapp Configuration
-WEBAPP_URL=https://meet-when-ah.vercel.app
+# Webapp Configuration (Vercel preview deployment)
+WEBAPP_URL=https://meet-when-ah-git-staging.vercel.app
 USE_LOCAL_WEBAPP=false
 
 # Database Configuration (Supabase)
 SUPABASE_URL=your_supabase_url_here
 SUPABASE_KEY=your_supabase_key_here
 
-# Webhook Configuration
+# Webhook Configuration (Coolify staging domain)
 USE_WEBHOOK=true
-WEBHOOK_URL=https://your-staging-domain.com/webhook
+WEBHOOK_URL=https://your-staging-coolify-domain.com/webhook/bot
 
 # Optional: Additional Staging Settings
 DEBUG=false
@@ -77,7 +77,7 @@ ENVIRONMENT=production
 BOT_USERNAME=MeetWhenAhBot
 TOKEN=your_production_bot_token_here
 
-# Webapp Configuration
+# Webapp Configuration (shared Vercel deployment)
 WEBAPP_URL=https://meet-when-ah.vercel.app
 USE_LOCAL_WEBAPP=false
 
@@ -85,9 +85,9 @@ USE_LOCAL_WEBAPP=false
 SUPABASE_URL=your_supabase_url_here
 SUPABASE_KEY=your_supabase_key_here
 
-# Webhook Configuration
+# Webhook Configuration (Coolify production domain)
 USE_WEBHOOK=true
-WEBHOOK_URL=https://your-production-domain.com/webhook
+WEBHOOK_URL=https://your-production-coolify-domain.com/webhook/bot
 
 # Optional: Additional Production Settings
 DEBUG=false
@@ -106,11 +106,33 @@ LOG_LEVEL=warning
 
 ### Webapp Configuration
 
-| Environment | URL | Local Development |
-|-------------|-----|-------------------|
-| Development | `https://meet-when-ah.vercel.app` or `https://localhost:3000` | `USE_LOCAL_WEBAPP=true` |
-| Staging | `https://meet-when-ah.vercel.app` | `USE_LOCAL_WEBAPP=false` |
-| Production | `https://meet-when-ah.vercel.app` | `USE_LOCAL_WEBAPP=false` |
+**Important**: The webapp is hosted on Vercel with separate deployments for staging and production environments.
+
+| Environment | Webapp URL | Bot API Host | Local Development |
+|-------------|------------|--------------|-------------------|
+| Development | `https://meet-when-ah.vercel.app` or `https://localhost:3000` | Local (localhost) | `USE_LOCAL_WEBAPP=true` |
+| Staging | `https://meet-when-ah-git-staging.vercel.app` | Coolify Staging | `USE_LOCAL_WEBAPP=false` |
+| Production | `https://meet-when-ah.vercel.app` | Coolify Production | `USE_LOCAL_WEBAPP=false` |
+
+**Architecture**:
+- **Webapp (Vercel)**: 
+  - Production: `https://meet-when-ah.vercel.app` (main branch)
+  - Staging: `https://meet-when-ah-git-staging.vercel.app` (staging branch preview)
+- **Bot API (Coolify)**: Separate deployments for staging and production
+- **Different Bots**: Staging uses `meeting_the_stage_bot`, Production uses `MeetWhenAhBot`
+- **Testing (GitHub Actions)**: Runs tests before any deployment, triggers Coolify if tests pass
+- **Deployment Flow**: Tests → [Coolify (bot API) + Vercel (webapp)] deploy in parallel
+
+### Webhook Configuration
+
+**Local Development**:
+- **`USE_WEBHOOK=false`**: Bot uses polling (recommended for local development)
+- **`WEBHOOK_URL`**: Not needed (bot polls for updates)
+- **Ngrok**: Only needed if `USE_LOCAL_WEBAPP=true` (for webapp HTTPS, not bot webhook)
+
+**Staging/Production**:
+- **`USE_WEBHOOK=true`**: Bot uses webhook (more efficient)
+- **`WEBHOOK_URL`**: Required - tells Telegram where to send updates
 
 ### Database Configuration
 

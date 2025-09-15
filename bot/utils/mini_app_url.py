@@ -18,6 +18,8 @@ def get_mini_app_url(action: str, **params) -> str:
     if environment == 'development' and os.getenv('USE_LOCAL_WEBAPP') == 'true':
         localhost_port = os.getenv('LOCALHOST_PORT', '3000')
         webapp_url = f'https://localhost:{localhost_port}'
+    elif environment == 'staging':
+        webapp_url = 'https://meet-when-ah-git-staging.vercel.app'
     else:
         webapp_url = 'https://meet-when-ah.vercel.app'
     
@@ -44,6 +46,8 @@ def get_webapp_url(path: str, **params) -> str:
     if environment == 'development' and os.getenv('USE_LOCAL_WEBAPP') == 'true':
         localhost_port = os.getenv('LOCALHOST_PORT', '3000')
         webapp_url = f'https://localhost:{localhost_port}'
+    elif environment == 'staging':
+        webapp_url = 'https://meet-when-ah-git-staging.vercel.app'
     else:
         webapp_url = os.getenv('WEBAPP_URL', 'https://meet-when-ah.vercel.app')
     

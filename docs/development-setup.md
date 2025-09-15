@@ -95,8 +95,8 @@ SUPABASE_URL=your_supabase_url_here
 SUPABASE_KEY=your_supabase_key_here
 
 # Webhook Configuration
-USE_WEBHOOK=true
-WEBHOOK_URL=https://your-dev-domain.com/webhook
+USE_WEBHOOK=false
+# WEBHOOK_URL not needed for local development (uses polling)
 
 # Optional: Additional Development Settings
 DEBUG=true
@@ -125,8 +125,8 @@ SUPABASE_URL=your_supabase_url_here
 SUPABASE_KEY=your_supabase_key_here
 
 # Webhook Configuration
-USE_WEBHOOK=true
-WEBHOOK_URL=https://your-dev-domain.com/webhook
+USE_WEBHOOK=false
+# WEBHOOK_URL not needed for local development (uses polling)
 
 # Optional: Additional Development Settings
 DEBUG=true
@@ -284,6 +284,24 @@ sed -i 's/USE_LOCAL_WEBAPP=false/USE_LOCAL_WEBAPP=true/' bot/.env.development
 
 **Remember to update BotFather Mini App URL when switching!**
 
+## Webhook vs Polling for Local Development
+
+**Local Development Uses Polling**:
+- **`USE_WEBHOOK=false`**: Bot polls Telegram for updates (recommended for local development)
+- **`WEBHOOK_URL`**: Not needed - bot automatically polls for updates
+- **Why polling?**: Simpler local development, no HTTPS webhook setup needed
+- **Ngrok**: Only needed if testing local webapp (`USE_LOCAL_WEBAPP=true`), not for bot polling
+
+**Production/Staging Uses Webhooks**:
+- **`USE_WEBHOOK=true`**: Bot receives updates via HTTP webhook
+- **`WEBHOOK_URL`**: Required - tells Telegram where to send updates
+- **Why webhook?**: More efficient, scales better, required for production
+
+**Common Confusion**:
+- **Bot webhook** ≠ **Webapp hosting**
+- **Bot polling** works fine locally without HTTPS
+- **Webapp** always needs HTTPS (Telegram Mini App requirement)
+
 ## Environment Variables Reference
 
 | Variable | Description | Example | Required |
@@ -296,8 +314,8 @@ sed -i 's/USE_LOCAL_WEBAPP=false/USE_LOCAL_WEBAPP=true/' bot/.env.development
 | `LOCALHOST_PORT` | Port for local webapp | `3000`, `3001`, etc. | ✅ |
 | `SUPABASE_URL` | Supabase project URL | `https://xxx.supabase.co` | ✅ |
 | `SUPABASE_KEY` | Supabase anon key | `eyJhbGciOiJIUzI1NiIs...` | ✅ |
-| `USE_WEBHOOK` | Enable webhook mode | `true` or `false` | ✅ |
-| `WEBHOOK_URL` | Webhook endpoint URL | `https://your-domain.com/webhook` | ✅ |
+| `USE_WEBHOOK` | Enable webhook mode | `false` (local), `true` (prod) | ✅ |
+| `WEBHOOK_URL` | Webhook endpoint URL | Not needed for local | ❌ (local) |
 | `DEBUG` | Enable debug mode | `true` or `false` | ❌ |
 | `LOG_LEVEL` | Logging level | `debug`, `info`, `warning` | ❌ |
 
@@ -338,8 +356,14 @@ sed -i 's/USE_LOCAL_WEBAPP=false/USE_LOCAL_WEBAPP=true/' bot/.env.development
 This development setup integrates with the CI/CD pipeline:
 
 - **Local Development**: Use your dev bot with `USE_LOCAL_WEBAPP=true`
-- **Staging Deployment**: Push to `staging` branch to deploy to staging
-- **Production Deployment**: Push to `main` branch to deploy to production
+- **Staging Deployment**: 
+  - Push to `staging` branch
+  - GitHub Actions runs tests
+  - If tests pass: Coolify deploys bot API + Vercel creates webapp preview
+- **Production Deployment**: 
+  - Push to `main` branch
+  - GitHub Actions runs tests
+  - If tests pass: Coolify deploys bot API + Vercel deploys webapp to main URL
 
 For more details, see:
 - [Environment Configuration Guide](./environment-configuration.md)
