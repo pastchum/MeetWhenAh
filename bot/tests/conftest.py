@@ -7,6 +7,19 @@ from unittest.mock import MagicMock, patch
 from datetime import datetime, timezone
 import tempfile
 import shutil
+import sys
+
+# Mock the bot before any imports that might use it
+mock_bot = MagicMock()
+mock_bot.reply_to = MagicMock()
+mock_bot.send_message = MagicMock()
+mock_bot.edit_message_text = MagicMock()
+mock_bot.answer_callback_query = MagicMock()
+
+# Patch the bot in the config module
+sys.modules['telegram.config.config'] = MagicMock()
+sys.modules['telegram.config.config'].bot = mock_bot
+sys.modules['telegram.config.config'].TOKEN = 'test_token'
 
 
 @pytest.fixture(scope="session")
@@ -16,9 +29,14 @@ def test_session():
     os.environ.update({
         'ENVIRONMENT': 'test',
         'BOT_USERNAME': 'test_bot',
+        'TOKEN': '123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11',
         'WEBAPP_URL': 'https://test-webapp.example.com',
         'USE_LOCAL_WEBAPP': 'false',
-        'LOCALHOST_PORT': '3000'
+        'LOCALHOST_PORT': '3000',
+        'SUPABASE_URL': 'https://test.supabase.co',
+        'SUPABASE_KEY': 'test_supabase_key',
+        'USE_WEBHOOK': 'false',
+        'WEBHOOK_URL': 'https://test.example.com/webhook'
     })
     yield
     # Cleanup after all tests

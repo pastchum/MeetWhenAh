@@ -1,0 +1,303 @@
+import os
+import pytest
+from unittest.mock import patch, MagicMock, call
+from telegram.handlers.event_handlers import register_event_handlers
+from telegram.handlers.share_handlers import register_share_handlers
+from events.events import Event
+from utils.mini_app_url import get_mini_app_url
+from tests.factories import (
+    TelegramMessageFactory, 
+    TelegramCallbackQueryFactory,
+    EventDataFactory,
+    EnvironmentFactory
+)
+
+
+@pytest.mark.unit
+class TestEventHandlersURLGeneration:
+    """Test that event handlers generate correct URLs with proper parameters"""
+    
+    def setup_method(self):
+        """Set up test environment"""
+        self.original_env = os.environ.copy()
+        os.environ.update({
+            'ENVIRONMENT': 'development',
+            'BOT_USERNAME': 'test_dev_bot',
+            'USE_LOCAL_WEBAPP': 'true',
+            'LOCALHOST_PORT': '3000'
+        })
+    
+    def teardown_method(self):
+        """Restore environment"""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    @patch('telegram.handlers.event_handlers.get_mini_app_url')
+    @patch('telegram.handlers.event_handlers.put_ctx')
+    @patch('telegram.handlers.event_handlers.bot')
+    def test_create_command_generates_correct_url(self, mock_bot, mock_put_ctx, mock_get_mini_app_url):
+        """Test that /create command generates correct datepicker URL"""
+        # Setup mocks
+        mock_put_ctx.return_value = "test_token_123"
+        mock_get_mini_app_url.return_value = "https://t.me/test_dev_bot/meetwhenah?startapp=datepicker=test_token_123"
+        
+        # Mock message
+        mock_message = MagicMock()
+        mock_message.from_user.id = 12345
+        mock_message.chat.id = 67890
+        mock_message.chat.type = 'private'
+        mock_message.message_thread_id = None
+        
+        # Mock bot reply
+        mock_bot_message = MagicMock()
+        mock_bot_message.message_id = 111
+        mock_bot.reply_to.return_value = mock_bot_message
+        
+        # Register handlers and get the create handler
+        register_event_handlers(mock_bot)
+        create_handler = None
+        for handler in mock_bot.message_handler.call_args_list:
+            if handler[1].get('commands') == ['create']:
+                create_handler = handler[0][0]
+                break
+        
+        assert create_handler is not None, "Create handler not found"
+        
+        # Call the handler
+        create_handler(mock_message)
+        
+        # Verify put_ctx was called with correct parameters
+        mock_put_ctx.assert_called_once_with(12345, 67890, 111, None)
+        
+        # Verify get_mini_app_url was called with correct parameters
+        mock_get_mini_app_url.assert_called_once_with("datepicker", token="test_token_123")
+        
+        # Verify bot.edit_message_text was called
+        mock_bot.edit_message_text.assert_called_once()
+        call_args = mock_bot.edit_message_text.call_args
+        assert call_args[1]['chat_id'] == 67890
+        assert call_args[1]['message_id'] == 111
+    
+    @patch('telegram.handlers.event_handlers.get_mini_app_url')
+    @patch('telegram.handlers.event_handlers.getEvent')
+    @patch('telegram.handlers.event_handlers.bot')
+    def test_handle_event_creation_generates_correct_confirm_url(self, mock_bot, mock_get_event, mock_get_mini_app_url):
+        """Test that event creation generates correct confirm URL"""
+        # Setup mocks
+        mock_event = {'event_id': 'test_event_456'}
+        mock_get_event.return_value = mock_event
+        mock_get_mini_app_url.return_value = "https://t.me/test_dev_bot/meetwhenah?startapp=confirm=test_event_456"
+        
+        # Mock message
+        mock_message = MagicMock()
+        mock_message.from_user.id = 12345
+        mock_message.chat.type = 'private'
+        
+        # Mock data
+        test_data = {
+            'event_name': 'Test Event',
+            'event_details': 'Test Description',
+            'start': '2024-01-01',
+            'end': '2024-01-02'
+        }
+        
+        # Import and call the function
+        from telegram.handlers.event_handlers import handle_event_creation
+        handle_event_creation(mock_message, test_data)
+        
+        # Verify get_mini_app_url was called with correct parameters
+        mock_get_mini_app_url.assert_called_once_with("confirm", event_id='test_event_456')
+    
+    @patch('events.events.get_mini_app_url')
+    def test_event_get_event_button_generates_correct_urls(self, mock_get_mini_app_url):
+        """Test that Event.get_event_button generates correct URLs"""
+        # Setup mocks
+        mock_get_mini_app_url.side_effect = [
+            "https://t.me/test_dev_bot/meetwhenah?startapp=dragselector=test_event",
+            "https://t.me/test_dev_bot/meetwhenah?startapp=confirm=test_event"
+        ]
+        
+        # Create event instance
+        event = Event(
+            event_id="test_event",
+            event_name="Test Event",
+            event_description="Test Description",
+            event_type="general",
+            start_date="2024-01-01",
+            end_date="2024-01-02",
+            start_hour="09:00:00",
+            end_hour="17:00:00",
+            creator="creator_uuid",
+            created_at="2024-01-01T00:00:00Z",
+            updated_at="2024-01-01T00:00:00Z",
+            min_participants=2,
+            min_duration=2,
+            max_duration=4,
+            is_reminders_enabled=False,
+            timezone="Asia/Singapore"
+        )
+        
+        # Call the method
+        markup = event._get_event_button()
+        
+        # Verify get_mini_app_url was called twice with correct parameters
+        expected_calls = [
+            call("dragselector", event_id="test_event"),
+            call("confirm", event_id="test_event")
+        ]
+        mock_get_mini_app_url.assert_has_calls(expected_calls, any_order=True)
+        
+        # Verify markup contains buttons
+        assert len(markup.keyboard) == 2
+        assert "Select Availability" in str(markup.keyboard[0][0].text)
+        assert "Confirm Best Time" in str(markup.keyboard[1][0].text)
+
+
+class TestShareHandlersURLGeneration:
+    """Test that share handlers generate correct URLs with proper parameters"""
+    
+    def setup_method(self):
+        """Set up test environment"""
+        self.original_env = os.environ.copy()
+        os.environ.update({
+            'ENVIRONMENT': 'development',
+            'BOT_USERNAME': 'test_dev_bot',
+            'USE_LOCAL_WEBAPP': 'true',
+            'LOCALHOST_PORT': '3000'
+        })
+    
+    def teardown_method(self):
+        """Restore environment"""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    @patch('telegram.handlers.share_handlers.get_mini_app_url')
+    @patch('telegram.handlers.share_handlers.put_ctx')
+    @patch('telegram.handlers.share_handlers.bot')
+    def test_share_command_generates_correct_url(self, mock_bot, mock_put_ctx, mock_get_mini_app_url):
+        """Test that /share command generates correct share URL"""
+        # Setup mocks
+        mock_put_ctx.return_value = "share_token_789"
+        mock_get_mini_app_url.return_value = "https://t.me/test_dev_bot/meetwhenah?startapp=share=share_token_789"
+        
+        # Mock message
+        mock_message = MagicMock()
+        mock_message.from_user.id = 12345
+        mock_message.chat.id = 67890
+        mock_message.message_thread_id = None
+        
+        # Mock bot send_message
+        mock_sent_message = MagicMock()
+        mock_sent_message.message_id = 222
+        mock_bot.send_message.return_value = mock_sent_message
+        
+        # Register handlers and get the share handler
+        register_share_handlers(mock_bot)
+        share_handler = None
+        for handler in mock_bot.message_handler.call_args_list:
+            if handler[1].get('commands') == ['share']:
+                share_handler = handler[0][0]
+                break
+        
+        assert share_handler is not None, "Share handler not found"
+        
+        # Call the handler
+        share_handler(mock_message)
+        
+        # Verify put_ctx was called with correct parameters
+        mock_put_ctx.assert_called_once_with(12345, 67890, 222, None)
+        
+        # Verify get_mini_app_url was called with correct parameters
+        mock_get_mini_app_url.assert_called_once_with("share", token="share_token_789")
+        
+        # Verify bot.edit_message_text was called
+        mock_bot.edit_message_text.assert_called_once()
+        call_args = mock_bot.edit_message_text.call_args
+        assert call_args[1]['chat_id'] == 67890
+        assert call_args[1]['message_id'] == 222
+
+
+class TestParameterValidation:
+    """Test that handlers validate and pass parameters correctly"""
+    
+    def setup_method(self):
+        """Set up test environment"""
+        self.original_env = os.environ.copy()
+        os.environ.update({
+            'ENVIRONMENT': 'development',
+            'BOT_USERNAME': 'test_dev_bot'
+        })
+    
+    def teardown_method(self):
+        """Restore environment"""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    def test_url_encoding_of_special_characters(self):
+        """Test that special characters in parameters are properly handled"""
+        # Test with special characters - single parameters are not URL encoded
+        url = get_mini_app_url("test", param="value with spaces & symbols!")
+        expected = "https://t.me/test_dev_bot/meetwhenah?startapp=test=value with spaces & symbols!"
+        assert url == expected
+    
+    def test_empty_parameters(self):
+        """Test handling of empty parameters"""
+        url = get_mini_app_url("test", empty_param="")
+        expected = "https://t.me/test_dev_bot/meetwhenah?startapp=test="
+        assert url == expected
+    
+    def test_none_parameters(self):
+        """Test handling of None parameters"""
+        url = get_mini_app_url("test", none_param=None)
+        expected = "https://t.me/test_dev_bot/meetwhenah?startapp=test=None"
+        assert url == expected
+    
+    def test_unicode_parameters(self):
+        """Test handling of Unicode parameters"""
+        url = get_mini_app_url("test", unicode_param="测试中文")
+        expected = "https://t.me/test_dev_bot/meetwhenah?startapp=test=测试中文"
+        assert url == expected
+    
+    def test_multiple_parameters_url_encoding(self):
+        """Test that multiple parameters are properly URL encoded"""
+        url = get_mini_app_url("test", param1="value1", param2="value2")
+        expected = "https://t.me/test_dev_bot/meetwhenah?startapp=test=param1%3Dvalue1%26param2%3Dvalue2"
+        assert url == expected
+
+
+class TestEnvironmentSwitching:
+    """Test that URL generation works correctly across different environments"""
+    
+    def test_environment_switching(self):
+        """Test that URLs change correctly when switching environments"""
+        # Test development
+        os.environ.update({
+            'ENVIRONMENT': 'development',
+            'BOT_USERNAME': 'dev_bot',
+            'USE_LOCAL_WEBAPP': 'true',
+            'LOCALHOST_PORT': '3000'
+        })
+        
+        dev_url = get_mini_app_url("test", param="value")
+        assert "dev_bot" in dev_url
+        assert "startapp=test=value" in dev_url
+        
+        # Test staging
+        os.environ.update({
+            'ENVIRONMENT': 'staging',
+            'BOT_USERNAME': 'staging_bot'
+        })
+        
+        staging_url = get_mini_app_url("test", param="value")
+        assert "staging_bot" in staging_url
+        assert "startapp=test=value" in staging_url
+        
+        # Test production
+        os.environ.update({
+            'ENVIRONMENT': 'production',
+            'BOT_USERNAME': 'MeetWhenAhBot'
+        })
+        
+        prod_url = get_mini_app_url("test", param="value")
+        assert "MeetWhenAhBot" in prod_url
+        assert "startapp=test=param%3Dvalue" in prod_url
