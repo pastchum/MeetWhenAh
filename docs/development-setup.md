@@ -338,7 +338,7 @@ sed -i 's/USE_LOCAL_WEBAPP=false/USE_LOCAL_WEBAPP=true/' bot/.env.development
 This development setup integrates with the CI/CD pipeline:
 
 - **Local Development**: Use your dev bot with `USE_LOCAL_WEBAPP=true`
-- **Staging Deployment**: Push to `develop` branch to deploy to staging
+- **Staging Deployment**: Push to `staging` branch to deploy to staging
 - **Production Deployment**: Push to `main` branch to deploy to production
 
 For more details, see:

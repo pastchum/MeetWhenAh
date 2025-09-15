@@ -171,7 +171,7 @@ Each environment needs its own webhook URL:
 The environment configuration integrates with the CI/CD pipeline:
 
 - **Development**: Local development with `USE_LOCAL_WEBAPP=true`
-- **Staging**: Deploys on `develop` branch push
+- **Staging**: Deploys on `staging` branch push
 - **Production**: Deploys on `main` branch push
 
 For detailed setup instructions, see:

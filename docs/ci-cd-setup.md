@@ -16,7 +16,7 @@ The CI/CD pipeline provides:
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Push to       │    │   Push to       │    │   Push to       │
-│   develop       │    │   main          │    │   any branch    │
+│   staging       │    │   main          │    │   any branch    │
 └─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
           │                      │                      │
           ▼                      ▼                      ▼
@@ -69,7 +69,7 @@ COOLIFY_PRODUCTION_WEBHOOK=https://your-coolify-production-webhook-url
 
 #### Staging Project
 - **Name**: `meetwhenah-staging`
-- **Branch**: `develop`
+- **Branch**: `staging`
 - **Environment**: `staging`
 - **Bot**: `meeting_the_stage_bot`
 
@@ -118,9 +118,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, staging]
   pull_request:
-    branches: [main, develop]
+    branches: [main, staging]
 
 jobs:
   test:
@@ -147,7 +147,7 @@ jobs:
 
   deploy-staging:
     needs: test
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -186,7 +186,7 @@ jobs:
 
 ### Automatic Triggers
 
-1. **Push to `develop` branch**:
+1. **Push to `staging` branch**:
    - Runs tests
    - Deploys to staging (if tests pass)
 
@@ -194,7 +194,7 @@ jobs:
    - Runs tests
    - Deploys to production (if tests pass)
 
-3. **Pull Request to `main` or `develop`**:
+3. **Pull Request to `main` or `staging`**:
    - Runs tests only
    - No deployment
 
@@ -212,7 +212,7 @@ You can also trigger deployments manually:
 ### Development Workflow
 
 ```
-feature/your-feature → develop → main
+feature/your-feature → staging → main
      ↓                   ↓        ↓
    Tests Only        Staging   Production
 ```
@@ -226,7 +226,7 @@ Recommended branch protection rules:
   - Require status checks (tests must pass)
   - Require up-to-date branches
 
-- **`develop` branch**:
+- **`staging` branch**:
   - Require status checks (tests must pass)
   - Allow force pushes for hotfixes
 

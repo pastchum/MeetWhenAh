@@ -156,7 +156,7 @@ Username: MeetWhenAhBot
 ## 🚀 Deployment Flow
 
 1. **Development**: Work locally with your dev bot
-2. **Push to `develop`**: Automatically deploys to staging
+2. **Push to `staging`**: Automatically deploys to staging
 3. **Push to `main`**: Automatically deploys to production
 
 ## ✅ Verification
