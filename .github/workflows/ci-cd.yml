@@ -1,0 +1,78 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          cd bot
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          cd bot
+          python -m pytest tests/ -v --cov=. --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./bot/coverage.xml
+
+  deploy-staging:
+    needs: test
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Staging
+        env:
+          ENVIRONMENT: staging
+          BOT_USERNAME: meeting_the_stage_bot
+          TOKEN: ${{ secrets.STAGING_BOT_TOKEN }}
+          WEBAPP_URL: https://meet-when-ah.vercel.app
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          echo "Environment: $ENVIRONMENT"
+          echo "Bot: $BOT_USERNAME"
+          echo "Webapp: $WEBAPP_URL"
+          curl -X POST "${{ secrets.COOLIFY_STAGING_WEBHOOK }}"
+
+  deploy-production:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Production
+        env:
+          ENVIRONMENT: production
+          BOT_USERNAME: MeetWhenAhBot
+          TOKEN: ${{ secrets.PRODUCTION_BOT_TOKEN }}
+          WEBAPP_URL: https://meet-when-ah.vercel.app
+        run: |
+          echo "🚀 Deploying to production environment..."
+          echo "Environment: $ENVIRONMENT"
+          echo "Bot: $BOT_USERNAME"
+          echo "Webapp: $WEBAPP_URL"
+          curl -X POST "${{ secrets.COOLIFY_PRODUCTION_WEBHOOK }}"
