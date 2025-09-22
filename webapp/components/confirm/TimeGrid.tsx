@@ -16,6 +16,7 @@ interface TimeGridProps {
   onDragStart: (day: string, time: number, isSelected: boolean) => void;
   onDragOver: (day: string, time: number) => void;
   onDragEnd: () => void;
+  onTimeSlotClick?: (timeSlot: number) => void;
 }
 
 const TimeGrid: React.FC<TimeGridProps> = ({
@@ -29,6 +30,7 @@ const TimeGrid: React.FC<TimeGridProps> = ({
   onDragStart,
   onDragOver,
   onDragEnd,
+  onTimeSlotClick,
 }) => {
   // Format date to YYYY-MM-DD for using as a key
   const formatDayKey = (date: Date): string => {
@@ -135,6 +137,7 @@ const TimeGrid: React.FC<TimeGridProps> = ({
                 onDragStart={onDragStart}
                 onDragOver={onDragOver}
                 onDragEnd={onDragEnd}
+                onClick={() => onTimeSlotClick?.(time)} // Added click handler
               />
             ))}
           </div>

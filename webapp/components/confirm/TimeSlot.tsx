@@ -17,6 +17,7 @@ interface TimeSlotProps {
   onDragStart: (day: string, time: number, isSelected: boolean) => void;
   onDragOver: (day: string, time: number) => void;
   onDragEnd: () => void;
+  onClick?: () => void; // Added onClick prop
 }
 
 const TimeSlot: React.FC<TimeSlotProps> = ({
@@ -34,6 +35,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   onDragStart,
   onDragOver,
   onDragEnd,
+  onClick, // Destructure onClick prop
 }) => {
   const slotRef = useRef<HTMLDivElement>(null);
 
@@ -138,6 +140,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       onTouchMove={handlePointerMove}
       onMouseUp={handlePointerUp}
       onTouchEnd={handlePointerUp}
+      onClick={onClick} // Added onClick handler
       data-day={day}
       data-time={time}
       title={`${availabilityCount}/${totalParticipants} participants available`}

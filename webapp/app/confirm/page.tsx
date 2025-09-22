@@ -78,12 +78,16 @@ export default function ConfirmPage() {
         if (eventData) {
           setError("");
           setEventDetails(eventData);
-          setCurrWeekStart(parseISO(eventData.start_date));
+          setCurrWeekStart(
+            compareAsc(new Date(), parseISO(eventData.start_date)) > 0
+              ? new Date()
+              : parseISO(eventData.start_date)
+          );
           setCurrWeekEnd(
             compareAsc(
               parseISO(eventData.end_date),
               add(currWeekStart, { days: 7 })
-            ) > 0
+            ) <= 0
               ? add(currWeekStart, { days: 7 })
               : parseISO(eventData.end_date)
           );
@@ -378,6 +382,11 @@ export default function ConfirmPage() {
   );
 
   const legendItems = generateLegendItems();
+
+  console.log("Current Week Start:", currWeekStart);
+  console.log("Current Week End:", currWeekEnd);
+  console.log("Reached Start of Event:", reachedStartOfEvent);
+  console.log("Reached End of Event:", reachedEndOfEvent);
 
   return (
     <main className="minecraft-font bg-black min-h-screen p-4">
