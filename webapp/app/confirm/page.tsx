@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ConfirmCalendar from "@/components/confirm/ConfirmCalendar";
 import { fetchEventFromAPI } from "@/routes/events_routes";
@@ -11,12 +11,15 @@ import {
 import ConfirmDatePicker from "@/components/confirm/ConfirmDatePicker";
 import { useTelegramViewport } from "@/hooks/useTelegramViewport";
 import { Button, Card, CardBody, CardHeader, Spinner } from "@nextui-org/react";
+import { add, compareAsc, compareDesc, parseISO } from "date-fns";
 
 export default function ConfirmPage() {
   // Telegram viewport setup
   useTelegramViewport();
 
   const [eventDetails, setEventDetails] = useState<EventData | null>(null);
+  const [currWeekStart, setCurrWeekStart] = useState(new Date());
+  const [currWeekEnd, setCurrWeekEnd] = useState(new Date());
   const [bestStart, setBestStart] = useState("");
   const [bestEnd, setBestEnd] = useState("");
   const [loading, setLoading] = useState(true);
@@ -75,6 +78,15 @@ export default function ConfirmPage() {
         if (eventData) {
           setError("");
           setEventDetails(eventData);
+          setCurrWeekStart(parseISO(eventData.start_date));
+          setCurrWeekEnd(
+            compareAsc(
+              parseISO(eventData.end_date),
+              add(currWeekStart, { days: 7 })
+            ) > 0
+              ? add(currWeekStart, { days: 7 })
+              : parseISO(eventData.end_date)
+          );
         } else {
           console.log("Error setting event");
           setError("Event not found");
@@ -231,6 +243,31 @@ export default function ConfirmPage() {
 
     return items;
   };
+
+  // handle next week
+  const handleNextWeek = () => {
+    setCurrWeekStart((prev) => add(prev, { days: 7 }));
+    setCurrWeekEnd((prev) => add(prev, { days: 7 }));
+  };
+
+  // handle previous week
+  const handlePrevWeek = () => {
+    setCurrWeekStart((prev) => add(prev, { days: -7 }));
+    setCurrWeekEnd((prev) => add(prev, { days: -7 }));
+  };
+
+  const reachedStartOfEvent = useMemo(() => {
+    return (
+      (eventDetails && currWeekStart <= parseISO(eventDetails.start_date)) ??
+      false
+    );
+  }, [eventDetails, currWeekStart]);
+
+  const reachedEndOfEvent = useMemo(() => {
+    return (
+      (eventDetails && currWeekEnd >= parseISO(eventDetails.end_date)) ?? false
+    );
+  }, [eventDetails, currWeekEnd]);
 
   //handle date change
   const handleDateChange = (dates: {
@@ -399,10 +436,30 @@ export default function ConfirmPage() {
             )}
 
             <div className="bg-[#0a0a0a] rounded-lg shadow-sm overflow-hidden">
+              <div className="flex justify-between items-center p-2 border-b border-[#333333]">
+                <button
+                  onClick={handlePrevWeek}
+                  className="text-[#e5e5e5] hover:text-white transition"
+                  disabled={reachedStartOfEvent}
+                >
+                  &larr; Previous
+                </button>
+                <div className="text-[#e5e5e5] font-medium">
+                  {currWeekStart.toLocaleDateString()} -{" "}
+                  {currWeekEnd.toLocaleDateString()}
+                </div>
+                <button
+                  onClick={handleNextWeek}
+                  className="text-[#e5e5e5] hover:text-white transition"
+                  disabled={reachedEndOfEvent}
+                >
+                  Next &rarr;
+                </button>
+              </div>
               <div className="h-64 overflow-y-auto">
                 <ConfirmCalendar
-                  startDate={eventStartDate}
-                  endDate={eventEndDate}
+                  startDate={currWeekStart}
+                  endDate={currWeekEnd}
                   numDays={Math.min(totalDays, 7)}
                   eventId={eventId || ""}
                   onParticipantCountChange={handleParticipantCountChange}
