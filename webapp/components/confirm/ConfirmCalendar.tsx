@@ -40,6 +40,12 @@ const ConfirmCalendar: React.FC<ConfirmCalendarProps> = ({
   // Container ref for position calculations
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Selected start and end time slots
+  const [selectedStartSlot, setSelectedStartSlot] = useState<number | null>(
+    null
+  );
+  const [selectedEndSlot, setSelectedEndSlot] = useState<number | null>(null);
+
   // Fetch event availability data for all participants
   useEffect(() => {
     if (!eventId) return;
@@ -69,6 +75,21 @@ const ConfirmCalendar: React.FC<ConfirmCalendarProps> = ({
   const handleDragOver = () => {};
   const handleDragEnd = () => {};
   const handleSelectWholeDay = () => {};
+
+  // Handle time slot selection for start and end timing
+  const handleTimeSlotClick = (timeSlot: number) => {
+    if (
+      selectedStartSlot === null ||
+      (selectedStartSlot !== null && selectedEndSlot !== null)
+    ) {
+      // Set start slot if none is selected or both start and end are already selected
+      setSelectedStartSlot(timeSlot);
+      setSelectedEndSlot(null);
+    } else if (selectedStartSlot !== null && selectedEndSlot === null) {
+      // Set end slot if start is selected but end is not
+      setSelectedEndSlot(timeSlot);
+    }
+  };
 
   return (
     <div
@@ -107,11 +128,18 @@ const ConfirmCalendar: React.FC<ConfirmCalendarProps> = ({
         <TimeGrid
           days={days}
           timeSlots={timeSlots}
-          selectedSlots={new Set()}
+          selectedSlots={
+            new Set(
+              [selectedStartSlot, selectedEndSlot]
+                .filter((slot) => slot !== null)
+                .map(String)
+            )
+          }
           isDragging={false}
           endDate={endDate}
           eventAvailability={eventAvailability}
-          readOnly={true}
+          readOnly={false}
+          onTimeSlotClick={handleTimeSlotClick}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
