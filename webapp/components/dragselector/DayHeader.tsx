@@ -30,7 +30,7 @@ const DayHeader: React.FC<DayHeaderProps> = ({
 
   return (
     <div
-      className={`p-2 border-r border-b border-border-primary font-medium transition-colors duration-150 ${
+      className={`p-2 border-r border-b border-border-primary font-medium transition-colors duration-150 font-ui ${
         isDisabled
           ? "bg-dark-tertiary text-text-disabled cursor-not-allowed"
           : "bg-dark-secondary text-text-primary cursor-pointer hover:bg-selection-hover"
@@ -39,8 +39,8 @@ const DayHeader: React.FC<DayHeaderProps> = ({
       onClick={handleClick}
     >
       <div className="text-center">
-        <div className="text-sm text-text-primary">{format(date, "EEE")}</div>
-        <div className="text-xs text-text-secondary">{format(date, "MMM d")}</div>
+        <div className="text-sm text-text-primary font-body">{format(date, "EEE")}</div>
+        <div className="text-xs text-text-secondary font-caption">{format(date, "MMM d")}</div>
       </div>
     </div>
   );

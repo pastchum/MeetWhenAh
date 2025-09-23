@@ -32,16 +32,16 @@ export default function EventCard({ event, token, onShare }: EventCardProps) {
 
   return (
     <div className="bg-[#f8f9fa] rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-150 relative">
-      <h3 className="text-lg font-semibold text-gray-800">
+      <h3 className="text-lg font-semibold text-gray-800 font-heading">
         {event.event_name}
       </h3>    
       
       {/* Event timing information */}
       <div className="mt-2 space-y-1">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 font-body">
           <span className="font-medium">From:</span> {formatDateTime(event.start_date, event.start_hour, event.timezone, { mobile: true, format: 'short' })}
         </p>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 font-body">
           <span className="font-medium">To:</span> {formatDateTime(event.end_date, event.end_hour, event.timezone, { mobile: true, format: 'short' })}
         </p>
         {/* <p className="text-xs text-gray-500">
@@ -61,7 +61,7 @@ export default function EventCard({ event, token, onShare }: EventCardProps) {
             e.currentTarget.blur();
           }}
           disabled={isSharing}
-          className={`px-3 py-1 rounded text-sm transition-all duration-150 minecraft-font w-20 ${
+          className={`px-3 py-1 rounded text-sm transition-all duration-150 font-ui w-20 ${
             isSharing 
               ? 'bg-gray-400 text-gray-600 cursor-not-allowed shadow-[1px_1px_0px_0px_rgba(0,0,0,0.4)]' 
               : 'bg-blue-500 hover:bg-blue-600 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.6)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.7)] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)]'
@@ -78,7 +78,7 @@ export default function EventCard({ event, token, onShare }: EventCardProps) {
           // Reset button state immediately after mouse up
           e.currentTarget.blur();
         }}
-        className="absolute bottom-3 right-3 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-all duration-150 minecraft-font shadow-[2px_2px_0px_0px_rgba(0,0,0,0.6)] hover:shadow-[3px_3px_0px_rgba(0,0,0,0.7)] active:shadow-[1px_1px_0px_rgba(0,0,0,0.5)]"
+        className="absolute bottom-3 right-3 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-all duration-150 font-ui shadow-[2px_2px_0px_0px_rgba(0,0,0,0.6)] hover:shadow-[3px_3px_0px_rgba(0,0,0,0.7)] active:shadow-[1px_1px_0px_rgba(0,0,0,0.5)]"
       >
         Confirm Event
       </button>

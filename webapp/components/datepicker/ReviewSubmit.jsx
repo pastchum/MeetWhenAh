@@ -43,7 +43,7 @@ export default function ReviewSubmit({ data, prevComponent, isOwner }) {
 
   return (
     <div
-      className="relative w-full max-w-md mx-auto minecraft-font"
+      className="relative w-full max-w-md mx-auto font-body"
       data-testid="summary"
     >
       {/* Animated Background */}
@@ -67,7 +67,7 @@ export default function ReviewSubmit({ data, prevComponent, isOwner }) {
 
         {/* Mobile Game UI Card */}
         <div
-          className="relative bg-gradient-to-b from-[#2a2a2a] via-[#1a1a1a] to-[#0a0a0a] border-4 border-[#8c2e2e] shadow-2xl minecraft-font rounded-lg overflow-hidden"
+          className="relative bg-gradient-to-b from-[#2a2a2a] via-[#1a1a1a] to-[#0a0a0a] border-4 border-[#8c2e2e] shadow-2xl font-body rounded-lg overflow-hidden"
           style={{
             background: "linear-gradient(to bottom, #2a2a2a, #1a1a1a, #0a0a0a)",
             boxShadow:
@@ -78,7 +78,7 @@ export default function ReviewSubmit({ data, prevComponent, isOwner }) {
           <div className="h-2 bg-gradient-to-r from-[#8c2e2e] via-[#c44545] to-[#8c2e2e]"></div>
 
           {/* Event Title - Game Style */}
-          <div className="px-6 py-4 text-center border-b-2 border-[#8c2e2e] relative minecraft-font">
+          <div className="px-6 py-4 text-center border-b-2 border-[#8c2e2e] relative font-body">
             {/* Side Sprites */}
             <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-xl animate-bounce">
               🎉
@@ -90,22 +90,22 @@ export default function ReviewSubmit({ data, prevComponent, isOwner }) {
               🎉
             </span>
 
-            <h2 className="text-2xl font-bold text-white minecraft-font leading-tight">
+            <h2 className="text-2xl font-bold text-white font-heading leading-tight">
               {data.event_name || "Awesome Event"}
             </h2>
           </div>
 
           {/* Content Layout */}
-          <div className="p-6 minecraft-font">
+          <div className="p-6 font-body">
             {/* Description - Full Width */}
-            <div className="mb-4 p-3 bg-gradient-to-r from-[#2a2a2a]/50 to-[#1a1a1a]/50 border border-[#8c2e2e]/50 minecraft-font">
+            <div className="mb-4 p-3 bg-gradient-to-r from-[#2a2a2a]/50 to-[#1a1a1a]/50 border border-[#8c2e2e]/50 font-body">
               <div className="flex items-start space-x-2">
                 <span className="text-[#c44545] text-lg mt-1">💬</span>
                 <div className="flex-1">
-                  <div className="text-[#c44545] minecraft-font text-xs font-bold mb-1">
+                  <div className="text-[#c44545] font-ui text-xs font-bold mb-1">
                     Description
                   </div>
-                  <div className="text-[#e5e5e5] minecraft-font text-sm leading-relaxed">
+                  <div className="text-[#e5e5e5] font-body text-sm leading-relaxed">
                     {data.event_details || "No description provided"}
                   </div>
                 </div>
@@ -115,30 +115,30 @@ export default function ReviewSubmit({ data, prevComponent, isOwner }) {
             {/* Date Pills - Side by Side */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Start Date Pill */}
-              <div className="p-3 bg-gradient-to-r from-[#8c2e2e]/30 to-[#c44545]/30 border border-[#8c2e2e] minecraft-font">
+              <div className="p-3 bg-gradient-to-r from-[#8c2e2e]/30 to-[#c44545]/30 border border-[#8c2e2e] font-body">
                 <div className="text-center">
                   <div className="flex justify-center items-center space-x-1 mb-1">
                     <span className="text-lg">🌟</span>
-                    <span className="text-[#c44545] minecraft-font text-xs font-bold">
+                    <span className="text-[#c44545] font-ui text-xs font-bold">
                       EARLIEST FROM
                     </span>
                   </div>
-                  <div className="text-white minecraft-font text-sm font-bold">
+                  <div className="text-white font-body text-sm font-bold">
                     {formatDate(data.start)}
                   </div>
                 </div>
               </div>
 
               {/* End Date Pill */}
-              <div className="p-3 bg-gradient-to-r from-[#c44545]/30 to-[#8c2e2e]/30 border border-[#8c2e2e] minecraft-font">
+              <div className="p-3 bg-gradient-to-r from-[#c44545]/30 to-[#8c2e2e]/30 border border-[#8c2e2e] font-body">
                 <div className="text-center">
                   <div className="flex justify-center items-center space-x-1 mb-1">
                     <span className="text-lg">🎯</span>
-                    <span className="text-[#c44545] minecraft-font text-xs font-bold">
+                    <span className="text-[#c44545] font-ui text-xs font-bold">
                       LATEST BY
                     </span>
                   </div>
-                  <div className="text-white minecraft-font text-sm font-bold">
+                  <div className="text-white font-body text-sm font-bold">
                     {formatDate(data.end)}
                   </div>
                 </div>
@@ -160,12 +160,12 @@ export default function ReviewSubmit({ data, prevComponent, isOwner }) {
           type="button"
           disabled={!isOwner}
           onClick={handleSubmit}
-          className="inline-flex items-center justify-center gap-x-2 rounded-md bg-[#8c2e2e] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#8c2e2e]/20 hover:bg-[#722525] hover:shadow-md hover:shadow-[#c44545]/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8c2e2e] transition-all duration-150 minecraft-font border-2 border-[#8c2e2e]"
+          className="inline-flex items-center justify-center gap-x-2 rounded-md bg-[#8c2e2e] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#8c2e2e]/20 hover:bg-[#722525] hover:shadow-md hover:shadow-[#c44545]/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8c2e2e] transition-all duration-150 font-ui border-2 border-[#8c2e2e]"
         >
-          <span className="text-white minecraft-font text-base leading-none flex items-center">
+          <span className="text-white font-ui text-base leading-none flex items-center">
             ▶
           </span>
-          <span className="transform translate-y-0.5 minecraft-font">
+          <span className="transform translate-y-0.5 font-ui">
             Submit
           </span>
           <div className="flex space-x-1 transform translate-y-0.5">

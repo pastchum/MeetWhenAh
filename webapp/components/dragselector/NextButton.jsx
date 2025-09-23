@@ -12,7 +12,7 @@ export default function NextButton({onClick, disabled}) {
         variant="solid"
         color="primary"
         size="sm"
-        className="bg-[#8c2e2e] hover:bg-[#722525]"
+        className="bg-[#8c2e2e] hover:bg-[#722525] font-ui"
         data-testid="nextbutton2"
         endContent={<ForwardIcon className="h-3 w-3" aria-hidden="true" />}
       >

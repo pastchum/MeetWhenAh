@@ -232,7 +232,7 @@ export default function EventDateSelector({
             >
               ←
             </Button>
-            <h3 className="text-slate-50 font-semibold minecraft-font">
+            <h3 className="text-slate-50 font-semibold font-heading">
               {monthName}
             </h3>
             <Button
@@ -303,7 +303,7 @@ export default function EventDateSelector({
                     h-8 rounded text-sm font-medium transition-all duration-150
                     ${bgColor} ${textColor} ${borderColor}
                     hover:bg-[#c44545] hover:text-white hover:border-[#c44545]
-                    border cursor-pointer minecraft-font
+                    border cursor-pointer font-body
                     ${
                       isStart || isEnd
                         ? "shadow-[2px_2px_0px_0px_rgba(0,0,0,0.8)]"

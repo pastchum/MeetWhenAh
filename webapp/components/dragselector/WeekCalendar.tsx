@@ -559,7 +559,7 @@ const WeekCalendar: React.FC<WeekCalendarProps> = ({
         <button
           onClick={handleToggleSelectionMode}
           className={`
-            px-3 py-1 rounded text-sm font-medium transition-colors
+            px-3 py-1 rounded text-sm font-medium transition-colors font-ui
             ${
               selectionMode === "add"
                 ? "bg-green-600 hover:bg-green-700 text-white"

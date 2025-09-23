@@ -44,7 +44,7 @@ COOLIFY_PRODUCTION_WEBHOOK=https://your-coolify-production-webhook-url
 
 Create two projects in Coolify:
 
-- **Staging Project**: Deploy from `develop` branch
+- **Staging Project**: Deploy from `staging` branch
 - **Production Project**: Deploy from `main` branch
 
 ### 6. ngrok Setup (For Local Webapp Development)
@@ -101,7 +101,7 @@ WEBHOOK_URL=https://your-dev-domain.com/webhook
 ENVIRONMENT=staging
 BOT_USERNAME=meeting_the_stage_bot
 TOKEN=your_staging_bot_token_here
-WEBAPP_URL=https://meet-when-ah.vercel.app
+WEBAPP_URL=https://meet-when-ah-git-staging.vercel.app
 USE_LOCAL_WEBAPP=false
 SUPABASE_URL=your_supabase_url_here
 SUPABASE_KEY=your_supabase_key_here

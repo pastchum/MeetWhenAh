@@ -14,6 +14,12 @@ const config: Config = {
   	extend: {
   		fontFamily: {
   			'minecraft': ['Minecraft', 'monospace'],
+  			'ibm-mono': ['IBM Plex Mono', 'monospace'],
+  			'body': ['IBM Plex Mono', 'monospace'],
+  			'heading': ['Minecraft', 'monospace'],
+  			'instruction': ['IBM Plex Mono', 'monospace'],
+  			'ui': ['IBM Plex Mono', 'monospace'],
+  			'caption': ['IBM Plex Mono', 'monospace'],
   		},
   		colors: {
   			selection: {

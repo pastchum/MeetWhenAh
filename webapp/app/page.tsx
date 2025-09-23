@@ -77,12 +77,12 @@ export default function Home() {
   if (loading) {
     return (
       <div className="transition-opacity duration-500 opacity-100">
-        <main className="minecraft-font bg-black min-h-screen flex items-center justify-center p-4">
+        <main className="font-body bg-black min-h-screen flex items-center justify-center p-4">
           <Card className="bg-dark-secondary border border-border-primary shadow-lg">
             <CardBody className="flex items-center justify-center p-8">
               <Spinner size="lg" color="primary" />
-              <p className="text-text-primary mt-4 text-center">Loading MeetWhenAh...</p>
-              <p className="text-text-tertiary mt-2 text-sm text-center">
+              <p className="text-text-primary mt-4 text-center font-body">Loading MeetWhenAh...</p>
+              <p className="text-text-tertiary mt-2 text-sm text-center font-caption">
                 Preparing your experience
               </p>
             </CardBody>
