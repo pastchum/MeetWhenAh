@@ -44,7 +44,6 @@ export default function DragSelectorPage() {
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [numDays, setNumDays] = useState<number>(7);
   const [totalEventDays, setTotalEventDays] = useState<number>(7);
-  const [currentRangeStart, setCurrentRangeStart] = useState<Date>(new Date());
   const [selectionData, setSelectionData] = useState<Set<string>>(new Set());
   const [teleId, setTeleId] = useState<string>("");
   const [username, setUsername] = useState<string>(""); // Default username
@@ -118,7 +117,6 @@ export default function DragSelectorPage() {
         );
 
         setTotalEventDays(totalDays);
-        setCurrentRangeStart(eventStart);
 
         // If event is less than 7 days, show full range. Otherwise, show 7 days
         setNumDays(Math.min(totalDays, 7));
@@ -254,7 +252,6 @@ export default function DragSelectorPage() {
     if (eventDetails.start_date) {
       const eventStart = new Date(eventDetails.start_date);
       setStartDate(eventStart);
-      setCurrentRangeStart(eventStart);
       setNumDays(Math.min(totalEventDays, 7));
     }
   };
@@ -267,7 +264,6 @@ export default function DragSelectorPage() {
       if (newStart < new Date(eventDetails.start_date)) {
         return prev;
       }
-      setCurrentRangeStart(newStart);
       return newStart;
     });
   };
@@ -281,7 +277,6 @@ export default function DragSelectorPage() {
       if (newStart >= eventEnd) {
         return prev;
       }
-      setCurrentRangeStart(newStart);
       return newStart;
     });
   };
@@ -500,7 +495,7 @@ export default function DragSelectorPage() {
           ) : (
             <div className="text-text-tertiary italic">
               No times selected. Click on a day header to select the entire day,
-              or drag across time slots to select specific periods.
+              or press the start and end of a time slot to select it.
             </div>
           )}
         </div>
