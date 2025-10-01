@@ -38,5 +38,3 @@ Zrok is a tunneling service that is set up custom for this project's testing, an
   uvicorn telegram:app --host 0.0.0.0 --port 8001
   zrok share reserved when2meetbot
 ```
-
-# Trigger CI/CD test - Wed Oct  1 10:39:30 CEST 2025
