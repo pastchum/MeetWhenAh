@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from best_time_algo.best_time_algo import BestTimeAlgo
+from bot.best_time_algo.best_time_algo import BestTimeAlgo
 
 ### NOT UPDATED FOR NEW TIMING WEIGHTS
 

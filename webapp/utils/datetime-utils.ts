@@ -420,3 +420,30 @@ export function getCompactDateLabel(dateStr: string): string {
     return '';
   }
 } 
+
+/**
+ * Compute the initial week window for the confirm view given an event start/end.
+ * weekStart = max(today, eventStart)
+ * weekEnd   = min(eventEnd, weekStart + 7 days)
+ */
+export function computeWeekWindow(
+  eventStartIso: string,
+  eventEndIso: string,
+  todayDate?: Date
+): { weekStart: Date; weekEnd: Date } {
+  const eventStart = new Date(eventStartIso);
+  const eventEnd = new Date(eventEndIso);
+  const today = todayDate ? new Date(todayDate) : new Date();
+
+  // Start at the later of today or event start
+  let weekStart = today > eventStart ? today : eventStart;
+  // If today is after the event ends, clamp start to event end
+  if (weekStart > eventEnd) {
+    weekStart = eventEnd;
+  }
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  const candidateEnd = new Date(weekStart.getTime() + sevenDaysMs);
+  const weekEnd = eventEnd < candidateEnd ? eventEnd : candidateEnd;
+
+  return { weekStart, weekEnd };
+}

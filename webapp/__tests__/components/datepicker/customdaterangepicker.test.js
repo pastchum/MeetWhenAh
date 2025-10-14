@@ -14,15 +14,24 @@ test("EventDateSelector renders correctly", () => {
   
   const prevComponent = jest.fn();
   const nextComponent = jest.fn();
-  const initialData = { start: null, end: null };
+  const data = { start: null, end: null, event_name: "" };
+  const setData = jest.fn();
   
-  render(<EventDateSelector prevComponent={prevComponent} nextComponent={nextComponent} initialData={initialData} />);
+  render(
+    <EventDateSelector 
+      prevComponent={prevComponent} 
+      nextComponent={nextComponent} 
+      data={data}
+      setData={setData}
+    />
+  );
   
   const dateRangeElement = screen.getByTestId('daterangepicker');
   expect(dateRangeElement).toBeInTheDocument();
   
-  // Check if the date range picker label is present
-  expect(screen.getByText("Event Date Range")).toBeInTheDocument();
+  // The component renders Start Date / End Date labels
+  expect(screen.getByText("Start Date")).toBeInTheDocument();
+  expect(screen.getByText("End Date")).toBeInTheDocument();
   
   // Check if the clear button is present
   expect(screen.getByText("Clear Dates")).toBeInTheDocument();
@@ -37,9 +46,17 @@ test("Navigation buttons are present", () => {
   
   const prevComponent = jest.fn();
   const nextComponent = jest.fn();
-  const initialData = { start: null, end: null };
+  const data = { start: null, end: null, event_name: "" };
+  const setData = jest.fn();
   
-  render(<EventDateSelector prevComponent={prevComponent} nextComponent={nextComponent} initialData={initialData} />);
+  render(
+    <EventDateSelector 
+      prevComponent={prevComponent} 
+      nextComponent={nextComponent} 
+      data={data}
+      setData={setData}
+    />
+  );
   
   // Check if previous button is present
   expect(screen.getByText("Previous")).toBeInTheDocument();

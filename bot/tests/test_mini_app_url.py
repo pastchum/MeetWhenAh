@@ -1,7 +1,7 @@
 import os
 import pytest
 from unittest.mock import patch, MagicMock
-from utils.mini_app_url import get_mini_app_url, get_webapp_url
+from bot.utils.mini_app_url import get_mini_app_url, get_webapp_url
 
 
 @pytest.mark.unit

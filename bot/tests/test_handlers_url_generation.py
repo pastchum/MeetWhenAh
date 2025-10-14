@@ -4,7 +4,7 @@ These tests focus on the core URL generation behavior without complex handler mo
 """
 import os
 import pytest
-from utils.mini_app_url import get_mini_app_url
+from bot.utils.mini_app_url import get_mini_app_url
 
 
 @pytest.mark.unit
@@ -98,7 +98,7 @@ class TestURLGeneration:
     
     def test_webapp_url_generation(self):
         """Test webapp URL generation"""
-        from utils.mini_app_url import get_webapp_url
+        from bot.utils.mini_app_url import get_webapp_url
         
         # Test with parameters
         url = get_webapp_url("datepicker", token="test123")

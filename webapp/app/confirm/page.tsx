@@ -9,6 +9,7 @@ import {
   fetchUserDataFromUsername,
 } from "@/routes/user_routes";
 import ConfirmDatePicker from "@/components/confirm/ConfirmDatePicker";
+import { computeWeekWindow } from "@/utils/datetime-utils";
 import { useTelegramViewport } from "@/hooks/useTelegramViewport";
 import { Button, Card, CardBody, CardHeader, Spinner } from "@nextui-org/react";
 import { add, compareAsc, compareDesc, parseISO } from "date-fns";
@@ -78,19 +79,13 @@ export default function ConfirmPage() {
         if (eventData) {
           setError("");
           setEventDetails(eventData);
-          setCurrWeekStart(
-            compareAsc(new Date(), parseISO(eventData.start_date)) > 0
-              ? new Date()
-              : parseISO(eventData.start_date)
+          // compute week window using shared util (tested)
+          const { weekStart, weekEnd } = computeWeekWindow(
+            eventData.start_date,
+            eventData.end_date
           );
-          setCurrWeekEnd(
-            compareAsc(
-              parseISO(eventData.end_date),
-              add(currWeekStart, { days: 7 })
-            ) <= 0
-              ? add(currWeekStart, { days: 7 })
-              : parseISO(eventData.end_date)
-          );
+          setCurrWeekStart(weekStart);
+          setCurrWeekEnd(weekEnd);
         } else {
           console.log("Error setting event");
           setError("Event not found");

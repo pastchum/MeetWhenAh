@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import tempfile
 import shutil
 import sys
+import pathlib
 
 # Mock the bot before any imports that might use it
 mock_bot = MagicMock()
@@ -15,6 +16,11 @@ mock_bot.reply_to = MagicMock()
 mock_bot.send_message = MagicMock()
 mock_bot.edit_message_text = MagicMock()
 mock_bot.answer_callback_query = MagicMock()
+
+# Ensure 'bot' package root is on sys.path for absolute imports in tests
+BOT_ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(BOT_ROOT) not in sys.path:
+    sys.path.insert(0, str(BOT_ROOT))
 
 # Patch the bot in the config module
 sys.modules['telegram.config.config'] = MagicMock()
