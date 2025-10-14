@@ -1,3 +1,4 @@
+from bot.users.users import User
 import telebot
 from telebot import types
 import logging
@@ -12,14 +13,6 @@ from best_time_algo.best_time_algo import DEFAULT_SLEEP_HOURS
 from services.user_service import setUserSleepPreferences, setUser, updateUserInitialised, updateUserCalloutCleared, updateUsername, getUser
 from services.event_service import check_membership, join_event, leave_event
 from services.availability_service import update_join_message
-
-# Import from utils
-from utils.message_templates import (
-    HELP_MESSAGE, 
-    SLEEP_START_PROMPT, 
-    SLEEP_END_PROMPT, 
-    SLEEP_INVALID_FORMAT
-)
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +42,10 @@ def register_user_handlers(bot):
         try:
             event_id = call.data.split(":")[1]
             tele_id = call.from_user.id
-            user_data = getUser(tele_id)
+            user_data = User.getUser(tele_id)
             tele_user = call.from_user.username
             if not user_data:
-                success = setUser(tele_id, tele_user)
+                success = User.create_user(tele_id, tele_user)
                 if not success:
                     logger.error(f"Error setting user: {str(e)}")
                     bot.answer_callback_query(
@@ -61,12 +54,11 @@ def register_user_handlers(bot):
                         show_alert=True
                     )
                     return
-                updateUserInitialised(tele_id)
-                updateUserCalloutCleared(tele_id)
+                User.update_user(tele_id, initialised=True, callout_cleared=True)
             
             # update username if necessary
             if user_data["tele_user"] != tele_user:
-                updateUsername(tele_id, tele_user)
+                User.update_user(tele_id, tele_user=tele_user)
 
             # Check if user is already a member of the event
             membership_status = check_membership(event_id, tele_id)

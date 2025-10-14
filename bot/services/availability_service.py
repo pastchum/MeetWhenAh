@@ -14,13 +14,7 @@ from events.confirmed_events import ConfirmedEvent
 # Import from services
 from .database_service import getEntry, setEntry, updateEntry
 from .event_service import (
-    getEvent, 
-    getUserAvailability, 
-    updateUserAvailability, 
- getConfirmedEvent, 
-    generate_confirmed_event_description,
-    generate_event_description,
-    generate_confirmed_event_participants_list
+    getEvent,
 )
 
 # Import from utils

@@ -256,6 +256,9 @@ class Event:
             timezone=event.get("timezone")
         )
     
+    def get_event(event_id: str) -> Optional['Event']:
+        return Event.from_database(event_id)
+    
     """
     Create event in database
     """
@@ -311,6 +314,17 @@ class Event:
     """
     def get_availability_blocks_for_event(self):
         return self._get_availability_blocks_for_event()
+    
+    """
+    Get all users within a given start and end time
+    """
+    def get_users_from_timings(self, start, end):
+        best_time_algo = BestTimeAlgo(min_participants=self.min_participants, min_block_size=self.min_duration, max_block_size=self.max_duration)
+        availability_blocks = self._get_availability_blocks_for_event()
+        if not availability_blocks:
+            return []
+        return best_time_algo.get_event_participants(availability_blocks, start, end)
+
     
     """
     format event details for message

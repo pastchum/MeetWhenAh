@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
+from bot.users.users import User
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Import from best time algo
@@ -7,10 +8,9 @@ from best_time_algo.best_time_algo import BestTimeAlgo
 
 # Import from services
 from .database_service import getEntry, setEntry, updateEntry, getEntries, deleteEntries, setEntries, deleteEntry
-from .user_service import getUser
 
 # Import from utils
-from utils.date_utils import format_date_for_message, format_time_from_iso, parse_date, parse_time, format_time, format_date_month_day, format_time_from_iso_am_pm
+from utils.date_utils import parse_date, format_date_month_day, format_time_from_iso_am_pm
 
 # Import from other
 import uuid
@@ -71,10 +71,10 @@ def join_event(event_id: str, tele_id: str) -> bool:
     event = getConfirmedEvent(event_id)
     if not event:
         return False
-    user = getUser(tele_id)
+    user = User.getUser(tele_id)
     if not user:
         return False
-    user_uuid = user["uuid"]
+    user_uuid = user.get_user_uuid()
     
     # add user to event membership table
     membership_data = {
@@ -93,10 +93,10 @@ def leave_event(event_id: str, tele_id: str) -> bool:
     event = getConfirmedEvent(event_id)
     if not event:
         return False
-    user = getUser(tele_id)
+    user = User.getUser(tele_id)
     if not user:
         return False
-    user_uuid = user["uuid"]
+    user_uuid = user.get_user_uuid()
     success = deleteEntry("membership", "event_id", event_id, "user_uuid", user_uuid)
     if not success:
         return False
@@ -116,10 +116,10 @@ def check_ownership(event_id: str, tele_id: str) -> bool:
     if not event:
         return False
     creator_uuid = event["creator"]
-    user = getUser(tele_id)
+    user = User.getUser(tele_id)
     if not user:
         return False
-    user_uuid = user["uuid"]
+    user_uuid = user.get_user_uuid()
     return creator_uuid == user_uuid
 
 def check_membership(event_id: str, tele_id: str) -> bool:
@@ -127,10 +127,10 @@ def check_membership(event_id: str, tele_id: str) -> bool:
     event = getConfirmedEvent(event_id)
     if not event:
         return False
-    user = getUser(tele_id)
+    user = User.getUser(tele_id)
     if not user:
         return False
-    user_uuid = user["uuid"]
+    user_uuid = user.get_user_uuid()
     membership = getEntries("membership", "event_id", event_id)
     for member in membership:
         if member["user_uuid"] == user_uuid:

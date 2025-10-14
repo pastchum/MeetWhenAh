@@ -7,15 +7,12 @@ from telegram.config.config import bot
 
 # Import from services
 from .database_service import setEntry, updateEntry, getEntries, getEntry, supabase
-from .user_service import getUser
 from .event_service import getEvent, check_ownership, generate_confirmed_event_participants_list, getConfirmedEvent
 
 # Import from other
 import uuid
 from telebot import types
 from utils.message_templates import (
-    REMINDER_ON_MESSAGE, 
-    REMINDER_OFF_MESSAGE,
     AVAILABILITY_REMINDER,
     EVENT_REMINDER,
     DAILY_REMINDER

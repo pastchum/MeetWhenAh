@@ -1,47 +1,24 @@
-import os
-import json
-from datetime import datetime, timedelta
-import uuid
-import telebot
+from bot.users.users import User
+from bot.events.events import Event
+from bot.events.confirmed_events import ConfirmedEvent
 from telebot import types
-import os
 
 # Import from config
 from ..config.config import bot
 
-# Import from best time algo
-from best_time_algo.best_time_algo import BestTimeAlgo
-
-# Import from services
-from services.user_service import (
-    getUser,
-    setUser,
-    updateUserInitialised,
-    updateUserCalloutCleared,
-    updateUsername,
-    getUserByUuid
-)
 from services.share_service import put_ctx
 from services.event_service import (
-    getEvent,
-    create_event, 
-    confirmEvent, 
     join_event_by_uuid, 
     generate_confirmed_event_description, 
-    generate_event_description,
-    get_event_availability,
     getConfirmedEvent, 
     get_event_chat
     )
 from services.availability_service import ask_availability, ask_join
 
 # Import from utils
-from utils.date_utils import daterange, parse_date, format_date_for_message, format_date
-from utils.web_app import create_web_app_url
+from utils.date_utils import parse_date
 from utils.message_templates import (
     WELCOME_MESSAGE, 
-    EVENT_CREATED_SUCCESS, 
-    GROUP_CREATE_INSTRUCTIONS
 )
 
 # Keep track of processed message IDs to prevent duplicate processing
@@ -54,19 +31,18 @@ def register_event_handlers(bot):
     @bot.message_handler(commands=['create'])
     def send_welcome(message):
         tele_id = str(message.from_user.id)
-        db_result = getUser(tele_id)
+        db_result = User.getUser(tele_id)
         if db_result is None:
             # User doesn't exist, create them
             print("User not found in DB, creating new entry.", message.from_user.id)
             username = str(message.from_user.username)
-            setUser(message.from_user.id, username)
+            User.setUser(message.from_user.id, username)
         else:
             if not db_result["initialised"]:
-                updateUserInitialised(tele_id)
-                updateUserCalloutCleared(tele_id)
+                User.update_user(tele_id, initialised=True, callout_cleared=True)
             if db_result["tele_user"] != str(message.from_user.username):
                 print("Username changed, updating in DB.")
-                updateUsername(message.from_user.id, message.from_user.username)
+                User.update_user(tele_id, tele_user=str(message.from_user.username))
 
         bot_message = bot.reply_to(message, WELCOME_MESSAGE)
 
@@ -111,21 +87,23 @@ def handle_event_creation(message, data):
             return
         
         # Create the event
-        event_id = create_event(
+        event = Event.create_event(
             event_name=event_name,
             event_description=event_description,
-            start_date=format_date(start_date),
-            end_date=format_date(end_date),
+            start_date=start_date,
+            end_date=end_date,
             creator_id=str(message.from_user.id),
             auto_join=True
         )
-        
-        if not event_id:
+
+        if not event:
             bot.reply_to(message, "❌ <b>Creation Failed</b>\n\nFailed to create event")
             return
         
         # Create share button
         markup = types.InlineKeyboardMarkup()
+
+        event_id = event.get_event_id()
         
         # Add confirm button
         params = f"confirm={event_id}"
@@ -136,9 +114,7 @@ def handle_event_creation(message, data):
         )
         markup.add(confirm_button)
 
-        event = getEvent(event_id)
-
-        generated_description = generate_event_description(event)
+        generated_description = event.get_event_details_for_message()
 
         # Send confirmation message
         if message.chat.type == 'private':
@@ -165,40 +141,42 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
     print("handle_event_confirmation", event_id, best_start_time, best_end_time)
     try:
         # get event details
-        event = getEvent(event_id)
+        event = Event.get_event(event_id)
+        if not event:
+            raise Exception("Event not found")
         # get event creator
-        creator_id = event["creator"]
-        creator = getUserByUuid(creator_id)
-        creator_tele_id = creator["tele_id"]
+        creator_id = event.get_creator()
+        creator = User.getUserFromUuid(creator_id)
+        creator_tele_id = creator.get_tele_id()
 
         # check if event is already confirmed
         if getConfirmedEvent(event_id):
             bot.send_message(chat_id=creator_tele_id, text=f"Event {event['event_name']} is already confirmed.")
             return
         
-        # set up scheduler
-        min_participants = event["min_participants"]
-        min_duration_blocks = event["min_duration"]
-        max_duration_blocks = event["max_duration"]
-        best_time_algo = BestTimeAlgo(min_participants=min_participants, min_block_size=min_duration_blocks, max_block_size=max_duration_blocks)
-
+        # check time validity
+        best_start_time = parse_date(best_start_time)
+        best_end_time = parse_date(best_end_time)
+        print("best time", best_start_time, best_end_time)
+        if best_start_time >= best_end_time:
+            bot.send_message(chat_id=creator_tele_id, text=f"Invalid best time range selected.")
+            return
 
         # get participants
-        availability_blocks = get_event_availability(event_id)
-        participants = best_time_algo.get_event_participants(availability_blocks, best_start_time, best_end_time)
+        participants = event.get_users_from_timings(best_start_time, best_end_time)
         print("participants", participants)
         # Confirm the event
-        success = confirmEvent(event_id, best_start_time, best_end_time)
+        success = event.confirmEvent(best_start_time, best_end_time)
         print("success", success)
         if not success: 
             # event failed to confirm
-            message = f"Failed to confirm event {event['event_name']}."
+            message = f"Failed to confirm event {event.get_event_name()}."
             bot.send_message(creator_tele_id, message)
             return
         # event confirmed successfully
         print("Event confirmed successfully.")
 
-        print("Message should be sent to creator ", creator["tele_user"])
+        print("Message should be sent to creator ", creator.get_tele_user())
         # add participants to event
         for participant in participants:
             success = join_event_by_uuid(event_id, participant)

@@ -130,8 +130,9 @@ class User:
             return None
         return user
 
+    """Static methods for user operations"""
     @staticmethod
-    def from_database(user_uuid: str):
+    def _from_database_by_uuid(user_uuid: str):
         """Fetch a user from the database by tele_id"""
         row = getEntry("users", "uuid", user_uuid)
         if not row:
@@ -150,9 +151,34 @@ class User:
         )
     
     @staticmethod
+    def _from_database_by_tele_id(tele_id: str):
+        """Fetch a user from the database by tele_id"""
+        row = getEntry("users", "tele_id", tele_id)
+        if not row:
+            return None
+        return User(
+            user_uuid=row["uuid"],
+            tele_id=row["tele_id"],
+            tele_user=row["tele_user"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            initialised=row.get("initialised", False),
+            callout_cleared=row.get("callout_cleared", True),
+            sleep_start_time=row.get("sleep_start_time", 2300),
+            sleep_end_time=row.get("sleep_end_time", 700),
+            tmp_sleep_start=row.get("tmp_sleep_start", 0)
+        )
+    
+
+    @staticmethod
     def getUser(tele_id: str):
         """Get user by tele_id"""
-        return User.from_database(tele_id)
+        return User._from_database_by_tele_id(tele_id)
+    
+    @staticmethod
+    def getUserFromUuid(user_uuid: str):
+        """Get user by user_uuid"""
+        return User._from_database_by_uuid(user_uuid)
 
     @staticmethod
     def create_user(tele_id: str, tele_user: str):
