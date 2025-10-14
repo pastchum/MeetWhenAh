@@ -1,5 +1,6 @@
 from datetime import datetime, timezone as tz
-from typing import Dict, List, Optional, Tuple
+
+from typing import Optional
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Import from config
@@ -12,7 +13,7 @@ from best_time_algo.best_time_algo import BestTimeAlgo
 from services.database_service import getEntry, setEntry, getEntries
 
 # Import from utils
-from utils.date_utils import parse_date, format_date_month_day
+from utils.date_utils import parse_date, format_date_month_day, parse_time
 
 # Import from other
 import uuid
@@ -40,21 +41,38 @@ Database schema for reference:
   created_at      TIMESTAMPTZ       NOT NULL DEFAULT NOW()
 """
 class Event:
+    event_id: str
+    event_name: str
+    event_description: str
+    event_type: str
+    start_date: datetime
+    end_date: datetime
+    start_hour: int
+    end_hour: int
+    creator: str
+    created_at: datetime
+    updated_at: datetime
+    min_participants: int
+    min_duration: int
+    max_duration: int
+    is_reminders_enabled: bool
+    timezone: str
+
     def __init__(self, 
                  event_id: str, 
                  event_name: str, 
                  event_description: str, 
                  event_type: str, 
-                 start_date: str, 
-                 end_date: str, 
-                 start_hour: str, 
-                 end_hour: str, 
+                 start_date: datetime, 
+                 end_date: datetime, 
+                 start_hour: int, 
+                 end_hour: int, 
                  creator: str, 
-                 created_at: str, 
-                 updated_at: str, 
+                 created_at: datetime, 
+                 updated_at: datetime, 
                  min_participants: int, 
                  min_duration: int, 
-                 max_duration: int, 
+                 max_duration: int,
                  is_reminders_enabled: bool, 
                  timezone: str):
         self.event_id = event_id if event_id else str(uuid.uuid4())
@@ -90,25 +108,25 @@ class Event:
     def get_event_type(self) -> str:
         return self.event_type
 
-    def get_start_date(self) -> str:
+    def get_start_date(self) -> datetime:
         return self.start_date
 
-    def get_end_date(self) -> str:
+    def get_end_date(self) -> datetime:
         return self.end_date
 
-    def get_start_hour(self) -> str:
+    def get_start_hour(self) -> int:
         return self.start_hour
 
-    def get_end_hour(self) -> str:
+    def get_end_hour(self) -> int:
         return self.end_hour
 
     def get_creator(self) -> str:
         return self.creator
-        
-    def get_created_at(self) -> str:
+
+    def get_created_at(self) -> datetime:
         return self.created_at
 
-    def get_updated_at(self) -> str:
+    def get_updated_at(self) -> datetime:
         return self.updated_at
 
     def get_min_participants(self) -> int:
@@ -133,13 +151,13 @@ class Event:
                  event_name: str, 
                  event_description: str, 
                  event_type: str, 
-                 start_date: str, 
-                 end_date: str, 
-                 start_hour: str, 
-                 end_hour: str, 
+                 start_date: datetime, 
+                 end_date: datetime, 
+                 start_hour: int, 
+                 end_hour: int, 
                  creator: str, 
-                 created_at: str, 
-                 updated_at: str, 
+                 created_at: datetime, 
+                 updated_at: datetime, 
                  min_participants: int, 
                  min_duration: int, 
                  max_duration: int, 
@@ -168,13 +186,13 @@ class Event:
             "event_name": event_name,
             "event_description": event_description,
             "event_type": event_type,
-            "start_date": start_date,
-            "end_date": end_date,
-            "start_hour": start_hour,
-            "end_hour": end_hour,
+            "start_date": start_date.toISOformat(),
+            "end_date": end_date.toISOformat(),
+            "start_hour": start_hour.toISOformat(),
+            "end_hour": end_hour.toISOformat(),
             "creator": creator,
-            "created_at": created_at,
-            "updated_at": updated_at,
+            "created_at": created_at.toISOformat(),
+            "updated_at": updated_at.toISOformat(),
             "min_participants": min_participants,
             "min_duration": min_duration,
             "max_duration": max_duration,
@@ -224,13 +242,13 @@ class Event:
             event_name=event.get("event_name"),
             event_description=event.get("event_description"),
             event_type=event.get("event_type"),
-            start_date=event.get("start_date"),
-            end_date=event.get("end_date"),
-            start_hour=event.get("start_hour"),
-            end_hour=event.get("end_hour"),
+            start_date=parse_date(event.get("start_date")),
+            end_date=parse_date(event.get("end_date")),
+            start_hour=parse_time(event.get("start_hour")),
+            end_hour=parse_time(event.get("end_hour")),
             creator=event.get("creator"),
-            created_at=event.get("created_at"),
-            updated_at=event.get("updated_at"),
+            created_at=parse_date(event.get("created_at")),
+            updated_at=parse_date(event.get("updated_at")),
             min_participants=event.get("min_participants"),
             min_duration=event.get("min_duration"),
             max_duration=event.get("max_duration"),
@@ -245,10 +263,10 @@ class Event:
     def create_event(cls, event_name: str, 
                 event_description: str, 
                 event_type: str, 
-                start_date: str, 
-                end_date: str, 
-                start_hour: str, 
-                end_hour: str, 
+                start_date: datetime, 
+                end_date: datetime, 
+                start_hour: int, 
+                end_hour: int, 
                 creator: str,
                 min_participants: int = 2,
                 min_duration: int = 2,
@@ -256,8 +274,8 @@ class Event:
                 is_reminders_enabled: bool = False,
                 timezone: str = "Asia/Singapore",
                 event_id: str = None):
-        created_at = datetime.now(tz.utc).isoformat()
-        updated_at = datetime.now(tz.utc).isoformat()
+        created_at = datetime.now(tz.utc)
+        updated_at = datetime.now(tz.utc)
         event_id_to_use = event_id if event_id else str(uuid.uuid4())
         return Event._create_event(event_name, 
                             event_description, 
@@ -313,10 +331,8 @@ class Event:
         
         # Date range
         if self.start_date and self.end_date:
-            start_date = parse_date(self.start_date)
-            end_date = parse_date(self.end_date)
-            start_date_str = format_date_month_day(start_date)
-            end_date_str = format_date_month_day(end_date)
+            start_date_str = format_date_month_day(self.start_date)
+            end_date_str = format_date_month_day(self.end_date)
             description += f"📅 <b>Date Range</b>: {start_date_str} - {end_date_str}\n"
         
         return description
