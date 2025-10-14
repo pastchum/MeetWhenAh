@@ -56,7 +56,7 @@ jobs:
           echo "Webapp: $WEBAPP_URL (Vercel Preview)"
           echo "📱 Bot API: Coolify staging project"
           echo "🌐 Webapp: Vercel preview deployment"
-          curl -X POST "${{ secrets.COOLIFY_STAGING_WEBHOOK }}"
+          curl --resolve deploy.jensenhshoots.com:443:39.109.169.87 -X POST "${{ secrets.COOLIFY_STAGING_WEBHOOK }}"
 
   # Production deployment: Coolify handles bot deployment, Vercel handles webapp main
   deploy-production:
@@ -80,4 +80,4 @@ jobs:
           echo "Webapp: $WEBAPP_URL (Vercel Main)"
           echo "📱 Bot API: Coolify production project"
           echo "🌐 Webapp: Vercel main deployment"
-          curl -X POST "${{ secrets.COOLIFY_PRODUCTION_WEBHOOK }}"
+          curl --resolve deploy.jensenhshoots.com:443:39.109.169.87 -X POST "${{ secrets.COOLIFY_PRODUCTION_WEBHOOK }}"
