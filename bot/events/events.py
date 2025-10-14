@@ -295,7 +295,7 @@ class Event:
                             event_id_to_use)
 
     """
-    Get best time for an
+    Get best time for an event
     """
     def get_best_time_for_event(self):
         return self._get_best_time_for_event()
