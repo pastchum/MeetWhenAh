@@ -10,6 +10,26 @@ import shutil
 import sys
 import pathlib
 
+# Set test environment variables BEFORE any imports
+os.environ.update({
+    'ENVIRONMENT': 'test',
+    'BOT_USERNAME': 'test_bot',
+    'TOKEN': '123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11',
+    'WEBAPP_URL': 'https://test-webapp.example.com',
+    'USE_LOCAL_WEBAPP': 'false',
+    'LOCALHOST_PORT': '3000',
+    'SUPABASE_URL': 'https://test.supabase.co',
+    'SUPABASE_KEY': 'test_supabase_key',
+    'USE_WEBHOOK': 'false',
+    'WEBHOOK_URL': 'https://test.example.com/webhook'
+})
+
+# Mock Supabase client before any imports that might use it
+mock_supabase_client = MagicMock()
+mock_supabase_client.rpc.return_value.execute.return_value.data = []
+sys.modules['supabase'] = MagicMock()
+sys.modules['supabase'].create_client = MagicMock(return_value=mock_supabase_client)
+
 # Mock the bot before any imports that might use it
 mock_bot = MagicMock()
 mock_bot.reply_to = MagicMock()
@@ -31,19 +51,6 @@ sys.modules['telegram.config.config'].TOKEN = 'test_token'
 @pytest.fixture(scope="session")
 def test_session():
     """Session-level fixture for test setup"""
-    # Set test environment variables
-    os.environ.update({
-        'ENVIRONMENT': 'test',
-        'BOT_USERNAME': 'test_bot',
-        'TOKEN': '123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11',
-        'WEBAPP_URL': 'https://test-webapp.example.com',
-        'USE_LOCAL_WEBAPP': 'false',
-        'LOCALHOST_PORT': '3000',
-        'SUPABASE_URL': 'https://test.supabase.co',
-        'SUPABASE_KEY': 'test_supabase_key',
-        'USE_WEBHOOK': 'false',
-        'WEBHOOK_URL': 'https://test.example.com/webhook'
-    })
     yield
     # Cleanup after all tests
 

@@ -1,7 +1,7 @@
 import os
 import pytest
 from unittest.mock import patch, MagicMock
-from bot.utils.mini_app_url import get_mini_app_url, get_webapp_url
+from utils.mini_app_url import get_mini_app_url, get_webapp_url
 
 
 @pytest.mark.unit
@@ -86,9 +86,10 @@ class TestMiniAppURL:
     
     def test_missing_bot_username(self):
         """Test error when BOT_USERNAME is not set"""
+        # Remove BOT_USERNAME since it's set at module level
+        os.environ.pop('BOT_USERNAME', None)
         os.environ.update({
             'ENVIRONMENT': 'development'
-            # BOT_USERNAME not set
         })
         
         with pytest.raises(ValueError, match="BOT_USERNAME not set for environment: development"):
@@ -177,6 +178,8 @@ class TestWebappURL:
     
     def test_default_webapp_url(self):
         """Test default webapp URL when not specified"""
+        # Remove WEBAPP_URL since it's set at module level
+        os.environ.pop('WEBAPP_URL', None)
         os.environ.update({
             'ENVIRONMENT': 'production'
         })

@@ -44,6 +44,25 @@ source venv/bin/activate
 python -m pytest tests/ -v
 ```
 
+## Where to run tests and how to import
+
+- Always prefer running tests from the project root via `./scripts/run-tests.sh`. The script `cd`'s into `bot/` and sets up the venv, so imports resolve consistently.
+- If running `pytest` manually, first `cd bot && source venv/bin/activate`, then run `python -m pytest tests -v`.
+- Import style inside tests should follow this pattern:
+  - For bot modules: `from telegram.handlers.event_handlers import ...` or `from utils.mini_app_url import ...` if running inside `bot/`.
+  - If you intentionally run tests from the project root without `cd bot`, use absolute imports prefixed with `bot.` like `from bot.telegram.handlers.event_handlers import ...` and `from bot.utils.mini_app_url import ...`.
+- Our standard is to run tests using the script (which changes into `bot/`), so tests should generally use imports without the `bot.` prefix (e.g., `from telegram...` and `from utils...`).
+
+### Common error and fix
+
+- Error: `ModuleNotFoundError: No module named 'bot'`
+  - Cause: Running `pytest` from within `bot/` while using `from bot....` imports.
+  - Fix: Either (a) run tests from the project root using `./scripts/run-tests.sh`, or (b) change imports to non-prefixed paths (e.g., `from telegram...`).
+
+- Error: `ModuleNotFoundError: No module named 'telegram'`
+  - Cause: Running tests from the project root manually without the script and using non-prefixed imports.
+  - Fix: Use the script (recommended), or ensure you `cd bot` before running `pytest`.
+
 ## Test Categories
 
 - **Unit tests** (`@pytest.mark.unit`) - Fast, isolated tests

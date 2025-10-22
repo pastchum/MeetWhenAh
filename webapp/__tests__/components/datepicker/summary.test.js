@@ -14,8 +14,11 @@ test("ReviewSubmit component renders correctly with event data", () => {
   };
   
   const prevComponent = jest.fn();
+  const mockTg = {
+    close: jest.fn()
+  };
   
-  render(<ReviewSubmit data={data} prevComponent={prevComponent} />);
+  render(<ReviewSubmit data={data} prevComponent={prevComponent} tg={mockTg} isOwner={true} />);
   
   // Check if the main component renders
   const summaryElement = screen.getByTestId('summary');
