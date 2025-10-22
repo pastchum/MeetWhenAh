@@ -14,7 +14,7 @@ async function createEvent(formData) {
   return response.json();
 }
 
-export default function ReviewSubmit({ data, prevComponent, isOwner }) {
+export default function ReviewSubmit({ data, prevComponent, isOwner, tg }) {
   const handleSubmit = async () => {
     // Handle form submission logic here
     const formData = {

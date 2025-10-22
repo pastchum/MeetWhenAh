@@ -153,6 +153,7 @@ export default function DatePicker() {
                 data={data}
                 prevComponent={prevComponent}
                 isOwner={isOwner}
+                tg={tg}
               />
             </CardBody>
           </Card>
