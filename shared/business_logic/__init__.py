@@ -1,1 +1,0 @@
-# Business logic package - Core business operations 

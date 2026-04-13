@@ -49,14 +49,14 @@ def setEntries(table: str, data: list[dict]) -> bool:
         print(f"Error setting entries in {table}: {e}")
         return False
 
-def updateEntry(table: str, id: str, data: dict) -> bool:
-    """Update an entry in a table with the given ID"""
+def updateEntry(table: str, id_field: str, id: str, data: dict) -> bool:
+    """Update an entry in a table by a given id field"""
     try:
-        response = supabase.table(table).update(data).eq("event_id", id).execute()
+        response = supabase.table(table).update(data).eq(id_field, id).execute()
         return True if response.data else False
     except Exception as e:
         print(f"Error updating entry in {table}: {e}")
-        return False 
+        return False
 
 def deleteEntry(table: str, id_field: str, id: str, key_field: str, key_value: str) -> bool:
     """Delete an entry from a table with the given ID"""

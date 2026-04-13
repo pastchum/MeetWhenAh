@@ -7,7 +7,8 @@ from telegram.config.config import bot
 
 # Import from services
 from .database_service import setEntry, updateEntry, getEntries, getEntry, supabase
-from .event_service import getEvent, check_ownership, generate_confirmed_event_participants_list, getConfirmedEvent
+from .event_service import getEvent, generate_confirmed_event_participants_list, getConfirmedEvent
+from .membership_service import check_ownership
 
 # Import from other
 import uuid
@@ -33,7 +34,7 @@ def update_reminders_status(event_id: str, new_status: bool):
     event = getEvent(event_id)
     if not event:
         return False
-    return updateEntry("events", event_id, {"is_reminders_enabled": new_status})
+    return updateEntry("events", "event_id", event_id, {"is_reminders_enabled": new_status})
 
 def send_group_message(group_id: str, message_thread_id: str, message: str):
     """Send a message to a group"""

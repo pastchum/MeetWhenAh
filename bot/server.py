@@ -22,9 +22,7 @@ from services.user_service import getUser
 
 from telebot.types import Update
 
-# Import bot instance (we'll need to set up the import path correctly)
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# Import bot instance
 from telegram.config.config import bot
 
 # Initialize FastAPI app

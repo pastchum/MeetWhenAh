@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import logging
 
@@ -40,7 +40,7 @@ def set_chat(event_id: str, chat_id: int, thread_id: int = None) -> bool:
 
 def put_ctx(user_id: str, chat_id: str, message_id: str, thread_id: str | None, exp: int = EXPIRY_TIME) -> str:
     token = str(uuid.uuid4().hex)
-    expires_at = datetime.now() + timedelta(seconds=exp)
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=exp)
     data = {
         "token": token,
         "tele_id": user_id,

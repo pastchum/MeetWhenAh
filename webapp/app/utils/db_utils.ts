@@ -75,16 +75,16 @@ export async function getEntry(table: string, keyField: string, keyValue: string
   }
   
   /**
-   * Update an entry in a table by `event_id`
+   * Update an entry in a table by a given id field
    */
-  export async function updateEntry(table: string, id: string, data: TableRow): Promise<boolean> {
+  export async function updateEntry(table: string, idField: string, id: string, data: TableRow): Promise<boolean> {
     try {
       const { data: result, error } = await supabase
         .from(table)
         .update(data)
-        .eq('event_id', id)
+        .eq(idField, id)
         .select();
-  
+
       if (error) throw error;
       return !!result;
     } catch (err) {

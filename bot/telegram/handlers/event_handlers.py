@@ -1,16 +1,15 @@
-from bot.users.users import User
 from bot.events.events import Event
-from bot.events.confirmed_events import ConfirmedEvent
 from telebot import types
 
 # Import from config
 from ..config.config import bot
 
+from services.user_service import getUser, getUserFromUuid, setUser, updateUsername, updateUserInitialised
 from services.share_service import put_ctx
+from services.membership_service import join_event_by_uuid
 from services.event_service import (
-    join_event_by_uuid, 
-    generate_confirmed_event_description, 
-    getConfirmedEvent, 
+    generate_confirmed_event_description,
+    getConfirmedEvent,
     get_event_chat
     )
 from services.availability_service import ask_availability, ask_join
@@ -18,7 +17,7 @@ from services.availability_service import ask_availability, ask_join
 # Import from utils
 from utils.date_utils import parse_date
 from utils.message_templates import (
-    WELCOME_MESSAGE, 
+    WELCOME_MESSAGE,
 )
 
 # Keep track of processed message IDs to prevent duplicate processing
@@ -31,18 +30,18 @@ def register_event_handlers(bot):
     @bot.message_handler(commands=['create'])
     def send_welcome(message):
         tele_id = str(message.from_user.id)
-        db_result = User.getUser(tele_id)
+        db_result = getUser(tele_id)
         if db_result is None:
             # User doesn't exist, create them
             print("User not found in DB, creating new entry.", message.from_user.id)
             username = str(message.from_user.username)
-            User.setUser(message.from_user.id, username)
+            setUser(tele_id, username)
         else:
             if not db_result["initialised"]:
-                User.update_user(tele_id, initialised=True, callout_cleared=True)
+                updateUserInitialised(tele_id)
             if db_result["tele_user"] != str(message.from_user.username):
                 print("Username changed, updating in DB.")
-                User.update_user(tele_id, tele_user=str(message.from_user.username))
+                updateUsername(tele_id, str(message.from_user.username))
 
         bot_message = bot.reply_to(message, WELCOME_MESSAGE)
 
@@ -146,8 +145,8 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
             raise Exception("Event not found")
         # get event creator
         creator_id = event.get_creator()
-        creator = User.getUserFromUuid(creator_id)
-        creator_tele_id = creator.get_tele_id()
+        creator = getUserFromUuid(creator_id)
+        creator_tele_id = creator["tele_id"]
 
         # check if event is already confirmed
         if getConfirmedEvent(event_id):
@@ -176,7 +175,7 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
         # event confirmed successfully
         print("Event confirmed successfully.")
 
-        print("Message should be sent to creator ", creator.get_tele_user())
+        print("Message should be sent to creator ", creator["tele_user"])
         # add participants to event
         for participant in participants:
             success = join_event_by_uuid(event_id, participant)
