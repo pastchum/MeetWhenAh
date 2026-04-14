@@ -1,12 +1,17 @@
 import os
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
-# Load .env so DATABASE_URL is available
+# Add parent directory to path so we can import from bot
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Load .env so DB_URL is available
 load_dotenv()
 
 # this is the Alembic Config object, which provides

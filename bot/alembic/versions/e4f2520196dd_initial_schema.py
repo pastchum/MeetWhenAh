@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.create_table(
         "users",
         sa.Column("uuid", UUID(as_uuid=True), primary_key=True),
-        sa.Column("tele_id", sa.Text(), unique=True),
+        sa.Column("tele_id", sa.BigInteger(), unique=True),
         sa.Column("tele_user", sa.Text(), unique=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),

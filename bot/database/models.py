@@ -33,7 +33,7 @@ class User(Base):
     __tablename__ = "users"
 
     uuid = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tele_id = Column(Text, unique=True)
+    tele_id = Column(BigInteger, unique=True)
     tele_user = Column(Text, unique=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default="now()")
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default="now()")
