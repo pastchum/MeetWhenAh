@@ -12,10 +12,12 @@ from events.events import Event
 from events.confirmed_events import ConfirmedEvent
 
 # Import from services
-from .database_service import getEntry, setEntry, updateEntry
+from .database_service import getEntry, setEntry, updateEntry, parse_rows
 from .event_service import (
     getEvent,
 )
+from database.sqlmodels import EventMemberRow, EventRow
+from services.database_service import parse_row
 
 # Import from utils
 from utils.message_templates import HELP_MESSAGE, AVAILABILITY_SELECTION
@@ -67,10 +69,11 @@ def ask_join(chat_id: int, event_id: str, thread_id: int = None):
         
         # create full message with participants
         rows = event.get_all_users_for_event() or []
+        member_rows = parse_rows(rows, EventMemberRow)
         participant_count = len(rows)
         participants_formatted = "\n".join(
-            f"@{row.get('tele_user')} {row.get('emoji_icon', '')}".strip()
-            for row in rows
+            f"@{row.tele_user} {(row.emoji_icon or '')}".strip()
+            for row in member_rows
         ) or "No participants yet"
 
         full_message = f"{event_description}\n\n👥 <b>Participants ({participant_count})</b>:\n{participants_formatted}"
@@ -99,10 +102,11 @@ def update_join_message(chat_id: int, message_id: int, event_id: str, thread_id:
         
         # create full message with participants
         rows = event.get_all_users_for_event() or []
+        member_rows = parse_rows(rows, EventMemberRow)
         participant_count = len(rows)
         participants_formatted = "\n".join(
-            f"• @{row.get('tele_user')} {row.get('emoji_icon', '')}".strip()
-            for row in rows
+            f"• @{row.tele_user} {(row.emoji_icon or '')}".strip()
+            for row in member_rows
         ) or "No participants yet"
 
         full_message = f"{event_description}\n\n👥 <b>Participants ({participant_count})</b>:\n{participants_formatted}"
@@ -123,7 +127,7 @@ def update_join_message(chat_id: int, message_id: int, event_id: str, thread_id:
 
 def format_availability_summary(event_id: str, username: str) -> str:
     """Format a summary of a user's availability for an event"""
-    event = getEvent(event_id)
+    event = parse_row(getEvent(event_id), EventRow)
     if not event:
         return "Event not found"
     
@@ -136,7 +140,7 @@ def format_availability_summary(event_id: str, username: str) -> str:
         return "No availability data found"
     
     # Format the summary
-    summary = f"Your availability for {event['event_name']}:\n\n"
+    summary = f"Your availability for {event.event_name}:\n\n"
     
     # Group availability by date
     by_date = defaultdict(list)

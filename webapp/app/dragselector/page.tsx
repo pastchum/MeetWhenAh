@@ -58,7 +58,7 @@ export default function DragSelectorPage() {
     const urlParams = new URLSearchParams(window.location.search);
     console.log(
       "[DragSelector] URL params:",
-      Object.fromEntries(urlParams.entries())
+      Object.fromEntries(urlParams.entries()),
     );
 
     if (window.Telegram.WebApp.initDataUnsafe.user) {
@@ -113,7 +113,7 @@ export default function DragSelectorPage() {
         console.log("eventStart", eventStart);
         const eventEnd = new Date(eventDetails.end_date);
         const totalDays = Math.ceil(
-          (eventEnd.getTime() - eventStart.getTime()) / (1000 * 3600 * 24) + 1
+          (eventEnd.getTime() - eventStart.getTime()) / (1000 * 3600 * 24) + 1,
         );
 
         setTotalEventDays(totalDays);
@@ -137,7 +137,7 @@ export default function DragSelectorPage() {
     const fetchUserUuidFromTeleId = async () => {
       console.log(
         "[DragSelector] Fetching user data for teleId:",
-        teleId.toString()
+        teleId.toString(),
       );
 
       const userData = await fetchUserDataFromId(teleId.toString());
@@ -155,16 +155,8 @@ export default function DragSelectorPage() {
         const telegramUser = window.Telegram.WebApp.initDataUnsafe.user;
         if (telegramUser) {
           const newUserData = {
-            uuid: crypto.randomUUID(),
             tele_id: telegramUser.id.toString(),
             tele_user: telegramUser.username || "",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            initialised: true,
-            callout_cleared: true,
-            sleep_start_time: "00:00:00",
-            sleep_end_time: "00:00:00",
-            tmp_sleep_start: "00:00:00",
           };
           const newUser = await addUserToDatabase(newUserData);
           if (newUser) {
@@ -199,7 +191,7 @@ export default function DragSelectorPage() {
 
     if (!userUuid || !username || !teleId || !eventId) {
       console.log(
-        "[DragSelector] Missing required data for availability fetch"
+        "[DragSelector] Missing required data for availability fetch",
       );
       return;
     }
@@ -207,7 +199,7 @@ export default function DragSelectorPage() {
     const fetchUserAvailability = async () => {
       const availability = await fetchUserAvailabilityFromAPI(
         teleId.toString(),
-        eventId
+        eventId,
       );
       console.log("[DragSelector] Availability response:", availability);
       if (availability) {

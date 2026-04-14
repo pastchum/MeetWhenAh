@@ -3,7 +3,9 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 # Import from services
-from services.database_service import getEntry, setEntry, getEntries, deleteEntry, supabase
+from services.database_service import getEntry, setEntry, getEntries, deleteEntry, supabase, parse_row, parse_rows
+
+from database.sqlmodels import ConfirmedEventCreatePayload, ConfirmedEventRow, EventMemberRow, MembershipRow
 
 # Import from utils
 from utils.date_utils import parse_date, format_date_month_day, format_time_from_iso_am_pm
@@ -92,13 +94,13 @@ class ConfirmedEvent(Event):
                              confirmed_start_time = confirmed_start_time, 
                              confirmed_end_time = confirmed_end_time)
         
-        confirmed_event_data = {
-            "event_id": event.event_id,
-            "confirmed_at": confirmed_event.confirmed_at,
-            "confirmed_start_time": confirmed_event.confirmed_start_time,
-            "confirmed_end_time": confirmed_event.confirmed_end_time
-        }
-        isConfirmed = getEntry("confirmed_events", "event_id", event.event_id)
+        confirmed_event_data = ConfirmedEventCreatePayload(
+            event_id=event.event_id,
+            confirmed_at=str(confirmed_event.confirmed_at),
+            confirmed_start_time=confirmed_event.confirmed_start_time,
+            confirmed_end_time=confirmed_event.confirmed_end_time,
+        )
+        isConfirmed = parse_row(getEntry("confirmed_events", "event_id", event.event_id), ConfirmedEventRow)
         if not isConfirmed:
             isConfirmed = setEntry("confirmed_events", event.event_id, confirmed_event_data)
         
@@ -112,10 +114,15 @@ class ConfirmedEvent(Event):
         event = Event.from_database(event_id)
         if not event:
             return None
-        confirmed_event = getEntry("confirmed_events", "event_id", event_id)
+        confirmed_event = parse_row(getEntry("confirmed_events", "event_id", event_id), ConfirmedEventRow)
         if not confirmed_event:
             return None
-        return ConfirmedEvent.from_event(event, confirmed_event.get("confirmed_at"), confirmed_event.get("confirmed_start_time"), confirmed_event.get("confirmed_end_time"))
+        return ConfirmedEvent.from_event(
+            event,
+            str(confirmed_event.confirmed_at),
+            confirmed_event.confirmed_start_time,
+            confirmed_event.confirmed_end_time,
+        )
 
     """
     field methods
@@ -137,12 +144,12 @@ class ConfirmedEvent(Event):
     Add user to membership table for given event
     """
     def _add_user_to_event(self, user_uuid: str):
-        membership_data = {
-        "event_id": self.event_id,
-        "user_uuid": user_uuid,
-        "joined_at": datetime.now(timezone.utc).isoformat(),
-        "emoji_icon": "👋"
-        }
+        membership_data = MembershipRow(
+            event_id=self.event_id,
+            user_uuid=user_uuid,
+            joined_at=datetime.now(timezone.utc),
+            emoji_icon="👋",
+        )
         success = setEntry("membership", self.event_id, membership_data)
         if not success:
             return False
@@ -162,7 +169,7 @@ class ConfirmedEvent(Event):
     """
     def _get_all_users_for_event(self):
         response = supabase.rpc("get_event_members", { "p_event_id": self.event_id }).execute()
-        return response.data
+        return [member.model_dump(mode="json") for member in parse_rows(response.data, EventMemberRow)]
 
     """
     Add user to event

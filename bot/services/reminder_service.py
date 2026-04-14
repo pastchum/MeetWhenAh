@@ -7,8 +7,12 @@ from telegram.config.config import bot
 
 # Import from services
 from .database_service import setEntry, updateEntry, getEntries, getEntry, supabase
+from .database_service import parse_row, parse_rows
 from .event_service import getEvent, generate_confirmed_event_participants_list, getConfirmedEvent
 from .membership_service import check_ownership
+
+from database.sqlmodels import ConfirmedEventRow, EventChatRow, EventRow
+from sqlmodel import SQLModel
 
 # Import from other
 import uuid
@@ -22,12 +26,16 @@ from utils.date_utils import format_date_for_message, format_time_from_iso, pars
 
 EVENT_REMINDER_HOUR_OFFSET = 2
 
+
+class EventIdRow(SQLModel, table=False):
+    event_id: str
+
 def get_reminders_status(event_id: str) -> bool:
     """Get the reminder status for an event"""
-    event = getEvent(event_id)
+    event = parse_row(getEvent(event_id), EventRow)
     if not event:
         return False
-    return event["is_reminders_enabled"]
+    return event.is_reminders_enabled
 
 def update_reminders_status(event_id: str, new_status: bool):
     """Enable reminders for an event"""
@@ -46,16 +54,17 @@ def send_group_message(group_id: str, message_thread_id: str, message: str):
 def send_daily_availability_reminders():
     """Send daily availability reminders for all events"""
     response = supabase.rpc("get_unconfirmed_active_events_at_noon_local_time").execute()
-    events = response.data
+    events = parse_rows(response.data, EventIdRow)
     print("events", events)
     for event in events:
-        event_id = event["event_id"]
+        event_id = event.event_id
         event_chats = getEntries("event_chats", "event_id", event_id)
         if not event_chats:
             continue
-        for event_chat in event_chats:
+        validated_event_chats = parse_rows(event_chats, EventChatRow)
+        for event_chat in validated_event_chats:
             message = generate_availability_reminder_message(event_id)
-            send_group_message(event_chat["chat_id"], event_chat["thread_id"], message)
+            send_group_message(event_chat.chat_id, event_chat.thread_id, message)
 
     print("done sending daily availability reminders")
     return True
@@ -63,25 +72,26 @@ def send_daily_availability_reminders():
 def send_daily_event_reminders():
     """Send daily reminders for all events"""
     response = supabase.rpc("get_confirmed_events_at_local_noon").execute()
-    events = response.data
+    events = parse_rows(response.data, EventIdRow)
     print("events", events)
     for event in events:
-        event_id = event["event_id"]
+        event_id = event.event_id
         message = generate_event_reminder_message(event_id)
         # check confirmed
-        confirmed_event_data = getConfirmedEvent(event_id)
+        confirmed_event_data = parse_row(getConfirmedEvent(event_id), ConfirmedEventRow)
         if not confirmed_event_data:
             continue
         # check if event has passed
-        confirmed_start_time = confirmed_event_data['confirmed_start_time']
+        confirmed_start_time = confirmed_event_data.confirmed_start_time
         if parse_date(confirmed_start_time) < datetime.now(timezone.utc):
             continue
         
         event_chats = getEntries("event_chats", "event_id", event_id)
         if not event_chats:
             continue
-        for event_chat in event_chats:
-            send_group_message(event_chat["chat_id"], event_chat["thread_id"], message)
+        validated_event_chats = parse_rows(event_chats, EventChatRow)
+        for event_chat in validated_event_chats:
+            send_group_message(event_chat.chat_id, event_chat.thread_id, message)
 
     print("done sending daily event reminders")
     return True
@@ -89,50 +99,53 @@ def send_daily_event_reminders():
 def send_upcoming_event_reminders():
     """Send upcoming event reminders for all events"""
     response = supabase.rpc("get_confirmed_events_starting_soon").execute()
-    events = response.data
+    events = parse_rows(response.data, EventIdRow)
     print("events", events)
     for event in events:
-        event_id = event["event_id"]
+        event_id = event.event_id
         event_chats = getEntries("event_chats", "event_id", event_id)
         if not event_chats:
             continue
-        for event_chat in event_chats:
+        validated_event_chats = parse_rows(event_chats, EventChatRow)
+        for event_chat in validated_event_chats:
             message = generate_event_reminder_message(event_id)
-            send_group_message(event_chat["chat_id"], event_chat["thread_id"], message)
+            send_group_message(event_chat.chat_id, event_chat.thread_id, message)
 
     print("done sending upcoming event reminders")
     return True
 
 def send_event_reminder(event_id: str):
     """Send an event reminder at an offset from the confirmed start time"""
-    event_chat = getEntry("event_chats", "event_id", event_id)
-    if not event_chat:
+    event_chats = getEntries("event_chats", "event_id", event_id)
+    if not event_chats:
         return
 
     message = generate_event_reminder_message(event_id)
-    send_group_message(event_chat["chat_id"], event_chat["thread_id"], message)
+    validated_event_chats = parse_rows(event_chats, EventChatRow)
+    for event_chat in validated_event_chats:
+        send_group_message(event_chat.chat_id, event_chat.thread_id, message)
 
 def generate_availability_reminder_message(event_id: str) -> str:
     """Generate a reminder message to input availability"""
-    event = getEvent(event_id)
+    event = parse_row(getEvent(event_id), EventRow)
     if not event:
         return ""
     
     # Format dates
-    start_date = parse_date(event['start_date'])
-    end_date = parse_date(event['end_date'])
+    start_date = parse_date(str(event.start_date))
+    end_date = parse_date(str(event.end_date))
     start_date_str = format_date_month_day(start_date)
     end_date_str = format_date_month_day(end_date)
     
     return AVAILABILITY_REMINDER.format(
-        event_name=event['event_name'],
+        event_name=event.event_name,
         start_date_str=start_date_str,
         end_date_str=end_date_str
     )
 
 def generate_event_reminder_message(event_id: str) -> str:
     """Generate a reminder message for an event"""
-    event = getEvent(event_id)
+    event = parse_row(getEvent(event_id), EventRow)
     if not event:
         return ""
     
@@ -144,28 +157,28 @@ def generate_event_reminder_message(event_id: str) -> str:
     participants = generate_confirmed_event_participants_list(event_id)
 
     return EVENT_REMINDER.format(
-        event_name=event['event_name'],
+        event_name=event.event_name,
         participants=participants
     )
 
 def generate_daily_reminder_message(event_id: str) -> str:
     """Generate a reminder message for an event"""
-    event = getEvent(event_id)
+    event = parse_row(getEvent(event_id), EventRow)
     if not event:
         return ""
     
     # get confirmed duration
-    confirmed_event_data = getConfirmedEvent(event_id)
+    confirmed_event_data = parse_row(getConfirmedEvent(event_id), ConfirmedEventRow)
     if not confirmed_event_data:
         return ""
-    confirmed_start_time = confirmed_event_data['confirmed_start_time']
+    confirmed_start_time = confirmed_event_data.confirmed_start_time
     confirmed_start_time_str = format_date_month_day(parse_date(confirmed_start_time)) + " " + format_time_from_iso_am_pm(confirmed_start_time)
-    confirmed_end_time = confirmed_event_data['confirmed_end_time']
+    confirmed_end_time = confirmed_event_data.confirmed_end_time
     confirmed_end_time_str = format_date_month_day(parse_date(confirmed_end_time)) + " " + format_time_from_iso_am_pm(confirmed_end_time)
 
     participants = generate_confirmed_event_participants_list(event_id)
     return DAILY_REMINDER.format(
-        event_name=event['event_name'],
+        event_name=event.event_name,
         start_time_str=confirmed_start_time_str,
         end_time_str=confirmed_end_time_str,
         participants=participants
@@ -174,14 +187,14 @@ def generate_daily_reminder_message(event_id: str) -> str:
 def toggle_reminders(call: types.CallbackQuery, event_id: str, tele_id: str):
     """Toggle reminders for an event"""
     # get event
-    event = getEvent(event_id)
+    event = parse_row(getEvent(event_id), EventRow)
     if not event:
         return False
     
     # get reminder status
-    is_reminders_enabled = event["is_reminders_enabled"]
-    event_chat = getEntry("event_chats", "event_id", event_id)
-    if not event_chat:
+    is_reminders_enabled = event.is_reminders_enabled
+    event_chat_rows = parse_rows(getEntries("event_chats", "event_id", event_id), EventChatRow)
+    if not event_chat_rows:
         return False
 
     is_owner = check_ownership(event_id, tele_id)
@@ -197,7 +210,7 @@ def toggle_reminders(call: types.CallbackQuery, event_id: str, tele_id: str):
 
         bot.answer_callback_query(
             call.id,
-            f"Reminders for event {event['event_name']} have been disabled.",
+            f"Reminders for event {event.event_name} have been disabled.",
             show_alert=False
         )
     else: # enable reminders
@@ -205,6 +218,6 @@ def toggle_reminders(call: types.CallbackQuery, event_id: str, tele_id: str):
         # add job
         bot.answer_callback_query(
             call.id,
-            f"Reminders for event {event['event_name']} have been enabled.",
+            f"Reminders for event {event.event_name} have been enabled.",
             show_alert=False
         )

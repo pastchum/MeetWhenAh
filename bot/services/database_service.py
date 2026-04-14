@@ -1,6 +1,9 @@
 import os
+from typing import Any, Optional, Type, TypeVar
+
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from sqlmodel import SQLModel
 
 # Load environment variables
 load_dotenv()
@@ -10,6 +13,28 @@ supabase: Client = create_client(
     os.getenv('SUPABASE_URL'),
     os.getenv('SUPABASE_KEY')
 )
+
+TModel = TypeVar("TModel", bound=SQLModel)
+
+
+def _to_payload(data: Any) -> dict:
+    if isinstance(data, SQLModel):
+        return data.model_dump(exclude_none=True)
+    if isinstance(data, dict):
+        return data
+    raise TypeError(f"Unsupported payload type: {type(data)}")
+
+
+def parse_row(row: Optional[dict], model: Type[TModel]) -> Optional[TModel]:
+    if not row:
+        return None
+    return model.model_validate(row)
+
+
+def parse_rows(rows: Optional[list[dict]], model: Type[TModel]) -> list[TModel]:
+    if not rows:
+        return []
+    return [model.model_validate(row) for row in rows]
 
 def getEntry(table: str, key_field: str, key_value: str):
     """Get an entry from a table by a key field"""
@@ -34,7 +59,7 @@ def getEntries(table: str, key_field: str, key_value: str):
 def setEntry(table: str, id: str, data: dict) -> bool:
     """Set an entry in a table with the given ID"""
     try:
-        response = supabase.table(table).insert(data).execute()
+        response = supabase.table(table).insert(_to_payload(data)).execute()
         return True if response.data else False
     except Exception as e:
         print(f"Error setting entry in {table}: {e}")
@@ -43,7 +68,8 @@ def setEntry(table: str, id: str, data: dict) -> bool:
 def setEntries(table: str, data: list[dict]) -> bool:
     """Set multiple entries in a table"""
     try:
-        response = supabase.table(table).insert(data).execute()
+        payload = [_to_payload(item) for item in data]
+        response = supabase.table(table).insert(payload).execute()
         return True if response.data else False
     except Exception as e:
         print(f"Error setting entries in {table}: {e}")
@@ -52,7 +78,7 @@ def setEntries(table: str, data: list[dict]) -> bool:
 def updateEntry(table: str, id_field: str, id: str, data: dict) -> bool:
     """Update an entry in a table by a given id field"""
     try:
-        response = supabase.table(table).update(data).eq(id_field, id).execute()
+        response = supabase.table(table).update(_to_payload(data)).eq(id_field, id).execute()
         return True if response.data else False
     except Exception as e:
         print(f"Error updating entry in {table}: {e}")

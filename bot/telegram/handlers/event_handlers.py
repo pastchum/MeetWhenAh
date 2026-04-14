@@ -10,9 +10,11 @@ from services.membership_service import join_event_by_uuid
 from services.event_service import (
     generate_confirmed_event_description,
     getConfirmedEvent,
-    get_event_chat
+    get_event_chats
     )
 from services.availability_service import ask_availability, ask_join
+from services.database_service import parse_row
+from database.sqlmodels import UserRow
 
 # Import from utils
 from utils.date_utils import parse_date
@@ -30,16 +32,16 @@ def register_event_handlers(bot):
     @bot.message_handler(commands=['create'])
     def send_welcome(message):
         tele_id = str(message.from_user.id)
-        db_result = getUser(tele_id)
+        db_result = parse_row(getUser(tele_id), UserRow)
         if db_result is None:
             # User doesn't exist, create them
             print("User not found in DB, creating new entry.", message.from_user.id)
             username = str(message.from_user.username)
             setUser(tele_id, username)
         else:
-            if not db_result["initialised"]:
+            if not db_result.initialised:
                 updateUserInitialised(tele_id)
-            if db_result["tele_user"] != str(message.from_user.username):
+            if db_result.tele_user != str(message.from_user.username):
                 print("Username changed, updating in DB.")
                 updateUsername(tele_id, str(message.from_user.username))
 
@@ -138,6 +140,7 @@ def handle_event_creation(message, data):
 def handle_event_confirmation(event_id, best_start_time, best_end_time):
     """Handle event confirmation from web app data"""
     print("handle_event_confirmation", event_id, best_start_time, best_end_time)
+    creator_tele_id = None
     try:
         # get event details
         event = Event.get_event(event_id)
@@ -145,12 +148,14 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
             raise Exception("Event not found")
         # get event creator
         creator_id = event.get_creator()
-        creator = getUserFromUuid(creator_id)
-        creator_tele_id = creator["tele_id"]
+        creator = parse_row(getUserFromUuid(creator_id), UserRow)
+        if not creator:
+            raise Exception("Event creator not found")
+        creator_tele_id = creator.tele_id
 
         # check if event is already confirmed
         if getConfirmedEvent(event_id):
-            bot.send_message(chat_id=creator_tele_id, text=f"Event {event['event_name']} is already confirmed.")
+            bot.send_message(chat_id=creator_tele_id, text=f"Event {event.get_event_name()} is already confirmed.")
             return
         
         # check time validity
@@ -175,7 +180,7 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
         # event confirmed successfully
         print("Event confirmed successfully.")
 
-        print("Message should be sent to creator ", creator["tele_user"])
+        print("Message should be sent to creator ", creator.tele_user)
         # add participants to event
         for participant in participants:
             success = join_event_by_uuid(event_id, participant)
@@ -185,16 +190,18 @@ def handle_event_confirmation(event_id, best_start_time, best_end_time):
         # create share message
         description = generate_confirmed_event_description(event_id)
 
-        text = f"Event {event['event_name']} confirmed successfully.\n\n{description}\n\nShare this event with others using the /share command in your group chats!"
+        text = f"Event {event.get_event_name()} confirmed successfully.\n\n{description}\n\nShare this event with others using the /share command in your group chats!"
 
         bot.send_message(chat_id=creator_tele_id, text=text)
 
         # send availability to event chat
-        chat_id, thread_id = get_event_chat(event_id)
-        if chat_id:
-            ask_join(chat_id, event_id, thread_id)
+        event_chats = get_event_chats(event_id)
+        if event_chats:
+            for event_chat in event_chats:
+                ask_join(event_chat["chat_id"], event_id, event_chat["thread_id"])
 
     except Exception as e:
-        bot.send_message(chat_id=creator_tele_id, text=f"Error confirming event: {str(e)}")
+        if creator_tele_id:
+            bot.send_message(chat_id=creator_tele_id, text=f"Error confirming event: {str(e)}")
         return
 

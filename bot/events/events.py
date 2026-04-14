@@ -10,7 +10,9 @@ from telegram.config.config import bot
 from best_time_algo.best_time_algo import BestTimeAlgo
 
 # Import from services
-from services.database_service import getEntry, setEntry, getEntries
+from services.database_service import getEntry, setEntry, getEntries, parse_row, parse_rows
+
+from database.sqlmodels import AvailabilityBlockRow, EventChatRow, EventRow
 
 # Import from utils
 from utils.date_utils import parse_date, format_date_month_day, parse_time
@@ -147,6 +149,7 @@ class Event:
     """
     Create event in database
     """
+    @staticmethod
     async def _create_event( 
                  event_name: str, 
                  event_description: str, 
@@ -186,13 +189,13 @@ class Event:
             "event_name": event_name,
             "event_description": event_description,
             "event_type": event_type,
-            "start_date": start_date.toISOformat(),
-            "end_date": end_date.toISOformat(),
-            "start_hour": start_hour.toISOformat(),
-            "end_hour": end_hour.toISOformat(),
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "start_hour": str(start_hour),
+            "end_hour": str(end_hour),
             "creator": creator,
-            "created_at": created_at.toISOformat(),
-            "updated_at": updated_at.toISOformat(),
+            "created_at": created_at.isoformat(),
+            "updated_at": updated_at.isoformat(),
             "min_participants": min_participants,
             "min_duration": min_duration,
             "max_duration": max_duration,
@@ -210,13 +213,15 @@ class Event:
     Get all chats from chat table for given event
     """
     def _get_chats_for_event(self):
-        return getEntries("event_chats", "event_id", self.event_id)
+        rows = parse_rows(getEntries("event_chats", "event_id", self.event_id), EventChatRow)
+        return [row.model_dump(mode="json") for row in rows]
     
     """
     Get all event availabilities
     """
     def _get_availability_blocks_for_event(self):
-        return getEntries("availability_blocks", "event_id", self.event_id)
+        rows = parse_rows(getEntries("availability_blocks", "event_id", self.event_id), AvailabilityBlockRow)
+        return [row.model_dump(mode="json") for row in rows]
     
     """
     Get best time for event
@@ -234,28 +239,29 @@ class Event:
     """
     @classmethod
     def from_database(cls, event_id: str) -> Optional['Event']:
-        event = getEntry("events", "event_id", event_id)
+        event = parse_row(getEntry("events", "event_id", event_id), EventRow)
         if not event:
             return None
         return cls(
-            event_id=event.get("event_id"),
-            event_name=event.get("event_name"),
-            event_description=event.get("event_description"),
-            event_type=event.get("event_type"),
-            start_date=parse_date(event.get("start_date")),
-            end_date=parse_date(event.get("end_date")),
-            start_hour=parse_time(event.get("start_hour")),
-            end_hour=parse_time(event.get("end_hour")),
-            creator=event.get("creator"),
-            created_at=parse_date(event.get("created_at")),
-            updated_at=parse_date(event.get("updated_at")),
-            min_participants=event.get("min_participants"),
-            min_duration=event.get("min_duration"),
-            max_duration=event.get("max_duration"),
-            is_reminders_enabled=event.get("is_reminders_enabled"),
-            timezone=event.get("timezone")
+            event_id=event.event_id,
+            event_name=event.event_name,
+            event_description=event.event_description,
+            event_type=event.event_type.value,
+            start_date=event.start_date,
+            end_date=event.end_date,
+            start_hour=parse_time(event.start_hour),
+            end_hour=parse_time(event.end_hour),
+            creator=event.creator,
+            created_at=event.created_at,
+            updated_at=event.updated_at or event.created_at,
+            min_participants=event.min_participants,
+            min_duration=event.min_duration,
+            max_duration=event.max_duration,
+            is_reminders_enabled=event.is_reminders_enabled,
+            timezone=event.timezone,
         )
     
+    @staticmethod
     def get_event(event_id: str) -> Optional['Event']:
         return Event.from_database(event_id)
     
@@ -276,7 +282,7 @@ class Event:
                 max_duration: int = 4,
                 is_reminders_enabled: bool = False,
                 timezone: str = "Asia/Singapore",
-                event_id: str = None):
+                event_id: Optional[str] = None):
         created_at = datetime.now(tz.utc)
         updated_at = datetime.now(tz.utc)
         event_id_to_use = event_id if event_id else str(uuid.uuid4())

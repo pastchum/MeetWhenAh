@@ -14,9 +14,11 @@ export async function POST(request: NextRequest) {
     const success = await userService.setUser(newUserData);
     
     if (success) {
+      const user = await userService.getUser(tele_id);
       return NextResponse.json({
         status: 'success',
-        message: 'User added successfully'
+        message: 'User added successfully',
+        data: user
       });
     } else {
       return NextResponse.json({

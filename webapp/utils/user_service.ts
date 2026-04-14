@@ -8,8 +8,9 @@ export interface UserData {
   callout_cleared: boolean;
   created_at: string;
   updated_at: string;
-  sleep_start?: string;
-  sleep_end?: string;
+  sleep_start_time?: string;
+  sleep_end_time?: string;
+  tmp_sleep_start?: string;
 }
 
 export interface NewUserData {
@@ -53,7 +54,7 @@ export class UserService {
         uuid: userUuid,
         tele_id: user.tele_id,
         tele_user: user.tele_user,
-        initialised: true,
+        initialised: false,
         callout_cleared: false,
         created_at: now,
         updated_at: now
@@ -143,7 +144,7 @@ export class UserService {
   /**
    * Set a user's sleep preferences
    */
-  async setUserSleepPreferences(teleId: string, sleepStart: string, sleepEnd: string): Promise<boolean> {
+  async setUserSleepPreferences(teleId: string, sleepStartTime: string, sleepEndTime: string): Promise<boolean> {
     try {
       const user = await this.getUser(teleId);
       const now = new Date().toISOString();
@@ -153,8 +154,8 @@ export class UserService {
         const { error } = await supabase
           .from('users')
           .update({
-            sleep_start: sleepStart,
-            sleep_end: sleepEnd,
+            sleep_start_time: sleepStartTime,
+            sleep_end_time: sleepEndTime,
             updated_at: now
           })
           .eq('tele_id', teleId);
@@ -170,8 +171,9 @@ export class UserService {
           uuid: userUuid,
           tele_id: teleId,
           tele_user: '',
-          sleep_start: sleepStart,
-          sleep_end: sleepEnd,
+          sleep_start_time: sleepStartTime,
+          sleep_end_time: sleepEndTime,
+          tmp_sleep_start: null,
           initialised: false,
           callout_cleared: false,
           created_at: now,

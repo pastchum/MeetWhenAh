@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import uvicorn
 from dotenv import load_dotenv
 import os
-import json
+from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -19,6 +19,9 @@ from services.event_service import get_event_best_time, getEvent, getConfirmedEv
 from services.reminder_service import send_daily_availability_reminders, send_daily_event_reminders, send_upcoming_event_reminders
 from services.share_service import get_ctx, handle_share_event, set_chat
 from services.user_service import getUser
+from services.database_service import parse_row
+
+from database.sqlmodels import UserRow, WebappShareTokenCtxRow
 
 from telebot.types import Update
 
@@ -41,17 +44,43 @@ app.add_middleware(
 class AvailabilityRequest(BaseModel):
     tele_id: str
     event_id: str
-    availability_data: list = None
+    availability_data: Optional[list] = None
 
 class WebhookUpdate(BaseModel):
     """Model for Telegram webhook updates"""
     update_id: int
-    message: dict = None
-    edited_message: dict = None
-    channel_post: dict = None
-    edited_channel_post: dict = None
-    inline_query: dict = None
-    callback_query: dict = None
+    message: Optional[dict] = None
+    edited_message: Optional[dict] = None
+    channel_post: Optional[dict] = None
+    edited_channel_post: Optional[dict] = None
+    inline_query: Optional[dict] = None
+    callback_query: Optional[dict] = None
+
+
+class ShareEventRequest(BaseModel):
+    token: str
+    event_id: str
+
+
+class CreateEventRequest(BaseModel):
+    token: str
+    event_id: str
+    event_name: str
+    event_details: str
+    event_type: str = "general"
+    start: str
+    end: str
+    creator: str
+
+
+class ConfirmEventRequest(BaseModel):
+    event_id: str
+    best_start_time: str
+    best_end_time: str
+
+
+class BestTimeRequest(BaseModel):
+    event_id: str
 
 # New webhook endpoint for Telegram
 @app.post("/webhook/bot")
@@ -79,9 +108,9 @@ async def health_check():
 @app.post("/api/share")
 async def share_event(request: Request):
     """Share an event"""
-    data = await request.json()
-    token = data["token"]
-    event_id = data["event_id"]
+    data = ShareEventRequest.model_validate(await request.json())
+    token = data.token
+    event_id = data.event_id
 
     # get the event
     event = getEvent(event_id)
@@ -89,12 +118,12 @@ async def share_event(request: Request):
         return JSONResponse(status_code=400, content=jsonable_encoder({"error": "Event not found"}))
 
     # get the event chat details
-    ctx = get_ctx(token)
+    ctx = parse_row(get_ctx(token), WebappShareTokenCtxRow)
     if not ctx:
         return JSONResponse(status_code=400, content=jsonable_encoder({"error": "Invalid token"}))
     print("ctx", ctx)
     # edit the message
-    success = handle_share_event(event_id, ctx["tele_id"], ctx["chat_id"], ctx["message_id"], ctx["thread_id"])
+    success = handle_share_event(event_id, ctx.tele_id, ctx.chat_id, ctx.message_id, ctx.thread_id)
     if not success:
         return JSONResponse(status_code=400, content=jsonable_encoder({"error": "Failed to handle share event"}))
     
@@ -103,30 +132,30 @@ async def share_event(request: Request):
 @app.post("/api/event/create")
 async def create_event(request: Request):
     """Create an event"""
-    data = await request.json()
+    data = CreateEventRequest.model_validate(await request.json())
     print("data", data)
 
     # get token details 
-    token = data["token"]
+    token = data.token
 
-    ctx = get_ctx(token)
+    ctx = parse_row(get_ctx(token), WebappShareTokenCtxRow)
     if not ctx:
         return JSONResponse(status_code=400, content=jsonable_encoder({"error": "Invalid token"})) 
     
     # get event details
-    event_id = data["event_id"]
-    event_name = data["event_name"]
-    event_description = data["event_details"]
-    event_type = data["event_type"]
-    start_date = data["start"]
-    end_date = data["end"]
-    creator_tele_id = data["creator"]
+    event_id = data.event_id
+    event_name = data.event_name
+    event_description = data.event_details
+    event_type = data.event_type
+    start_date = data.start
+    end_date = data.end
+    creator_tele_id = data.creator
 
-    creator = getUser(creator_tele_id)
+    creator = parse_row(getUser(creator_tele_id), UserRow)
     if not creator:
         return JSONResponse(status_code=400, content=jsonable_encoder({"error": "Creator not found"}))
-    creator_uuid = creator["uuid"]
-    start_hour: str = "00:00:00.000000+08:00", 
+    creator_uuid = creator.uuid
+    start_hour: str = "00:00:00.000000+08:00"
     end_hour: str = "23:30:00.000000+08:00"
     min_participants = 2
     min_duration = 2
@@ -154,7 +183,7 @@ async def create_event(request: Request):
         return JSONResponse(status_code=400, content=jsonable_encoder({"error": "Failed to create event"}))
     
     # Share event
-    success = handle_share_event(event_id, ctx["tele_id"], ctx["chat_id"], ctx["message_id"], ctx["thread_id"])
+    success = handle_share_event(event_id, ctx.tele_id, ctx.chat_id, ctx.message_id, ctx.thread_id)
     if not success:
         return JSONResponse(status_code=400, content={"error": "Failed to share event"})
     
@@ -164,10 +193,10 @@ async def create_event(request: Request):
 @app.post("/api/event/confirm")
 async def confirm_event(request: Request):
     """Confirm an event"""
-    data = await request.json()
-    event_id = data["event_id"]
-    best_start_time = data["best_start_time"]
-    best_end_time = data["best_end_time"]
+    data = ConfirmEventRequest.model_validate(await request.json())
+    event_id = data.event_id
+    best_start_time = data.best_start_time
+    best_end_time = data.best_end_time
 
     # process confirm event
     success = handle_event_confirmation(event_id, best_start_time, best_end_time)
@@ -176,8 +205,8 @@ async def confirm_event(request: Request):
 @app.post("/api/event/get-best-time")
 async def get_best_time(request: Request):
     """Get the best time for an event"""
-    data = await request.json()
-    event_id = data["event_id"]
+    data = BestTimeRequest.model_validate(await request.json())
+    event_id = data.event_id
     best_time = get_event_best_time(event_id)
     print("best_time", best_time)
     return JSONResponse(status_code=200, content=jsonable_encoder({"data": best_time}))

@@ -4,13 +4,15 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 import uuid
 
-from services.database_service import getEntry, setEntry, updateEntry
+from services.database_service import getEntry, parse_row, setEntry, updateEntry
+from database.sqlmodels import UserCreatePayload, UserRow, UserUpdatePayload
 
 
 def getUser(tele_id: str) -> Optional[Dict[str, Any]]:
     """Get a user by their Telegram ID"""
     try:
-        return getEntry("users", "tele_id", str(tele_id))
+        user = parse_row(getEntry("users", "tele_id", str(tele_id)), UserRow)
+        return user.model_dump(mode="json") if user else None
     except Exception as e:
         print(f"Error getting user {tele_id}: {e}")
         return None
@@ -19,7 +21,8 @@ def getUser(tele_id: str) -> Optional[Dict[str, Any]]:
 def getUserFromUuid(user_uuid: str) -> Optional[Dict[str, Any]]:
     """Get a user by their UUID"""
     try:
-        return getEntry("users", "uuid", user_uuid)
+        user = parse_row(getEntry("users", "uuid", user_uuid), UserRow)
+        return user.model_dump(mode="json") if user else None
     except Exception as e:
         print(f"Error getting user by uuid {user_uuid}: {e}")
         return None
@@ -30,15 +33,15 @@ def setUser(tele_id: str, username: str) -> bool:
     try:
         user_uuid = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
-        user_data = {
-            "uuid": user_uuid,
-            "tele_id": str(tele_id),
-            "tele_user": username,
-            "initialised": True,
-            "callout_cleared": True,
-            "created_at": now,
-            "updated_at": now,
-        }
+        user_data = UserCreatePayload(
+            uuid=user_uuid,
+            tele_id=str(tele_id),
+            tele_user=username,
+            initialised=False,
+            callout_cleared=False,
+            created_at=now,
+            updated_at=now,
+        )
         return setEntry("users", user_uuid, user_data)
     except Exception as e:
         print(f"Error setting user {tele_id}: {e}")
@@ -51,7 +54,8 @@ def updateUser(tele_id: str, **fields) -> bool:
         if not fields:
             return True
         fields["updated_at"] = datetime.now(timezone.utc).isoformat()
-        return updateEntry("users", "tele_id", str(tele_id), fields)
+        validated_fields = UserUpdatePayload.model_validate(fields)
+        return updateEntry("users", "tele_id", str(tele_id), validated_fields)
     except Exception as e:
         print(f"Error updating user {tele_id}: {e}")
         return False
@@ -92,15 +96,18 @@ def setUserSleepPreferences(tele_id: str, sleep_start: str, sleep_end: str) -> b
             )
         else:
             now = datetime.now(timezone.utc).isoformat()
-            user_data = {
-                "uuid": str(uuid.uuid4()),
-                "tele_id": str(tele_id),
-                "sleep_start_time": sleep_start,
-                "sleep_end_time": sleep_end,
-                "created_at": now,
-                "updated_at": now,
-            }
-            return setEntry("users", user_data["uuid"], user_data)
+            user_data = UserCreatePayload(
+                uuid=str(uuid.uuid4()),
+                tele_id=str(tele_id),
+                tele_user="",
+                initialised=False,
+                callout_cleared=False,
+                sleep_start_time=sleep_start,
+                sleep_end_time=sleep_end,
+                created_at=now,
+                updated_at=now,
+            )
+            return setEntry("users", user_data.uuid, user_data)
     except Exception as e:
         print(f"Error setting sleep preferences for {tele_id}: {e}")
         return False

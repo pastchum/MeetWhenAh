@@ -178,14 +178,14 @@ export class EventService {
       for (const userUuid of participants) {
         const { data: userData } = await supabase
           .from('users')
-          .select('sleep_start, sleep_end')
+          .select('sleep_start_time, sleep_end_time')
           .eq('uuid', userUuid)
           .single();
 
-        if (userData && userData.sleep_start && userData.sleep_end) {
+        if (userData && userData.sleep_start_time && userData.sleep_end_time) {
           sleepPrefs[userUuid] = {
-            start: userData.sleep_start,
-            end: userData.sleep_end
+            start: userData.sleep_start_time,
+            end: userData.sleep_end_time
           };
         }
       }

@@ -14,11 +14,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ user
 
     return NextResponse.json({
       status: 'success',
-      data: {
-        uuid: user.uuid,
-        tele_user: user.tele_user,
-        tele_id: user.tele_id
-      }
+      data: user
     });
   } catch (error) {
     console.error('Error getting user by username:', error);

@@ -6,6 +6,8 @@ export interface ShareData {
   chat_id: string;
   thread_id: string;
   message_id: string;
+  expires_at: string;
+  used_at: string | null;
 }
 
 export class ShareService {
