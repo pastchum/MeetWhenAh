@@ -15,8 +15,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+env = os.getenv('env', 'dev')
+logger.info(f"Running in {env} environment")
+
 # Get bot token from environment variable
-TOKEN = os.getenv('TOKEN')
+if env == 'prod':
+    TOKEN = os.getenv('PRODTOKEN')
+else:
+    TOKEN = os.getenv('TOKEN')
+
 if not TOKEN:
     raise ValueError("No TOKEN found in environment variables")
 
